@@ -12,6 +12,7 @@ aiohttp = "==3.5.1"
 lxml = "==4.3.0"
 "discord.py" = {extras = ["voice"],file = "https://github.com/Rapptz/discord.py/archive/rewrite.zip"}
 beautifulsoup4 = "*"
+tabulate = "*"
 
 [requires]
 python_version = "3.7"
