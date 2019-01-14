@@ -24,9 +24,9 @@ async def send_request(session, url):
         if res.status != 200:
             logger.warning('Problem fetching request. Failed with HTTP/{} {}'.format(res.status, res.reason))
             return None
+        # check response type, file streaming should be handled seperately
         else:
             if is_xml(res):
-                print('XML')
                 content = await res.read()
             elif is_json(res):
                 content = await res.json()

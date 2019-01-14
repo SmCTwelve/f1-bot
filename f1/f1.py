@@ -5,6 +5,7 @@ import logging
 import asyncio
 from fetch import fetch
 from bs4 import BeautifulSoup
+from datetime import date
 from tabulate import tabulate
 
 BASE_URL = 'http://ergast.com/api/f1/current'
@@ -29,6 +30,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def age(yob):
+    current_year = date.today().year
+    age = (current_year - yob)
+    return age
+
+
+def make_table(data, headers='keys'):
+    return tabulate(data, headers=headers, tablefmt='fancy_grid')
+
+
 async def get_soup(url):
     '''Request the URL and parse response as BeautifulSoup object.'''
     res = await fetch(url)
@@ -39,7 +50,7 @@ async def get_soup(url):
 
 
 async def get_driver_standings():
-    '''Returns the latest driver championship standings.
+    '''Returns the latest driver championship standings or None.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, driver code, total points and wins.
@@ -55,30 +66,70 @@ async def get_driver_standings():
             'data': [],
         }
         for standing in standings.find_all('driverstanding'):
-            print(standing)
             result['data'].append(
                 {
                     'Pos': standing['position'],
+                    'No': standing.driver['permanentnumber'],
                     'Driver': standing.driver['code'],
                     'Points': standing['points'],
                     'Wins': standing['wins'],
                 }
             )
-        print(tabulate(result['data'], headers='keys', tablefmt='grid'))
         return result
     return None
 
 
 async def get_team_standings():
+    '''Returns the latest constructor championship standings or None.
+
+    Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
+    Data includes position, team, total points and wins.
+    '''
     url = f'{BASE_URL}/constructorStandings'
+    soup = await get_soup(url)
+    if soup:
+        standings = soup.standingslist
+        result = {
+            'season': standings['season'],
+            'round': standings['round'],
+            'data': [],
+        }
+        for standing in standings.find_all('constructorstanding'):
+            result['data'].append(
+                {
+                    'Pos': standing['position'],
+                    'Team': standing.constructor.name,
+                    'Points': standing['points'],
+                    'Wins': standing['wins'],
+                }
+            )
+        return result
+    return None
 
 
 async def get_all_drivers_and_teams():
+    '''Return all drivers and teams on the grid as a list of dicts. Returns None if data unavailable.
 
-    # Use Ergast API to fetch all driver names, code, team. PROGRAMATICALLY place results into dictionary for cahcing and usage.
-    # For driver in drivers:
-    #   {name, team, age, code, etc.}
-    # Easy automated updating
-    pass
-
-asyncio.run(get_driver_standings())
+    Example: `[{'No': 44, 'Code': 'HAM', 'Name': 'Lewis Hamilton', 'Age': 34,
+    'Nationality': 'British', 'Team': 'Mercedes'}]`
+    '''
+    url = f'{BASE_URL}/driverStandings'
+    soup = await get_soup(url)
+    if soup:
+        standings = soup.find_all('driverstanding')
+        results = []
+        for standing in standings:
+            driver = standing.driver
+            team = standing.constructor
+            results.append(
+                {
+                    'No': driver.permanentnumber,
+                    'Code': driver['code'],
+                    'Name': f'{driver.givenname} {driver.familyname}',
+                    'Age': age(driver.dateofbirth[:4]),
+                    'Nationality': driver.nationality,
+                    'Team': team.name,
+                }
+            )
+        return results
+    return None
