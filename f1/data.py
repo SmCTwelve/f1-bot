@@ -42,6 +42,17 @@ def time_parser(time_str):
     return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%X')
 
 
+def countdown(target):
+    '''
+    Calculate time to `target` datetime object from current time when invoked.
+    Returns string tuple as (days, hrs, mins, sec).
+    '''
+    delta = target - datetime.now()
+    d = str(delta.days) if delta.days > -1 else 0
+    h, m, s = str(delta).split(', ')[1].split(':')
+    return (d, h, m, s)
+
+
 def make_table(data, headers='keys'):
     return tabulate(data, headers=headers, tablefmt='fancy_grid')
 
@@ -166,4 +177,28 @@ async def get_race_schedule():
                 }
             )
         return results
+    return None
+
+
+async def get_next_race():
+    '''Returns the next race in the calendar and a countdown (from moment of req).'''
+    url = f'{BASE_URL}/next'
+    soup = get_soup(url)
+    if soup:
+        race = soup.race
+        result = {
+            'season': race['season'],
+            'countdown': countdown(datetime.strptime(
+                f'{race.date} {race.time}', '%Y-%m-%d %H:%M:%SZ'
+            )),
+            'data': {
+                'Round': race['round'],
+                'Name': race.racename,
+                'Date': date_parser(race.date),
+                'Time': time_parser(race.time),
+                'Circuit': race.circuit.circuitname,
+                'Country': race.location.country,
+            }
+        }
+        return result
     return None
