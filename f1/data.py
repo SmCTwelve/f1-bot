@@ -2,11 +2,11 @@
 Utilities to grab latest F1 results from Ergast API.
 '''
 import logging
-import asyncio
-from fetch import fetch
 from bs4 import BeautifulSoup
 from datetime import date
 from tabulate import tabulate
+
+from fetch import fetch
 
 BASE_URL = 'http://ergast.com/api/f1/current'
 
@@ -23,16 +23,13 @@ BASE_URL = 'http://ergast.com/api/f1/current'
 # !f1 update -- ADMIN, manually reset cache
 # !f1 help | <command> help -- help text and usage example
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 
 def age(yob):
     current_year = date.today().year
-    age = (current_year - yob)
+    age = (current_year - int(yob))
+    print(age)
     return age
 
 
@@ -126,7 +123,7 @@ async def get_all_drivers_and_teams():
                     'No': driver.permanentnumber,
                     'Code': driver['code'],
                     'Name': f'{driver.givenname} {driver.familyname}',
-                    'Age': age(driver.dateofbirth[:4]),
+                    'Age': age(driver.dateofbirth.string[:4]),
                     'Nationality': driver.nationality,
                     'Team': team.name,
                 }
