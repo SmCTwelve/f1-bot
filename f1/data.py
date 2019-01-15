@@ -3,7 +3,7 @@ Utilities to grab latest F1 results from Ergast API.
 '''
 import logging
 from bs4 import BeautifulSoup
-from datetime import date
+from datetime import date, datetime
 from tabulate import tabulate
 
 from fetch import fetch
@@ -21,6 +21,8 @@ BASE_URL = 'http://ergast.com/api/f1/current'
 # !f1 calendar | races -- all race weekends, ciruits, dates
 # !f1 countdown | next -- next race circuit, weekend, date and countdown timer (use /next/ ergast round)
 # !f1 update -- ADMIN, manually reset cache
+# !f1 results [<round> | <circuitID>] -- qualifying and race results
+# !f1 results race | qualifying
 # !f1 help | <command> help -- help text and usage example
 
 logger = logging.getLogger(__name__)
@@ -29,8 +31,15 @@ logger = logging.getLogger(__name__)
 def age(yob):
     current_year = date.today().year
     age = (current_year - int(yob))
-    print(age)
     return age
+
+
+def date_parser(date_str):
+    return datetime.strptime(date_str, '%Y-%m-%d').strftime('%d %b')
+
+
+def time_parser(time_str):
+    return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%X')
 
 
 def make_table(data, headers='keys'):
@@ -114,11 +123,14 @@ async def get_all_drivers_and_teams():
     soup = await get_soup(url)
     if soup:
         standings = soup.find_all('driverstanding')
-        results = []
+        results = {
+            'season': soup.standingstable['season'],
+            'data': []
+        }
         for standing in standings:
             driver = standing.driver
             team = standing.constructor
-            results.append(
+            results['data'].append(
                 {
                     'No': driver.permanentnumber,
                     'Code': driver['code'],
@@ -126,6 +138,31 @@ async def get_all_drivers_and_teams():
                     'Age': age(driver.dateofbirth.string[:4]),
                     'Nationality': driver.nationality,
                     'Team': team.name,
+                }
+            )
+        return results
+    return None
+
+
+async def get_race_schedule():
+    '''Return full race calendar with circuit names and date or None.'''
+    url = BASE_URL
+    soup = await get_soup(url)
+    if soup:
+        races = soup.find_all('race')
+        results = {
+            'season': soup.racetable['season'],
+            'data': []
+        }
+        for race in races:
+            results['data'].append(
+                {
+                    'Round': race['round'],
+                    'Name': race.racename,
+                    'Date': date_parser(race.date),
+                    'Time': time_parser(race.time),
+                    'Circuit': race.circuit.circuitname,
+                    'Country': race.location.country,
                 }
             )
         return results
