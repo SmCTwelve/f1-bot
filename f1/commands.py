@@ -1,21 +1,11 @@
-import os
 import logging
 from discord.ext import commands
 
-import data
+from f1 import data
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 bot = commands.Bot(command_prefix='!')
-
-
-def contains(first, second):
-    '''Returns true if any item in `first` matches an item in `second`.'''
-    return any(i in first for i in second)
 
 
 @bot.event
@@ -57,5 +47,3 @@ async def races(ctx, *args):
 @f1.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
     pass
-
-bot.run(os.getenv('BOT_TOKEN'))
