@@ -3,10 +3,11 @@ Utilities to grab latest F1 results from Ergast API.
 '''
 import logging
 from bs4 import BeautifulSoup
-from datetime import date, datetime
+from datetime import datetime
 from tabulate import tabulate
 
-from fetch import fetch
+from f1.fetch import fetch
+from f1 import utils
 
 BASE_URL = 'http://ergast.com/api/f1/current'
 
@@ -15,7 +16,7 @@ BASE_URL = 'http://ergast.com/api/f1/current'
 # !f1 -- return all driver and constructor standings as table/embed
 # !f1 wdc | drivers -- only drivers standings
 # !f1 <driverName> points -- current points in season for the driver
-# !f1 <driverName> -- details about the driver, name, age, all-time wins, poles - get picture
+# !f1 <driverName> -- details about the driver, name, utils.age, all-time wins, poles - get picture
 # !f1 wcc | constructors -- only constructors standings
 # !f1 <constructor> points -- constructor points this season
 # !f1 calendar | races -- all race weekends, ciruits, dates
@@ -26,31 +27,6 @@ BASE_URL = 'http://ergast.com/api/f1/current'
 # !f1 help | <command> help -- help text and usage example
 
 logger = logging.getLogger(__name__)
-
-
-def age(yob):
-    current_year = date.today().year
-    age = (current_year - int(yob))
-    return age
-
-
-def date_parser(date_str):
-    return datetime.strptime(date_str, '%Y-%m-%d').strftime('%d %b')
-
-
-def time_parser(time_str):
-    return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%X')
-
-
-def countdown(target):
-    '''
-    Calculate time to `target` datetime object from current time when invoked.
-    Returns string tuple as (days, hrs, mins, sec).
-    '''
-    delta = target - datetime.now()
-    d = str(delta.days) if delta.days > -1 else 0
-    h, m, s = str(delta).split(', ')[1].split(':')
-    return (d, h, m, s)
 
 
 def make_table(data, headers='keys'):
@@ -86,7 +62,7 @@ async def get_driver_standings():
             result['data'].append(
                 {
                     'Pos': standing['position'],
-                    'No': standing.driver['permanentnumber'],
+                    'No': standing.driver.permanentnumber,
                     'Driver': standing.driver['code'],
                     'Points': standing['points'],
                     'Wins': standing['wins'],
@@ -146,7 +122,7 @@ async def get_all_drivers_and_teams():
                     'No': driver.permanentnumber,
                     'Code': driver['code'],
                     'Name': f'{driver.givenname} {driver.familyname}',
-                    'Age': age(driver.dateofbirth.string[:4]),
+                    'Age': utils.age(driver.dateofbirth.string[:4]),
                     'Nationality': driver.nationality,
                     'Team': team.name,
                 }
@@ -170,8 +146,8 @@ async def get_race_schedule():
                 {
                     'Round': race['round'],
                     'Name': race.racename,
-                    'Date': date_parser(race.date),
-                    'Time': time_parser(race.time),
+                    'Date': utils.date_parser(race.date),
+                    'Time': utils.time_parser(race.time),
                     'Circuit': race.circuit.circuitname,
                     'Country': race.location.country,
                 }
@@ -188,14 +164,14 @@ async def get_next_race():
         race = soup.race
         result = {
             'season': race['season'],
-            'countdown': countdown(datetime.strptime(
+            'countdown': utils.countdown(datetime.strptime(
                 f'{race.date} {race.time}', '%Y-%m-%d %H:%M:%SZ'
             )),
             'data': {
                 'Round': race['round'],
                 'Name': race.racename,
-                'Date': date_parser(race.date),
-                'Time': time_parser(race.time),
+                'Date': utils.date_parser(race.date),
+                'Time': utils.time_parser(race.time),
                 'Circuit': race.circuit.circuitname,
                 'Country': race.location.country,
             }
