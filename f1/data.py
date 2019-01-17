@@ -61,11 +61,11 @@ async def get_driver_standings():
         for standing in standings.find_all('driverstanding'):
             result['data'].append(
                 {
-                    'Pos': standing['position'],
-                    'No': standing.driver.permanentnumber,
+                    'Pos': int(standing['position']),
+                    'No': int(standing.driver.permanentnumber.string),
                     'Driver': standing.driver['code'],
-                    'Points': standing['points'],
-                    'Wins': standing['wins'],
+                    'Points': int(standing['points']),
+                    'Wins': int(standing['wins']),
                 }
             )
         return result
@@ -90,10 +90,10 @@ async def get_team_standings():
         for standing in standings.find_all('constructorstanding'):
             result['data'].append(
                 {
-                    'Pos': standing['position'],
-                    'Team': standing.constructor.name,
-                    'Points': standing['points'],
-                    'Wins': standing['wins'],
+                    'Pos': int(standing['position']),
+                    'Team': standing.constructor.find('name').string,
+                    'Points': int(standing['points']),
+                    'Wins': int(standing['wins']),
                 }
             )
         return result
@@ -119,12 +119,12 @@ async def get_all_drivers_and_teams():
             team = standing.constructor
             results['data'].append(
                 {
-                    'No': driver.permanentnumber,
+                    'No': int(driver.permanentnumber.string),
                     'Code': driver['code'],
-                    'Name': f'{driver.givenname} {driver.familyname}',
+                    'Name': f'{driver.givenname.string} {driver.familyname.string}',
                     'Age': utils.age(driver.dateofbirth.string[:4]),
-                    'Nationality': driver.nationality,
-                    'Team': team.name,
+                    'Nationality': driver.nationality.string,
+                    'Team': team.find('name').string,
                 }
             )
         return results
@@ -144,12 +144,12 @@ async def get_race_schedule():
         for race in races:
             results['data'].append(
                 {
-                    'Round': race['round'],
-                    'Name': race.racename,
-                    'Date': utils.date_parser(race.date),
-                    'Time': utils.time_parser(race.time),
-                    'Circuit': race.circuit.circuitname,
-                    'Country': race.location.country,
+                    'Round': int(race['round']),
+                    'Name': race.racename.string,
+                    'Date': utils.date_parser(race.date.string),
+                    'Time': utils.time_parser(race.time.string),
+                    'Circuit': race.circuit.circuitname.string,
+                    'Country': race.location.country.string,
                 }
             )
         return results
@@ -159,21 +159,22 @@ async def get_race_schedule():
 async def get_next_race():
     '''Returns the next race in the calendar and a countdown (from moment of req).'''
     url = f'{BASE_URL}/next'
-    soup = get_soup(url)
+    soup = await get_soup(url)
     if soup:
         race = soup.race
+        date, time = (race.date.string, race.time.string)
         result = {
             'season': race['season'],
             'countdown': utils.countdown(datetime.strptime(
-                f'{race.date} {race.time}', '%Y-%m-%d %H:%M:%SZ'
+                f'{date} {time}', '%Y-%m-%d %H:%M:%SZ'
             )),
             'data': {
-                'Round': race['round'],
-                'Name': race.racename,
-                'Date': utils.date_parser(race.date),
-                'Time': utils.time_parser(race.time),
-                'Circuit': race.circuit.circuitname,
-                'Country': race.location.country,
+                'Round': int(race['round']),
+                'Name': race.racename.string,
+                'Date': utils.date_parser(date),
+                'Time': utils.time_parser(time),
+                'Circuit': race.circuit.circuitname.string,
+                'Country': race.location.country.string,
             }
         }
         return result
