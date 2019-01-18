@@ -4,7 +4,6 @@ Utilities to grab latest F1 results from Ergast API.
 import logging
 from bs4 import BeautifulSoup
 from datetime import datetime
-from tabulate import tabulate
 
 from f1.fetch import fetch
 from f1 import utils
@@ -27,10 +26,6 @@ BASE_URL = 'http://ergast.com/api/f1/current'
 # !f1 help | <command> help -- help text and usage example
 
 logger = logging.getLogger(__name__)
-
-
-def make_table(data, headers='keys'):
-    return tabulate(data, headers=headers, tablefmt='fancy_grid')
 
 
 async def get_soup(url):

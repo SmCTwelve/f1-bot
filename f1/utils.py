@@ -1,12 +1,17 @@
 import logging
+from tabulate import tabulate
 from datetime import date, datetime
 
 logger = logging.getLogger(__name__)
 
 
 def contains(first, second):
-    '''Returns true if any item in `first` matches an item in `second`.'''
+    '''Returns True if any item in `first` matches an item in `second`.'''
     return any(i in first for i in second)
+
+
+def make_table(data, headers='keys'):
+    return tabulate(data, headers=headers, tablefmt='fancy_grid')
 
 
 def age(yob):
@@ -23,7 +28,7 @@ def time_parser(time_str):
     return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%X')
 
 
-def countdown(target):
+def countdown(target: datetime):
     '''
     Calculate time to `target` datetime object from current time when invoked.
     Returns string tuple as (days, hrs, mins, sec).
