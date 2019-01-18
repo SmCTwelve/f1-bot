@@ -4,15 +4,13 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-autopep8 = "*"
 flake8 = "*"
-rope = "*"
+autopep8 = "*"
 
 [packages]
-aiohttp = "==3.5.1"
-lxml = "==4.3.0"
-"discord.py" = {extras = ["voice"],file = "https://github.com/Rapptz/discord.py/archive/rewrite.zip"}
-beautifulsoup4 = "*"
+discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "rewrite"}
+lxml = "*"
+bs4 = "*"
 tabulate = "*"
 
 [requires]
