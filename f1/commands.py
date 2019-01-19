@@ -13,6 +13,7 @@ bot = commands.Bot(command_prefix='!')
 @bot.event
 async def on_ready():
     logger.info('Bot ready')
+    await ctx.send('Ready')
 
 
 @bot.event
@@ -25,7 +26,7 @@ async def on_command_error(ctx, err):
     logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
 
 
-@bot.command
+@bot.command()
 async def ping(ctx, *args):
     '''Display the current latency.'''
     await ctx.send(bot.latency)
@@ -67,7 +68,7 @@ async def constructors(ctx, *args):
         logger.warning('No constructor data available. Command will do nothing.')
 
 
-@f1.command
+@f1.command()
 async def grid(ctx, *args):
     '''Display all the drivers and teams participating in the current season.'''
     result = await data.get_all_drivers_and_teams()
@@ -106,13 +107,13 @@ async def countdown(ctx, *args):
             title=f"{result['data']['Name']}",
             description=f"{result['countdown']}",
             url=result['url'],
-            # placeholder
-            thumbnail='https://i.imgur.com/1tpFlpv.jpg',
             colour=Colour.dark_blue(),
         )
+        # placeholder
+        embed.set_thumbnail('https://i.imgur.com/1tpFlpv.jpg')
+        embed.add_field(name='Circuit', value=result['data']['Circuit'])
         embed.add_field(name='Round', value=result['data']['Round'], inline=True)
         embed.add_field(name='Country', value=result['data']['Country'], inline=True)
-        embed.add_field(name='Circuit', value=result['data']['Circuit'])
         embed.add_field(name='Date', value=result['data']['Date'], inline=True)
         embed.add_field(name='Time', value=result['data']['Time'], inline=True)
         await ctx.send(embed=embed)
