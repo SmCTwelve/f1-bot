@@ -109,7 +109,7 @@ async def countdown(ctx, *args):
             colour=Colour.dark_blue(),
         )
         # placeholder
-        embed.set_thumbnail('https://i.imgur.com/1tpFlpv.jpg')
+        embed.set_thumbnail(url='https://i.imgur.com/1tpFlpv.jpg')
         embed.add_field(name='Circuit', value=result['data']['Circuit'])
         embed.add_field(name='Round', value=result['data']['Round'], inline=True)
         embed.add_field(name='Country', value=result['data']['Country'], inline=True)
@@ -149,7 +149,7 @@ async def results(ctx, round='last', *args):
 
 @f1.command()
 async def career(ctx, driver, *args):
-    '''Career stats for the `driver`.
+    '''Career stats for the `driver` (code).
 
     Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
     '''
