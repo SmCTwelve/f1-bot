@@ -48,22 +48,21 @@ async def get_driver_standings():
     if soup:
         # tags are lowercase
         standings = soup.standingslist
-        result = {
+        results = {
             'season': standings['season'],
             'round': standings['round'],
             'data': [],
         }
         for standing in standings.find_all('driverstanding'):
-            result['data'].append(
+            results['data'].append(
                 {
                     'Pos': int(standing['position']),
-                    'No': int(standing.driver.permanentnumber.string),
                     'Driver': standing.driver['code'],
                     'Points': int(standing['points']),
                     'Wins': int(standing['wins']),
                 }
             )
-        return result
+        return results
     return None
 
 
@@ -77,13 +76,13 @@ async def get_team_standings():
     soup = await get_soup(url)
     if soup:
         standings = soup.standingslist
-        result = {
+        results = {
             'season': standings['season'],
             'round': standings['round'],
             'data': [],
         }
         for standing in standings.find_all('constructorstanding'):
-            result['data'].append(
+            results['data'].append(
                 {
                     'Pos': int(standing['position']),
                     'Team': standing.constructor.find('name').string,
@@ -91,7 +90,7 @@ async def get_team_standings():
                     'Wins': int(standing['wins']),
                 }
             )
-        return result
+        return results
     return None
 
 
@@ -107,6 +106,7 @@ async def get_all_drivers_and_teams():
         standings = soup.find_all('driverstanding')
         results = {
             'season': soup.standingstable['season'],
+            'round': soup.standingstable['round'],
             'data': []
         }
         for standing in standings:
@@ -114,8 +114,8 @@ async def get_all_drivers_and_teams():
             team = standing.constructor
             results['data'].append(
                 {
-                    'No': int(driver.permanentnumber.string),
                     'Code': driver['code'],
+                    'No': int(driver.permanentnumber.string),
                     'Name': f'{driver.givenname.string} {driver.familyname.string}',
                     'Age': utils.age(driver.dateofbirth.string[:4]),
                     'Nationality': driver.nationality.string,
@@ -140,15 +140,16 @@ async def get_race_schedule():
             results['data'].append(
                 {
                     'Round': int(race['round']),
-                    'Name': race.racename.string,
+                    'Circuit': race.circuit.circuitname.string,
                     'Date': utils.date_parser(race.date.string),
                     'Time': utils.time_parser(race.time.string),
-                    'Circuit': race.circuit.circuitname.string,
                     'Country': race.location.country.string,
                 }
             )
         return results
     return None
+
+#  TODO - Get image of circuit
 
 
 async def get_next_race():
@@ -158,11 +159,13 @@ async def get_next_race():
     if soup:
         race = soup.race
         date, time = (race.date.string, race.time.string)
+        cd = utils.countdown(datetime.strptime(
+            f'{date} {time}', '%Y-%m-%d %H:%M:%SZ'
+        ))
         result = {
             'season': race['season'],
-            'countdown': utils.countdown(datetime.strptime(
-                f'{date} {time}', '%Y-%m-%d %H:%M:%SZ'
-            )),
+            'countdown': cd[0],
+            'url': race['url'],
             'data': {
                 'Round': int(race['round']),
                 'Name': race.racename.string,
