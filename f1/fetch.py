@@ -16,7 +16,7 @@ def is_json(res): return 'application/json' in res.content_type
 
 
 async def send_request(session, url):
-    '''Attempt to request the URL. Returns response object if successful or None.'''
+    '''Attempt to request the URL. Returns content of the Response if successful or None.'''
     logger.info('GET {}'.format(url))
     # open connection context, all response handling must be within
     async with session.get(url) as res:
