@@ -110,7 +110,7 @@ async def countdown(ctx, *args):
         )
         # placeholder
         embed.set_thumbnail(url='https://i.imgur.com/1tpFlpv.jpg')
-        embed.add_field(name='Circuit', value=result['data']['Circuit'])
+        embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
         embed.add_field(name='Round', value=result['data']['Round'], inline=True)
         embed.add_field(name='Country', value=result['data']['Country'], inline=True)
         embed.add_field(name='Date', value=result['data']['Date'], inline=True)
