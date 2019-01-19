@@ -1,4 +1,5 @@
 import logging
+from discord import Colour
 from discord.embeds import Embed
 from discord.ext import commands
 
@@ -102,12 +103,14 @@ async def countdown(ctx, *args):
     result = await data.get_next_race()
     if result:
         embed = Embed(
-            title=f"Next Race {result['season']}",
-            description=f"**{result['countdown']}**",
+            title=f"{result['data']['Name']}",
+            description=f"{result['countdown']}",
             url=result['url'],
+            # placeholder
+            thumbnail='https://i.imgur.com/1tpFlpv.jpg',
+            colour=Colour.dark_blue(),
         )
         embed.add_field(name='Round', value=result['data']['Round'], inline=True)
-        embed.add_field(name='Name', value=result['data']['Name'], inline=True)
         embed.add_field(name='Country', value=result['data']['Country'], inline=True)
         embed.add_field(name='Circuit', value=result['data']['Circuit'])
         embed.add_field(name='Date', value=result['data']['Date'], inline=True)
