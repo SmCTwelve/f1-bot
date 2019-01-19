@@ -71,7 +71,8 @@ async def grid(ctx, *args):
     '''Display all the drivers and teams participating in the current season.'''
     result = await data.get_all_drivers_and_teams()
     if result:
-        table = utils.make_table(result['data'])
+        # Use simple table to not exceed content limit
+        table = utils.make_table(result['data'], fmt='simple')
         await ctx.send(
             f"**Formula 1 {result['season']} Grid**\n" +
             f"Round: {result['round']}\n"
@@ -86,7 +87,8 @@ async def races(ctx, *args):
     '''Display the full race schedule for the current season.'''
     result = await data.get_race_schedule()
     if result:
-        table = utils.make_table(result['data'])
+        # Use simple table to not exceed content limit
+        table = utils.make_table(result['data'], fmt='simple')
         await ctx.send(f"**{result['season']} Formula 1 Race Calendar**\n")
         await ctx.send(f"```\n{table}\n```")
     else:
