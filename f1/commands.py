@@ -103,7 +103,7 @@ async def countdown(ctx, *args):
     result = await data.get_next_race()
     if result:
         embed = Embed(
-            title=f"{result['data']['Name']}",
+            title=f"**{result['data']['Name']}**",
             description=f"{result['countdown']}",
             url=result['url'],
             colour=Colour.dark_blue(),

@@ -169,7 +169,7 @@ async def get_next_race():
             'data': {
                 'Round': int(race['round']),
                 'Name': race.racename.string,
-                'Date': utils.date_parser(date),
+                'Date': f'{utils.date_parser(date)} {race['season']}',
                 'Time': utils.time_parser(time),
                 'Circuit': race.circuit.circuitname.string,
                 'Country': race.location.country.string,
