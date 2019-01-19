@@ -25,9 +25,7 @@ def date_parser(date_str):
 
 
 def time_parser(time_str):
-    time = datetime.strptime(time_str, '%H:%M:%SZ').strftime('%X')
-    # Strip seconds
-    return time[:len(time) - 3]
+    return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%H:%M UTC')
 
 
 def countdown(target: datetime):
