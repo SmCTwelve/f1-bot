@@ -13,7 +13,6 @@ bot = commands.Bot(command_prefix='!')
 @bot.event
 async def on_ready():
     logger.info('Bot ready')
-    await ctx.send('Ready')
 
 
 @bot.event
@@ -119,3 +118,39 @@ async def countdown(ctx, *args):
         await ctx.send(embed=embed)
     else:
         logger.warning('Could not fetch next race. Nothing returned.')
+
+
+@f1.command(aliases=['times', 'laps'])
+async def timings(ctx, round='last', *args):
+    '''Display fastest lap times and delta per driver for `round`.
+
+    If no `round` number specified returns results for the most recent race.
+
+    **Optional param**:
+    `fastest` -  Only show the fastest lap of the race
+    `slowest` -  Only show the slowest lap of the race
+    `top`     -  Top 5 fastest drivers
+    `bottom`  -  Bottom 5 slowest drivers
+    '''
+    await ctx.send('no')
+
+
+@f1.command(aliases=['finish', 'result'])
+async def results(ctx, round='last', *args):
+    '''Results for race `round`. Default most recent.
+
+    Data includes finishing position, fastest lap, finish status, pit stops per driver.
+
+    **Optional param**:
+    `quali` -   Show qualifying results with position and fastest Q1, Q2, Q3 time.
+    '''
+    await ctx.send('no')
+
+
+@f1.command()
+async def career(ctx, driver, *args):
+    '''Career stats for the `driver`.
+
+    Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
+    '''
+    await ctx.send('no')
