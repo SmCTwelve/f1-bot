@@ -1,4 +1,4 @@
-# f1-bot 🏁 
+# 🏁 f1-bot  
 A Discord bot to view F1 stats. 
 
 ## Description
