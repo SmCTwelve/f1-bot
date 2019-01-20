@@ -19,6 +19,10 @@ $ pipenv install
 ```
 See https://discordapp.com/developers/applications/ for the creation of a Discord Bot user and inviting to a server. Copy the Token ID of your Bot account to an environment variable called `BOT_TOKEN` which is read by the application to connect to Discord. 
 
+Run the application by executing `python -m bot.py` from the main directory. The console will display log messages to monitor the bot. 
+
+A Procfile is included for easy hosting on Heroku as a worker dyno. For other hosting configurations ensure `bot.py` is used as the entry point. 
+
 ## Usage
 Commands are invoked with the prefix `!` and base `f1` command followed by one of the following subcommands:
 ```
