@@ -105,8 +105,8 @@ async def get_all_drivers_and_teams():
     if soup:
         standings = soup.find_all('driverstanding')
         results = {
-            'season': soup.standingstable['season'],
-            'round': soup.standingstable['round'],
+            'season': soup.standingslist['season'],
+            'round': soup.standingslist['round'],
             'data': []
         }
         for standing in standings:
@@ -169,7 +169,7 @@ async def get_next_race():
             'data': {
                 'Round': int(race['round']),
                 'Name': race.racename.string,
-                'Date': f'{utils.date_parser(date)} {race['season']}',
+                'Date': f"{utils.date_parser(date)} {race['season']}",
                 'Time': utils.time_parser(time),
                 'Circuit': race.circuit.circuitname.string,
                 'Country': race.location.country.string,
