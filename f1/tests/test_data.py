@@ -1,7 +1,9 @@
 import unittest
+import re
 from datetime import datetime
 
 from f1 import data
+from f1 import utils
 from f1.tests.async_test import async_test
 
 
@@ -25,12 +27,25 @@ class DataTests(unittest.TestCase):
     async def test_get_all_drivers_and_teams(self):
         res = await data.get_all_drivers_and_teams()
         age = res['data'][0]['Age']
-        print(res['data'][0])
         self.check_data(res)
+        # arbirary check for extreme values
         self.assertTrue(int(age) > 0 and int(age) < 99, "Age not valid.")
 
     @async_test
-    async def test_countdown(self):
+    async def test_get_next_race(self):
         res = await data.get_next_race()
+        time = res['data']['Time']
+        date = res['data']['Date']
         self.assertTrue(res['data'], "Results empty.")
-        self.assertTrue(datetime.strptime(res['data']['Date'], '%d %b'), "Date not valid.")
+        self.assertTrue(datetime.strptime(date, '%d %b %Y'), "Date not valid.")
+        self.assertTrue(datetime.strptime(time, '%H:%M UTC'), "Time not valid.")
+
+    @async_test
+    async def test_countdown_with_past_date(self):
+        past_date = datetime(1999, 1, 1)
+        result = utils.countdown(past_date)
+        countdown_str = result[0]
+        d, h, m, s = result[1]
+        self.assertTrue((d is 0), "No of days for past date should be zero.")
+        self.assertTrue(re.findall(r'(\d+ days?|\d+ hours?|\d+ minutes?|\d+ seconds?)+',
+                                   countdown_str), "Invalid string output.")

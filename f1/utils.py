@@ -34,14 +34,15 @@ def countdown(target: datetime):
     Returns a list containing the string output and tuple of (days, hrs, mins, sec).
     '''
     delta = target - datetime.now()
-    d = str(delta.days) if delta.days > -1 else 0
-    h, m, s = str(delta).split(', ')[1].split(':')
-    # trim ms
-    s = s.split('.')[0]
+    d = (delta.days) if delta.days > -1 else 0
+    # str() on delta nicely outputs 'D days, H:M:S'
+    # split 'H:M:S' to get individual values as floats
+    h, m, s = [float(x) for x in str(delta).split(', ')[1].split(':')]
+    # text representation
     stringify = (
-        f"{d} {'days' if d is not '1' else 'day'}, "
-        f"{h} {'hours' if h is not '1' else 'hour'}, "
-        f"{m} {'minutes' if m is not '1' else 'minute'}, "
-        f"{s} {'seconds' if s is not '1' else 'second'} "
+        f"{d} {'days' if d is not 1 else 'day'}, "
+        f"{h} {'hours' if h is not 1 else 'hour'}, "
+        f"{m} {'minutes' if m is not 1 else 'minute'}, "
+        f"{s} {'seconds' if s is not 1 else 'second'} "
     )
     return [stringify, (d, h, m, s)]
