@@ -33,14 +33,22 @@ async def ping(ctx, *args):
 
 @bot.group(invoke_without_command=True, case_insensitive=True)
 async def f1(ctx, *args):
-    '''Commands to get F1 data. Invoke with !f1.'''
-    await ctx.send('Command not recognised. Type !help f1.')
+    '''Commands to get F1 data. Invoke with !f1.
+
+    Only called if no f1 subcommand reached.
+    '''
+    await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}. Type `!help f1`.')
 
 
 @f1.command(aliases=['wdc'])
-async def drivers(ctx, *args):
-    '''Display the current Driver Championship standings as of the last race.'''
-    result = await data.get_driver_standings()
+async def drivers(ctx, season='current', *args):
+    '''Display the Driver Championship standings as of the last race or `season`.
+
+    Usage:
+        !f1 drivers             Current WDC standings as of last race.
+        !f1 drivers <season>    WDC standings from <season>.
+    '''
+    result = await data.get_driver_standings(season)
     if result:
         table = utils.make_table(result['data'])
         await ctx.send(
@@ -53,9 +61,14 @@ async def drivers(ctx, *args):
 
 
 @f1.command(aliases=['teams', 'wcc'])
-async def constructors(ctx, *args):
-    '''Display the current Constructor Championship standings as of the last race.'''
-    result = await data.get_team_standings()
+async def constructors(ctx, season='current', *args):
+    '''Display Constructor Championship standings as of the last race or `season`.
+
+    Usage:
+        !f1 constructors            Current WCC standings as of the last race.
+        !f1 constructors <season>   WCC standings from <season>.
+    '''
+    result = await data.get_team_standings(season)
     if result:
         table = utils.make_table(result['data'])
         await ctx.send(
@@ -68,9 +81,14 @@ async def constructors(ctx, *args):
 
 
 @f1.command()
-async def grid(ctx, *args):
-    '''Display all the drivers and teams participating in the current season.'''
-    result = await data.get_all_drivers_and_teams()
+async def grid(ctx, season='current', *args):
+    '''Display all the drivers and teams participating in the current season or `season`.
+
+    Usage:
+        !f1 grid            All drivers and teams in the current season as of last race.
+        !f1 grid <season>   All drivers and teams at the end of <season>.
+    '''
+    result = await data.get_all_drivers_and_teams(season)
     if result:
         # Use simple table to not exceed content limit
         table = utils.make_table(result['data'], fmt='simple')
@@ -99,7 +117,10 @@ async def races(ctx, *args):
 # ## TODO - Display thumbnail for circuits ##
 @f1.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
-    '''Display details of the next race on the calendar and a countdown.'''
+    '''Display details of the next race on the calendar and a countdown.
+
+    Output is a Discord Embed.
+    '''
     result = await data.get_next_race()
     if result:
         embed = Embed(
@@ -124,7 +145,7 @@ async def countdown(ctx, *args):
 async def timings(ctx, round='last', *args):
     '''Display fastest lap times and delta per driver for `round`.
 
-    If no `round` number specified returns results for the most recent race.
+    If no `round` specified returns results for the most recent race.
 
     **Optional param**:
     `fastest` -  Only show the fastest lap of the race

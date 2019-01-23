@@ -8,7 +8,7 @@ from datetime import datetime
 from f1.fetch import fetch
 from f1 import utils
 
-BASE_URL = 'http://ergast.com/api/f1/current'
+BASE_URL = 'http://ergast.com/api/f1'
 
 # -- Use caching for all requests to reuse results from previous command use, only request directly from API if expired --
 # -- Check if race weekend, lower cache period --
@@ -37,13 +37,13 @@ async def get_soup(url):
     return BeautifulSoup(res, 'lxml')
 
 
-async def get_driver_standings():
-    '''Returns the latest driver championship standings or None.
+async def get_driver_standings(season):
+    '''Returns the driver championship standings or None.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, driver code, total points and wins.
     '''
-    url = f'{BASE_URL}/driverStandings'
+    url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
     if soup:
         # tags are lowercase
@@ -66,13 +66,13 @@ async def get_driver_standings():
     return None
 
 
-async def get_team_standings():
-    '''Returns the latest constructor championship standings or None.
+async def get_team_standings(season):
+    '''Returns the constructor championship standings or None.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, team, total points and wins.
     '''
-    url = f'{BASE_URL}/constructorStandings'
+    url = f'{BASE_URL}/{season}/constructorStandings'
     soup = await get_soup(url)
     if soup:
         standings = soup.standingslist
@@ -94,13 +94,13 @@ async def get_team_standings():
     return None
 
 
-async def get_all_drivers_and_teams():
+async def get_all_drivers_and_teams(season):
     '''Return all drivers and teams on the grid as a list of dicts. Returns None if data unavailable.
 
     Example: `[{'No': 44, 'Code': 'HAM', 'Name': 'Lewis Hamilton', 'Age': 34,
     'Nationality': 'British', 'Team': 'Mercedes'}]`
     '''
-    url = f'{BASE_URL}/driverStandings'
+    url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
     if soup:
         standings = soup.find_all('driverstanding')
@@ -128,7 +128,7 @@ async def get_all_drivers_and_teams():
 
 async def get_race_schedule():
     '''Return full race calendar with circuit names and date or None.'''
-    url = BASE_URL
+    url = f'{BASE_URL}/current'
     soup = await get_soup(url)
     if soup:
         races = soup.find_all('race')
@@ -149,11 +149,11 @@ async def get_race_schedule():
         return results
     return None
 
-#  TODO - Get image of circuit
-
 
 async def get_next_race():
     '''Returns the next race in the calendar and a countdown (from moment of req).'''
+    #  TODO - Get image of circuit
+
     url = f'{BASE_URL}/next'
     soup = await get_soup(url)
     if soup:
