@@ -4,6 +4,7 @@ from datetime import datetime
 
 from f1 import data
 from f1 import utils
+from f1.errors import MissingDataError
 from f1.tests.async_test import async_test
 
 
@@ -15,20 +16,25 @@ class DataTests(unittest.TestCase):
 
     @async_test
     async def test_get_driver_standings(self):
-        res = await data.get_driver_standings()
+        res = await data.get_driver_standings('current')
         self.check_data(res)
 
     @async_test
+    async def test_get_driver_standings_in_future(self):
+        with self.assertRaises(MissingDataError):
+            await data.get_driver_standings(3000)
+
+    @async_test
     async def test_get_team_standings(self):
-        res = await data.get_team_standings()
+        res = await data.get_team_standings('current')
         self.check_data(res)
 
     @async_test
     async def test_get_all_drivers_and_teams(self):
-        res = await data.get_all_drivers_and_teams()
+        res = await data.get_all_drivers_and_teams('current')
         age = res['data'][0]['Age']
         self.check_data(res)
-        # arbirary check for extreme values
+        # arbirary check for extreme values, active drivers 18-40
         self.assertTrue(int(age) > 0 and int(age) < 99, "Age not valid.")
 
     @async_test
@@ -46,6 +52,23 @@ class DataTests(unittest.TestCase):
         result = utils.countdown(past_date)
         countdown_str = result[0]
         d, h, m, s = result[1]
-        self.assertTrue((d is 0), "No of days for past date should be zero.")
+        self.assertTrue(d is 0, "No of days for past date should be zero.")
         self.assertTrue(re.findall(r'(\d+ days?|\d+ hours?|\d+ minutes?|\d+ seconds?)+',
                                    countdown_str), "Invalid string output.")
+
+    @async_test
+    async def test_get_race_results(self):
+        res = await data.get_race_results('last', 'current')
+        past_res = await data.get_race_results(12, '2017')
+        self.assertTrue(utils.make_table(res['data']), "Table too big.")
+        self.assertTrue(utils.make_table(past_res['data']), "Table too big.")
+
+    @async_test
+    async def test_get_race_results_in_future_raises_exception(self):
+        with self.assertRaises(MissingDataError):
+            await data.get_race_results(3000, 1)
+
+    @async_test
+    async def test_get_qualifying_results(self):
+        res = await data.get_qualifying_results('last', 'current')
+        self.assertTrue(utils.make_table(res['data']), "Table too big.")
