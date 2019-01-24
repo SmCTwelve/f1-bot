@@ -2,6 +2,8 @@ import logging
 from tabulate import tabulate
 from datetime import date, datetime
 
+from f1.errors import MessageTooLongError
+
 logger = logging.getLogger(__name__)
 
 
@@ -10,8 +12,27 @@ def contains(first, second):
     return any(i in first for i in second)
 
 
+def too_long(message):
+    '''Returns True if the message exceeds discord's 2000 character limit.'''
+    return len(message) >= 2000
+
+
 def make_table(data, headers='keys', fmt='fancy_grid'):
-    return tabulate(data, headers=headers, tablefmt=fmt)
+    '''Tabulate data into an ASCII table. Return value is a str.
+
+    The `fmt` param defaults to 'fancy_grid' which includes borders for cells. If the table exceeds
+    Discord message limit the table is rebuilt with borders removed.
+
+    If still too large raise `MessageTooLongError`.
+    '''
+    table = tabulate(data, headers=headers, tablefmt=fmt)
+    # remove cell borders if too long
+    if too_long(table):
+        table = tabulate(data, headers=headers, tablefmt='simple')
+        # cannot send table if too large even without borders
+        if too_long(table):
+            raise MessageTooLongError('Table too large to send.', table)
+    return table
 
 
 def age(yob):
