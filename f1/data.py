@@ -5,8 +5,9 @@ import logging
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-from f1.fetch import fetch
 from f1 import utils
+from f1.errors import MissingDataError
+from f1.fetch import fetch
 
 BASE_URL = 'http://ergast.com/api/f1'
 
@@ -38,10 +39,12 @@ async def get_soup(url):
 
 
 async def get_driver_standings(season):
-    '''Returns the driver championship standings or None.
+    '''Returns the driver championship standings as dict.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, driver code, total points and wins.
+
+    Raises `MissingDataError` if API response unavailable.
     '''
     url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
@@ -63,14 +66,16 @@ async def get_driver_standings(season):
                 }
             )
         return results
-    return None
+    raise MissingDataError()
 
 
 async def get_team_standings(season):
-    '''Returns the constructor championship standings or None.
+    '''Returns the constructor championship standings as dict.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, team, total points and wins.
+
+    Raises `MissingDataError` if API response unavailable.
     '''
     url = f'{BASE_URL}/{season}/constructorStandings'
     soup = await get_soup(url)
@@ -91,14 +96,13 @@ async def get_team_standings(season):
                 }
             )
         return results
-    return None
+    raise MissingDataError()
 
 
 async def get_all_drivers_and_teams(season):
-    '''Return all drivers and teams on the grid as a list of dicts. Returns None if data unavailable.
+    '''Return all drivers and teams on the grid as dict.
 
-    Example: `[{'No': 44, 'Code': 'HAM', 'Name': 'Lewis Hamilton', 'Age': 34,
-    'Nationality': 'British', 'Team': 'Mercedes'}]`
+    Raises `MissingDataError` if API response unavailable.
     '''
     url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
@@ -123,11 +127,14 @@ async def get_all_drivers_and_teams(season):
                 }
             )
         return results
-    return None
+    raise MissingDataError()
 
 
 async def get_race_schedule():
-    '''Return full race calendar with circuit names and date or None.'''
+    '''Return full race calendar with circuit names and date as dict.
+
+    Raises `MissingDataError` if API response unavailable.
+    '''
     url = f'{BASE_URL}/current'
     soup = await get_soup(url)
     if soup:
@@ -147,14 +154,17 @@ async def get_race_schedule():
                 }
             )
         return results
-    return None
+    raise MissingDataError()
 
 
 async def get_next_race():
-    '''Returns the next race in the calendar and a countdown (from moment of req).'''
+    '''Returns the next race in the calendar and a countdown (from moment of req) as dict.
+
+    Raises `MissingDataError` if API response unavailable.
+    '''
     #  TODO - Get image of circuit
 
-    url = f'{BASE_URL}/next'
+    url = f'{BASE_URL}/current/next'
     soup = await get_soup(url)
     if soup:
         race = soup.race
@@ -176,4 +186,84 @@ async def get_next_race():
             }
         }
         return result
-    return None
+    raise MissingDataError()
+
+
+async def get_race_results(rnd, season):
+    '''Returns race results for `round` in `season` as dict.
+
+    E.g. `get_race_results(12, 2008)` --> Results for 2008 season, round 12.
+
+    Data includes finishing position, fastest lap, finish status, pit stops per driver.
+    Raises `MissingDataError` if API response unavailable.
+    '''
+    url = f'{BASE_URL}/{season}/{rnd}/results'
+    soup = await get_soup(url)
+    if soup:
+        race = soup.race
+        race_results = race.resultslist.find_all('result')
+        date, time = (race.date.string, race.time.string)
+        res = {
+            'season': race['season'],
+            'round': race['round'],
+            'name': race.racename.string,
+            'url': race['url'],
+            'date': f"{utils.date_parser(date)} {race['season']}",
+            'time': utils.time_parser(time),
+            'data': []
+        }
+        for result in race_results:
+            # Finish time and nested fastest lap have same <time> tag so use sibling search
+            finish_time = result.find_next_sibling('time')
+            res['data'].append(
+                {
+                    'Pos': int(result['position']),
+                    'Driver': f'{result.driver.givenname.string} {result.driver.familyname.string}',
+                    'Team': result.constructor.find('name').string,
+                    'Laps': int(result.laps.string),
+                    'Start': int(result.grid.string),
+                    # If DNF finish time will be missing so replace with None
+                    'Time': None if finish_time is None else finish_time.string,
+                    'Status': result.status.string,
+                    'Points': int(result['points']),
+                }
+            )
+        return res
+    raise MissingDataError()
+
+
+async def get_qualifying_results(rnd, season):
+    '''Returns qualifying results for `round` in `season` as dict.
+
+    E.g. `get_qualifying_results(12, 2008)` --> Results for round 12 in 2008 season.
+
+    Data includes Q1, Q2, Q3 times per driver, position, laps per driver.
+    '''
+    url = f'{BASE_URL}/{season}/{rnd}/qualifying'
+    soup = await get_soup(url)
+    if soup:
+        race = soup.race
+        quali_results = race.qualifyinglist.find_all('qualifyingresult')
+        date, time = (race.date.string, race.time.string)
+        res = {
+            'season': race['season'],
+            'round': race['round'],
+            'name': race.racename.string,
+            'url': race['url'],
+            'date': f"{utils.date_parser(date)} {race['season']}",
+            'time': utils.time_parser(time),
+            'data': []
+        }
+        for result in quali_results:
+            res['data'].append(
+                {
+                    'Pos': int(result['position']),
+                    'Driver': result.driver['code'],
+                    'Team': result.constructor.find('name').string,
+                    'Q1': result.q1.string if result.q1 is not None else None,
+                    'Q2': result.q2.string if result.q2 is not None else None,
+                    'Q3': result.q3.string if result.q3 is not None else None,
+                }
+            )
+        return res
+    raise MissingDataError()
