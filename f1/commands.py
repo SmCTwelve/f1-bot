@@ -149,7 +149,7 @@ async def countdown(ctx, *args):
 
 
 @f1.command(aliases=['times', 'laps'])
-async def timings(ctx, round='last', *args):
+async def timings(ctx, rnd='last', *args):
     '''Display fastest lap times and delta per driver for `round`.
 
     If no `round` specified returns results for the most recent race.
@@ -165,7 +165,7 @@ async def timings(ctx, round='last', *args):
 
 
 @f1.command(aliases=['finish', 'result'])
-async def results(ctx, season='current', round='last'):
+async def results(ctx, rnd='last', season='current'):
     '''Results for race `round`. Default most recent.
 
     Data includes finishing position, fastest lap, finish status, pit stops per driver.
@@ -174,13 +174,13 @@ async def results(ctx, season='current', round='last'):
     ------
         !f1 results                     Results for last race.
         !f1 results [round]             Results for [round] in current season.
-        !f1 results [season] [round]    Results for [round] in [season].
+        !f1 results [round] [season]    Results for [round] in [season].
     '''
     await ctx.send('no')
 
 
 @f1.command(aliases=['qual', 'quali'])
-async def qualifying(ctx, season='current', round='last'):
+async def qualifying(ctx, rnd='last', season='current'):
     '''Qualifying results for `round`. Defaults to latest.
 
     Includes best Q1, Q2 and Q3 times per driver.
@@ -189,12 +189,12 @@ async def qualifying(ctx, season='current', round='last'):
     ------
         !f1 quali                    Latest results.
         !f1 quali [round]            Results for [round] in current season.
-        !f1 quali [season] [round]   Results for [round] in [season].
+        !f1 quali [round] [season]   Results for [round] in [season].
     '''
     pass
 
 
-@f1.command()
+@f1.command(aliases=['driver'])
 async def career(ctx, driver):
     '''Career stats for the `driver` (code).
 
@@ -202,6 +202,6 @@ async def career(ctx, driver):
 
     Usage:
     --------
-        !f1 career VET     Get career stats for Vettel(code VET).
+        !f1 career VET     Get career stats for Vettel (code VET).
     '''
     await ctx.send('no')
