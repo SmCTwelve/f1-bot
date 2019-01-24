@@ -32,9 +32,9 @@ Commands are invoked with the prefix `!` and base `f1` command followed by one o
 !f1 schedule | races               Display the race calendar for the current season
 !f1 next                           Show a countdown to the next race and details
 !f1 grid                           Return details of all drivers and teams participating in the season 
-!f1 timings [season, [round]]      Display fastest lap times per driver for [round] in [season] 
-!f1 results [season, [round]]      Race results for [round] in [season]
-!f1 quali [season, [round]]        Qualifying results for [round] in [season]
+!f1 timings [round, [season]]      Display fastest lap times per driver for [round] in [season] 
+!f1 results [round, [season]]      Race results for [round] in [season]
+!f1 quali [round, [season]]        Qualifying results for [round] in [season]
 !f1 career <driver_code>           Career stats for the driver                 
 ```
 More functionality is planned, including lap times, qualifying results, comparisons between drivers and generating visualisations. 
