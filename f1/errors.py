@@ -13,3 +13,12 @@ class MissingDataError(BotError):
 
     def __init__(self, message="Returned data missing or invalid, results could not be processed."):
         self.message = message
+
+
+class MessageTooLongError(BotError):
+    '''Raised if the message exceeds Discord's 2000 char limit on messages.'''
+
+    def __init__(self, message, orig_message):
+        self.message = message
+        self.length = len(orig_message)
+        self.diff = self.length - 2000
