@@ -1,5 +1,6 @@
 import logging
 from discord import Colour
+from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
@@ -12,12 +13,16 @@ bot = commands.Bot(command_prefix='!')
 
 @bot.event
 async def on_ready():
-    logger.info('Bot ready')
+    logger.info('Bot ready...')
+    job = Activity(name='!f1', type=ActivityType.watching)
+    bot.change_presence(activity=job)
 
 
 @bot.event
 async def on_command(ctx):
-    logger.info(f'Command: {ctx.prefix}{ctx.command}')
+    channel = ctx.message.channel
+    user = ctx.message.author
+    logger.info(f'Command: {ctx.prefix}{ctx.command} in {channel} by {user}')
 
 
 @bot.event
@@ -33,18 +38,20 @@ async def ping(ctx, *args):
 
 @bot.group(invoke_without_command=True, case_insensitive=True)
 async def f1(ctx, *args):
-    '''Commands to get F1 data. Invoke with !f1.
+    '''Command group of all F1 related commands.
 
-    Only called if no f1 subcommand reached.
+    Function is only called when the invoked command does not match one of the subcommands
+    in `f1.commands`. Otherwise context and args are passed down to the approriate subcommand.
     '''
     await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}. Type `!help f1`.')
 
 
 @f1.command(aliases=['wdc'])
-async def drivers(ctx, season='current', *args):
+async def drivers(ctx, season='current'):
     '''Display the Driver Championship standings as of the last race or `season`.
 
     Usage:
+    ------
         !f1 drivers             Current WDC standings as of last race.
         !f1 drivers <season>    WDC standings from <season>.
     '''
@@ -61,12 +68,13 @@ async def drivers(ctx, season='current', *args):
 
 
 @f1.command(aliases=['teams', 'wcc'])
-async def constructors(ctx, season='current', *args):
+async def constructors(ctx, season='current'):
     '''Display Constructor Championship standings as of the last race or `season`.
 
     Usage:
+    ------
         !f1 constructors            Current WCC standings as of the last race.
-        !f1 constructors <season>   WCC standings from <season>.
+        !f1 constructors [season]   WCC standings from [season].
     '''
     result = await data.get_team_standings(season)
     if result:
@@ -81,12 +89,13 @@ async def constructors(ctx, season='current', *args):
 
 
 @f1.command()
-async def grid(ctx, season='current', *args):
+async def grid(ctx, season='current'):
     '''Display all the drivers and teams participating in the current season or `season`.
 
     Usage:
+    ------
         !f1 grid            All drivers and teams in the current season as of last race.
-        !f1 grid <season>   All drivers and teams at the end of <season>.
+        !f1 grid [season]   All drivers and teams at the end of [season].
     '''
     result = await data.get_all_drivers_and_teams(season)
     if result:
@@ -114,13 +123,11 @@ async def races(ctx, *args):
         logger.warn('Race schedule unavailable. Result was None.')
 
 
-# ## TODO - Display thumbnail for circuits ##
 @f1.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
-    '''Display details of the next race on the calendar and a countdown.
+    '''Display an Embed with details and countdown to the next calendar race.'''
+    # ## TODO - Display thumbnail for circuits ##
 
-    Output is a Discord Embed.
-    '''
     result = await data.get_next_race()
     if result:
         embed = Embed(
@@ -147,31 +154,54 @@ async def timings(ctx, round='last', *args):
 
     If no `round` specified returns results for the most recent race.
 
-    **Optional param**:
-    `fastest` -  Only show the fastest lap of the race
-    `slowest` -  Only show the slowest lap of the race
-    `top`     -  Top 5 fastest drivers
-    `bottom`  -  Bottom 5 slowest drivers
+    Optional param:
+    ---------------
+    `fastest` -  Only show the fastest lap of the race.
+    `slowest` -  Only show the slowest lap of the race.
+    `top`     -  Top 5 fastest drivers.
+    `bottom`  -  Bottom 5 slowest drivers.
     '''
     await ctx.send('no')
 
 
 @f1.command(aliases=['finish', 'result'])
-async def results(ctx, round='last', *args):
+async def results(ctx, season='current', round='last'):
     '''Results for race `round`. Default most recent.
 
     Data includes finishing position, fastest lap, finish status, pit stops per driver.
 
-    **Optional param**:
-    `quali` -   Show qualifying results with position and fastest Q1, Q2, Q3 time.
+    Usage:
+    ------
+        !f1 results                     Results for last race.
+        !f1 results [round]             Results for [round] in current season.
+        !f1 results [season] [round]    Results for [round] in [season].
     '''
     await ctx.send('no')
 
 
+@f1.command(aliases=['qual', 'quali'])
+async def qualifying(ctx, season='current', round='last'):
+    '''Qualifying results for `round`. Defaults to latest.
+
+    Includes best Q1, Q2 and Q3 times per driver.
+
+    Usage:
+    ------
+        !f1 quali                    Latest results.
+        !f1 quali [round]            Results for [round] in current season.
+        !f1 quali [season] [round]   Results for [round] in [season].
+    '''
+    pass
+
+
 @f1.command()
-async def career(ctx, driver, *args):
+async def career(ctx, driver):
     '''Career stats for the `driver` (code).
 
     Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
+
+    Usage:
+    --------
+        !f1 career VET     Get career stats for Vettel(code VET).
     '''
     await ctx.send('no')
