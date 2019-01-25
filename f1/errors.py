@@ -1,5 +1,7 @@
+from discord.ext.commands import errors
 
-class BotError(Exception):
+
+class BotError(errors.CommandError):
     '''Base error class for the bot.'''
     pass
 
