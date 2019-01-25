@@ -4,7 +4,7 @@ from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
-from f1 import data, utils
+from f1 import api, utils
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ async def drivers(ctx, season='current'):
         !f1 drivers             Current WDC standings as of last race.
         !f1 drivers <season>    WDC standings from <season>.
     '''
-    result = await data.get_driver_standings(season)
+    result = await api.get_driver_standings(season)
     if result:
         table = utils.make_table(result['data'])
         await ctx.send(
@@ -76,7 +76,7 @@ async def constructors(ctx, season='current'):
         !f1 constructors            Current WCC standings as of the last race.
         !f1 constructors [season]   WCC standings from [season].
     '''
-    result = await data.get_team_standings(season)
+    result = await api.get_team_standings(season)
     if result:
         table = utils.make_table(result['data'])
         await ctx.send(
@@ -97,7 +97,7 @@ async def grid(ctx, season='current'):
         !f1 grid            All drivers and teams in the current season as of last race.
         !f1 grid [season]   All drivers and teams at the end of [season].
     '''
-    result = await data.get_all_drivers_and_teams(season)
+    result = await api.get_all_drivers_and_teams(season)
     if result:
         # Use simple table to not exceed content limit
         table = utils.make_table(result['data'], fmt='simple')
@@ -113,7 +113,7 @@ async def grid(ctx, season='current'):
 @f1.command(aliases=['calendar', 'schedule'])
 async def races(ctx, *args):
     '''Display the full race schedule for the current season.'''
-    result = await data.get_race_schedule()
+    result = await api.get_race_schedule()
     if result:
         # Use simple table to not exceed content limit
         table = utils.make_table(result['data'], fmt='simple')
@@ -128,7 +128,7 @@ async def countdown(ctx, *args):
     '''Display an Embed with details and countdown to the next calendar race.'''
     # ## TODO - Display thumbnail for circuits ##
 
-    result = await data.get_next_race()
+    result = await api.get_next_race()
     if result:
         embed = Embed(
             title=f"**{result['data']['Name']}**",
