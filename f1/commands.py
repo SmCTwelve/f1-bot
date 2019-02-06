@@ -4,11 +4,19 @@ from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
-from f1 import api, utils
+from f1 import api
+from f1.utils import is_future, make_table
 
 logger = logging.getLogger(__name__)
 
 bot = commands.Bot(command_prefix='!')
+
+
+async def check_season(ctx, season):
+    '''Raise error if the given season is in the future.'''
+    if is_future(season):
+        await ctx.send("Can't predict future :thinking:")
+        raise commands.BadArgument('Given season is in the future.')
 
 
 @bot.event
@@ -55,16 +63,16 @@ async def drivers(ctx, season='current'):
         !f1 drivers             Current WDC standings as of last race.
         !f1 drivers <season>    WDC standings from <season>.
     '''
+    await check_season(ctx, season)
     result = await api.get_driver_standings(season)
-    if result:
-        table = utils.make_table(result['data'])
-        await ctx.send(
-            f"**World Driver Championship**\n" +
-            f"Season: {result['season']} Round: {result['round']}\n"
-        )
-        await ctx.send(f"```\n{table}\n```")
-    else:
-        logger.warning('Unable to get driver data. Command will do nothing.')
+    table = make_table(result['data'])
+    await ctx.send(
+        f"**World Driver Championship**\n" +
+        f"Season: {result['season']} Round: {result['round']}\n"
+    )
+    await ctx.send(f"```\n{table}\n```")
+
+# ##################### remove if chains
 
 
 @f1.command(aliases=['teams', 'wcc'])
@@ -76,9 +84,10 @@ async def constructors(ctx, season='current'):
         !f1 constructors            Current WCC standings as of the last race.
         !f1 constructors [season]   WCC standings from [season].
     '''
+    await check_season(ctx, season)
     result = await api.get_team_standings(season)
     if result:
-        table = utils.make_table(result['data'])
+        table = make_table(result['data'])
         await ctx.send(
             f"**World Constructor Championship**\n" +
             f"Season: {result['season']} Round: {result['round']}\n"
@@ -97,10 +106,11 @@ async def grid(ctx, season='current'):
         !f1 grid            All drivers and teams in the current season as of last race.
         !f1 grid [season]   All drivers and teams at the end of [season].
     '''
+    await check_season(ctx, season)
     result = await api.get_all_drivers_and_teams(season)
     if result:
         # Use simple table to not exceed content limit
-        table = utils.make_table(result['data'], fmt='simple')
+        table = make_table(result['data'], fmt='simple')
         await ctx.send(
             f"**Formula 1 {result['season']} Grid**\n" +
             f"Round: {result['round']}\n"
@@ -116,7 +126,7 @@ async def races(ctx, *args):
     result = await api.get_race_schedule()
     if result:
         # Use simple table to not exceed content limit
-        table = utils.make_table(result['data'], fmt='simple')
+        table = make_table(result['data'], fmt='simple')
         await ctx.send(f"**{result['season']} Formula 1 Race Calendar**\n")
         await ctx.send(f"```\n{table}\n```")
     else:
@@ -176,6 +186,7 @@ async def results(ctx, rnd='last', season='current'):
         !f1 results [round]             Results for [round] in current season.
         !f1 results [round] [season]    Results for [round] in [season].
     '''
+    # await check_season(ctx, season)
     await ctx.send('no')
 
 
@@ -191,6 +202,7 @@ async def qualifying(ctx, rnd='last', season='current'):
         !f1 quali [round]            Results for [round] in current season.
         !f1 quali [round] [season]   Results for [round] in [season].
     '''
+    # await check_season(ctx, season)
     pass
 
 

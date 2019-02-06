@@ -12,6 +12,13 @@ def contains(first, second):
     return any(i in first for i in second)
 
 
+def is_future(year):
+    '''Return True if `year` is greater than current year.'''
+    if year is 'current':
+        return False
+    return datetime.now().year < int(year)
+
+
 def too_long(message):
     '''Returns True if the message exceeds discord's 2000 character limit.'''
     return len(message) >= 2000
