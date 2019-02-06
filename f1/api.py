@@ -2,6 +2,7 @@
 Utilities to grab latest F1 results from Ergast API.
 '''
 import logging
+from operator import itemgetter
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -206,19 +207,22 @@ async def get_race_results(rnd, season):
         res = {
             'season': race['season'],
             'round': race['round'],
-            'name': race.racename.string,
+            'race': race.racename.string,
             'url': race['url'],
             'date': f"{utils.date_parser(date)} {race['season']}",
             'time': utils.time_parser(time),
-            'data': []
+            'data': [],
+            'timings': [],
         }
         for result in race_results:
+            driver = result.driver
             # Finish time and nested fastest lap have same <time> tag so use sibling search
             finish_time = result.find_next_sibling('time')
+            fastest_lap = result.fastestlap
             res['data'].append(
                 {
                     'Pos': int(result['position']),
-                    'Driver': f'{result.driver.givenname.string} {result.driver.familyname.string}',
+                    'Driver': f'{driver.givenname.string} {driver.familyname.string}',
                     'Team': result.constructor.find('name').string,
                     'Laps': int(result.laps.string),
                     'Start': int(result.grid.string),
@@ -228,6 +232,16 @@ async def get_race_results(rnd, season):
                     'Points': int(result['points']),
                 }
             )
+            # Fastest lap data if available
+            if fastest_lap is not None:
+                res['timings'].append(
+                    {
+                        'Rank': int(fastest_lap['rank']),
+                        'Driver': driver['code'],
+                        'Time': fastest_lap.time.string,
+                        'Speed (kph)': int(float(fastest_lap.averagespeed.string)),
+                    }
+                )
         return res
     raise MissingDataError()
 
@@ -248,7 +262,7 @@ async def get_qualifying_results(rnd, season):
         res = {
             'season': race['season'],
             'round': race['round'],
-            'name': race.racename.string,
+            'race': race.racename.string,
             'url': race['url'],
             'date': f"{utils.date_parser(date)} {race['season']}",
             'time': utils.time_parser(time),
@@ -267,3 +281,39 @@ async def get_qualifying_results(rnd, season):
             )
         return res
     raise MissingDataError()
+
+
+async def rank_lap_times(data, filter):
+    '''Returns filtered best lap times based on race results data obtained
+    from `get_race_results()`.
+
+    Sorts the list of dicts of lap times returned by `get_race_results()` and splits
+    the results based on the filter keyword.
+
+    Parameters
+    ----------
+    `data` : list
+        Race results (from `get_race_results()`) dataset.
+    `filter` : str
+        Type of filter to be applied:
+            'slowest' - slowest lap
+            'fastest' - fastest lap
+            'top'     - top 5 laps
+            'bottom'  - bottom 5 laps
+    '''
+    sorted_times = sorted(data['timings'], key=itemgetter('Rank'))
+    # slowest lap
+    if filter is 'slowest':
+        return sorted_times[len(sorted_times) - 1]
+    # fastest lap
+    elif filter is 'fastest':
+        return sorted_times[0]
+    # fastest 5 laps
+    elif filter is 'top':
+        return sorted_times[:5]
+    # slowest 5 laps
+    elif filter is 'bottom':
+        return sorted_times[len(sorted_times) - 5:]
+    # no filter given, return full sorted results
+    else:
+        return sorted_times
