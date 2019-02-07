@@ -7,6 +7,8 @@ from f1 import utils
 from f1.errors import MissingDataError
 from f1.tests.async_test import async_test
 
+# Switch to mock API requests with aioresponse lib
+
 
 class DataTests(unittest.TestCase):
 
