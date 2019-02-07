@@ -251,7 +251,7 @@ async def get_qualifying_results(rnd, season):
 
     E.g. `get_qualifying_results(12, 2008)` --> Results for round 12 in 2008 season.
 
-    Data includes Q1, Q2, Q3 times per driver, position, laps per driver.
+    Data includes Q1, Q2, Q3 times per driver, position, laps per driver. Raises `MissingDataError`.
     '''
     url = f'{BASE_URL}/{season}/{rnd}/qualifying'
     soup = await get_soup(url)
@@ -281,6 +281,82 @@ async def get_qualifying_results(rnd, season):
             )
         return res
     raise MissingDataError()
+
+
+async def get_driver_wins(driver_id):
+    '''Returns dict with total wins for the driver and a list of dicts for each race.'''
+    url = f'{BASE_URL}/drivers/{driver_id}/results/1'
+    soup = await get_soup(url)
+    if soup:
+        races = soup.racetable.find_all('race')
+        driver = soup.find('driver')
+        res = {
+            'total': int(soup.MRData['total']),
+            'driver': f'{driver.givenname.string} {driver.familyname.string}',
+            'driver_code': driver['code'],
+            'data': []
+        }
+        for race in races:
+            race_result = race.racelist.result
+            res['data'].append(
+                {
+                    'Race': race.racename.string,
+                    'Circuit': race.circuitname.string,
+                    'Date': utils.date_parser(race.date.string),
+                    'Team': race_result.constructor.name.string,
+                    'Grid': race_result.grid.string,
+                    'Laps': race_result.laps.string,
+                    'Time': race_result.time.string,
+                }
+            )
+        return res
+    return MissingDataError()
+
+
+async def get_driver_poles(driver_id):
+    '''Returns total pole positions for driver with list of dicts for each race.'''
+    url = f'{BASE_URL}/drivers/{driver_id}/grid/1'
+    soup = await get_soup(url)
+    if soup:
+        races = soup.racetable.find_all('race')
+        driver = soup.find('driver')
+        res = {
+            'total':  int(soup.MRData['total']),
+            'driver': f'{driver.givenname.string} {driver.familyname.string}',
+            'driver_code': driver['code'],
+            'data': []
+        }
+        for race in races:
+            quali_result = race.qualifyinglist.qualifyingresult
+            res['data'].append(
+                {
+                    'Race': race.racename.string,
+                    'Circuit': race.circuitname.string,
+                    'Date': utils.date_parser(race.date.string),
+                    'Team': quali_result.constructor.name.string,
+                    'Q1': quali_result.q1.string,
+                    'Q2': quali_result.q2.string,
+                    'Q3': quali_result.q3.string,
+                }
+            )
+
+# championship wins (driverstandings/driver/1)
+
+# DNF's (finish status not 1)
+
+
+async def get_driver_career(driver_id):
+    '''Returns total wins, poles, points, seasons, teams and DNF's for the driver as dict.
+
+    `driver_id` must be valid, e.g. 'alonso', 'vettel', 'di_resta'.
+
+    Raises `MissingDataError`.
+    '''
+    # results/1 count
+    # qualifying/1 count
+    # driverstandings/1 count
+    # use MRData 'total' attribute
+    pass
 
 
 async def rank_lap_times(data, filter):
