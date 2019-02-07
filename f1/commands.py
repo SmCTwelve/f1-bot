@@ -72,8 +72,6 @@ async def drivers(ctx, season='current'):
     )
     await ctx.send(f"```\n{table}\n```")
 
-# ##################### remove if chains
-
 
 @f1.command(aliases=['teams', 'wcc'])
 async def constructors(ctx, season='current'):
@@ -86,15 +84,12 @@ async def constructors(ctx, season='current'):
     '''
     await check_season(ctx, season)
     result = await api.get_team_standings(season)
-    if result:
-        table = make_table(result['data'])
-        await ctx.send(
-            f"**World Constructor Championship**\n" +
-            f"Season: {result['season']} Round: {result['round']}\n"
-        )
-        await ctx.send(f"```\n{table}\n```")
-    else:
-        logger.warning('No constructor data available. Command will do nothing.')
+    table = make_table(result['data'])
+    await ctx.send(
+        f"**World Constructor Championship**\n" +
+        f"Season: {result['season']} Round: {result['round']}\n"
+    )
+    await ctx.send(f"```\n{table}\n```")
 
 
 @f1.command()
@@ -108,29 +103,23 @@ async def grid(ctx, season='current'):
     '''
     await check_season(ctx, season)
     result = await api.get_all_drivers_and_teams(season)
-    if result:
-        # Use simple table to not exceed content limit
-        table = make_table(result['data'], fmt='simple')
-        await ctx.send(
-            f"**Formula 1 {result['season']} Grid**\n" +
-            f"Round: {result['round']}\n"
-        )
-        await ctx.send(f"```\n{table}\n```")
-    else:
-        logger.warning('Could not access grid data. Command will do nothing.')
+    # Use simple table to not exceed content limit
+    table = make_table(result['data'], fmt='simple')
+    await ctx.send(
+        f"**Formula 1 {result['season']} Grid**\n" +
+        f"Round: {result['round']}\n"
+    )
+    await ctx.send(f"```\n{table}\n```")
 
 
 @f1.command(aliases=['calendar', 'schedule'])
 async def races(ctx, *args):
     '''Display the full race schedule for the current season.'''
     result = await api.get_race_schedule()
-    if result:
-        # Use simple table to not exceed content limit
-        table = make_table(result['data'], fmt='simple')
-        await ctx.send(f"**{result['season']} Formula 1 Race Calendar**\n")
-        await ctx.send(f"```\n{table}\n```")
-    else:
-        logger.warn('Race schedule unavailable. Result was None.')
+    # Use simple table to not exceed content limit
+    table = make_table(result['data'], fmt='simple')
+    await ctx.send(f"**{result['season']} Formula 1 Race Calendar**\n")
+    await ctx.send(f"```\n{table}\n```")
 
 
 @f1.command(aliases=['timer', 'next'])
@@ -139,46 +128,54 @@ async def countdown(ctx, *args):
     # ## TODO - Display thumbnail for circuits ##
 
     result = await api.get_next_race()
-    if result:
-        embed = Embed(
-            title=f"**{result['data']['Name']}**",
-            description=f"{result['countdown']}",
-            url=result['url'],
-            colour=Colour.dark_blue(),
-        )
-        # placeholder
-        embed.set_thumbnail(url='https://i.imgur.com/1tpFlpv.jpg')
-        embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
-        embed.add_field(name='Round', value=result['data']['Round'], inline=True)
-        embed.add_field(name='Country', value=result['data']['Country'], inline=True)
-        embed.add_field(name='Date', value=result['data']['Date'], inline=True)
-        embed.add_field(name='Time', value=result['data']['Time'], inline=True)
-        await ctx.send(embed=embed)
-    else:
-        logger.warning('Could not fetch next race. Nothing returned.')
+    embed = Embed(
+        title=f"**{result['data']['Name']}**",
+        description=f"{result['countdown']}",
+        url=result['url'],
+        colour=Colour.dark_blue(),
+    )
+    # placeholder
+    embed.set_thumbnail(url='https://i.imgur.com/1tpFlpv.jpg')
+    embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
+    embed.add_field(name='Round', value=result['data']['Round'], inline=True)
+    embed.add_field(name='Country', value=result['data']['Country'], inline=True)
+    embed.add_field(name='Date', value=result['data']['Date'], inline=True)
+    embed.add_field(name='Time', value=result['data']['Time'], inline=True)
+    await ctx.send(embed=embed)
 
 
 @f1.command(aliases=['times', 'laps'])
-async def timings(ctx, rnd='last', *args):
+async def timings(ctx, rnd='last', filter=None):
     '''Display fastest lap times and delta per driver for `round`.
 
     If no `round` specified returns results for the most recent race.
 
-    Optional param:
+    Usage:
+    ---------------
+        !f1 timings [<round>]           Return all fastet laps.
+        !f1 timings [<round>] [filter]  Return fastet laps sorted by [filter].
+
+    Optional filter:
     ---------------
     `fastest` -  Only show the fastest lap of the race.
     `slowest` -  Only show the slowest lap of the race.
     `top`     -  Top 5 fastest drivers.
     `bottom`  -  Bottom 5 slowest drivers.
     '''
-    await ctx.send('no')
+    results = await api.get_race_results(rnd, season='current')
+    filtered = await api.rank_lap_times(results, filter)
+    table = make_table(filtered)
+    await ctx.send(f"**Fastest laps ranked {filter}**")
+    await ctx.send(f"{results['season']} {results['race']}")
+    await ctx.send(f"```\n{table}\n```")
 
 
 @f1.command(aliases=['finish', 'result'])
 async def results(ctx, rnd='last', season='current'):
     '''Results for race `round`. Default most recent.
 
-    Data includes finishing position, fastest lap, finish status, pit stops per driver.
+    Displays an embed with details about the race event and wikipedia link. Followed by table
+    of results. Data includes finishing position, fastest lap, finish status, pit stops per driver.
 
     Usage:
     ------
@@ -186,8 +183,16 @@ async def results(ctx, rnd='last', season='current'):
         !f1 results [round]             Results for [round] in current season.
         !f1 results [round] [season]    Results for [round] in [season].
     '''
-    # await check_season(ctx, season)
-    await ctx.send('no')
+    await check_season(ctx, season)
+    result = await api.get_race_results(rnd, season)
+    table = make_table(result['data'], fmt='simple')
+    embed = Embed(
+        title=f"{result['season']} {result['race']} Race",
+        url=result['url'],
+        colour=Colour.dark_blue(),
+        description=f"```\n{table}\n```",
+    )
+    await ctx.send(embed=embed)
 
 
 @f1.command(aliases=['qual', 'quali'])
@@ -202,8 +207,16 @@ async def qualifying(ctx, rnd='last', season='current'):
         !f1 quali [round]            Results for [round] in current season.
         !f1 quali [round] [season]   Results for [round] in [season].
     '''
-    # await check_season(ctx, season)
-    pass
+    await check_season(ctx, season)
+    result = await api.get_qualifying_results(rnd, season)
+    table = make_table(result['data'])
+    embed = Embed(
+        title=f"{result['season']} {result['race']} Qualifying",
+        url=result['url'],
+        colour=Colour.dark_blue(),
+        description=f"```\n{table}\n```",
+    )
+    await ctx.send(embed=embed)
 
 
 @f1.command(aliases=['driver'])
@@ -216,4 +229,5 @@ async def career(ctx, driver):
     --------
         !f1 career VET     Get career stats for Vettel (code VET).
     '''
+
     await ctx.send('no')
