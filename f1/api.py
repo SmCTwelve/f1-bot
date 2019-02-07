@@ -12,22 +12,25 @@ from f1.fetch import fetch
 
 BASE_URL = 'http://ergast.com/api/f1'
 
-# -- Use caching for all requests to reuse results from previous command use, only request directly from API if expired --
-# -- Check if race weekend, lower cache period --
-# !f1 -- return all driver and constructor standings as table/embed
-# !f1 wdc | drivers -- only drivers standings
-# !f1 <driverName> points -- current points in season for the driver
-# !f1 <driverName> -- details about the driver, name, utils.age, all-time wins, poles - get picture
-# !f1 wcc | constructors -- only constructors standings
-# !f1 <constructor> points -- constructor points this season
-# !f1 calendar | races -- all race weekends, ciruits, dates
-# !f1 countdown | next -- next race circuit, weekend, date and countdown timer (use /next/ ergast round)
-# !f1 update -- ADMIN, manually reset cache
-# !f1 results [<round> | <circuitID>] -- qualifying and race results
-# !f1 results race | qualifying
-# !f1 help | <command> help -- help text and usage example
-
 logger = logging.getLogger(__name__)
+
+
+def driver_info(elem):
+    '''Returns a dict with driver first and last name, age, nationality, code and number.
+
+    `elem` - must be a valid '<Driver />' element from the BeautifulSoup response XML tree.
+    '''
+    driver = {
+        'firstname': elem.givenname.string,
+        'surname': elem.familyname.string,
+        'code': elem['code'],
+        'id': elem['id'],
+        'url': elem['url'],
+        'number': elem.permenantnumber.string,
+        'age': utils.age(elem.dateofbirth.string[:4]),
+        'nationality': elem.nationality.string,
+    }
+    return driver
 
 
 async def get_soup(url):
@@ -216,7 +219,8 @@ async def get_race_results(rnd, season):
         }
         for result in race_results:
             driver = result.driver
-            # Finish time and nested fastest lap have same <time> tag so use sibling search
+            # Finish time and fastest lap both use <time> tag, soup.find() will return first match
+            # use sibling search instead to get second time
             finish_time = result.find_next_sibling('time')
             fastest_lap = result.fastestlap
             res['data'].append(
@@ -292,8 +296,7 @@ async def get_driver_wins(driver_id):
         driver = soup.find('driver')
         res = {
             'total': int(soup.MRData['total']),
-            'driver': f'{driver.givenname.string} {driver.familyname.string}',
-            'driver_code': driver['code'],
+            'driver': driver_info(driver),
             'data': []
         }
         for race in races:
@@ -322,8 +325,7 @@ async def get_driver_poles(driver_id):
         driver = soup.find('driver')
         res = {
             'total':  int(soup.MRData['total']),
-            'driver': f'{driver.givenname.string} {driver.familyname.string}',
-            'driver_code': driver['code'],
+            'driver': driver_info(driver),
             'data': []
         }
         for race in races:
@@ -342,7 +344,30 @@ async def get_driver_poles(driver_id):
 
 # championship wins (driverstandings/driver/1)
 
-# DNF's (finish status not 1)
+
+async def get_driver_championships(driver_id):
+    '''Returns total championship wins for the driver and list of dicts for each season, team, points and wins.'''
+    url = f'{BASE_URL}/drivers/{driver_id}/driverStandings/1'
+    soup = await get_soup(url)
+    if soup:
+        standings = soup.standingstable.find_all('standingslist')
+        driver = soup.find('driver')
+        res = {
+            'total': int(soup.MRDate['total']),
+            'driver': driver_info(driver),
+            'data': []
+        }
+        for standing in standings:
+            res['data'].append(
+                {
+                    'season': standing['season'],
+                    'points': standing.driverstanding['points'],
+                    'wins': standing.driverstanding['wins'],
+                    'team': standing.driverstanding.constructor.name.string,
+                }
+            )
+        return res
+    raise MissingDataError()
 
 
 async def get_driver_career(driver_id):
