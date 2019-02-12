@@ -2,23 +2,23 @@ from discord.ext.commands import errors
 
 
 class BotError(errors.CommandError):
-    '''Base error class for the bot.'''
+    """Base error class for the bot."""
     pass
 
 
 class MissingDataError(BotError):
-    '''Raised if data required for the execution of a command is unavailable.
+    """Raised if data required for the execution of a command is unavailable.
 
     Should be raised instead of returning `None` as it is more explicit and
     can be handled by `bot.on_command_error()`.
-    '''
+    """
 
     def __init__(self, message="Returned data missing or invalid, results could not be processed."):
         self.message = message
 
 
 class MessageTooLongError(BotError):
-    '''Raised if the message exceeds Discord's 2000 char limit on messages.'''
+    """Raised if the message exceeds Discord's 2000 char limit on messages."""
 
     def __init__(self, message, orig_message):
         self.message = message

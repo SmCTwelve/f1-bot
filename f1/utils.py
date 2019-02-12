@@ -8,30 +8,30 @@ logger = logging.getLogger(__name__)
 
 
 def contains(first, second):
-    '''Returns True if any item in `first` matches an item in `second`.'''
+    """Returns True if any item in `first` matches an item in `second`."""
     return any(i in first for i in second)
 
 
 def is_future(year):
-    '''Return True if `year` is greater than current year.'''
+    """Return True if `year` is greater than current year."""
     if year is 'current':
         return False
     return datetime.now().year < int(year)
 
 
 def too_long(message):
-    '''Returns True if the message exceeds discord's 2000 character limit.'''
+    """Returns True if the message exceeds discord's 2000 character limit."""
     return len(message) >= 2000
 
 
 def make_table(data, headers='keys', fmt='fancy_grid'):
-    '''Tabulate data into an ASCII table. Return value is a str.
+    """Tabulate data into an ASCII table. Return value is a str.
 
     The `fmt` param defaults to 'fancy_grid' which includes borders for cells. If the table exceeds
     Discord message limit the table is rebuilt with borders removed.
 
     If still too large raise `MessageTooLongError`.
-    '''
+    """
     table = tabulate(data, headers=headers, tablefmt=fmt)
     # remove cell borders if too long
     if too_long(table):
@@ -57,10 +57,10 @@ def time_parser(time_str):
 
 
 def countdown(target: datetime):
-    '''
+    """
     Calculate time to `target` datetime object from current time when invoked.
     Returns a list containing the string output and tuple of (days, hrs, mins, sec).
-    '''
+    """
     delta = target - datetime.now()
     d = (delta.days) if delta.days > -1 else 0
     # str() on delta nicely outputs 'D days, H:M:S'

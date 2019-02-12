@@ -1,6 +1,6 @@
-'''
+"""
 Perform asyncronous web requests.
-'''
+"""
 import aiohttp
 import logging
 
@@ -16,7 +16,7 @@ def is_json(res): return 'application/json' in res.content_type
 
 
 async def send_request(session, url):
-    '''Attempt to request the URL. Returns content of the Response if successful or None.'''
+    """Attempt to request the URL. Returns content of the Response if successful or None."""
     logger.info('GET {}'.format(url))
     # open connection context, all response handling must be within
     async with session.get(url) as res:
@@ -36,7 +36,7 @@ async def send_request(session, url):
 
 
 async def fetch(url):
-    '''Request the url and await response. Returns response content or None.'''
+    """Request the url and await response. Returns response content or None."""
     tmout = aiohttp.ClientTimeout(total=SESSION_TIMEOUT)
     try:
         async with aiohttp.ClientSession(timeout=tmout) as session:
