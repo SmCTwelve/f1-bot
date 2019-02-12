@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix='!')
 
 
 async def check_season(ctx, season):
-    '''Raise error if the given season is in the future.'''
+    """Raise error if the given season is in the future."""
     if is_future(season):
         await ctx.send("Can't predict future :thinking:")
         raise commands.BadArgument('Given season is in the future.')
@@ -40,29 +40,29 @@ async def on_command_error(ctx, err):
 
 @bot.command()
 async def ping(ctx, *args):
-    '''Display the current latency.'''
+    """Display the current latency."""
     await ctx.send(bot.latency)
 
 
 @bot.group(invoke_without_command=True, case_insensitive=True)
 async def f1(ctx, *args):
-    '''Command group of all F1 related commands.
+    """Command group of all F1 related commands.
 
     Function is only called when the invoked command does not match one of the subcommands
     in `f1.commands`. Otherwise context and args are passed down to the approriate subcommand.
-    '''
+    """
     await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}. Type `!help f1`.')
 
 
 @f1.command(aliases=['wdc'])
 async def drivers(ctx, season='current'):
-    '''Display the Driver Championship standings as of the last race or `season`.
+    """Display the Driver Championship standings as of the last race or `season`.
 
     Usage:
     ------
         !f1 drivers             Current WDC standings as of last race.
         !f1 drivers <season>    WDC standings from <season>.
-    '''
+    """
     await check_season(ctx, season)
     result = await api.get_driver_standings(season)
     table = make_table(result['data'])
@@ -75,13 +75,13 @@ async def drivers(ctx, season='current'):
 
 @f1.command(aliases=['teams', 'wcc'])
 async def constructors(ctx, season='current'):
-    '''Display Constructor Championship standings as of the last race or `season`.
+    """Display Constructor Championship standings as of the last race or `season`.
 
     Usage:
     ------
         !f1 constructors            Current WCC standings as of the last race.
         !f1 constructors [season]   WCC standings from [season].
-    '''
+    """
     await check_season(ctx, season)
     result = await api.get_team_standings(season)
     table = make_table(result['data'])
@@ -94,13 +94,13 @@ async def constructors(ctx, season='current'):
 
 @f1.command()
 async def grid(ctx, season='current'):
-    '''Display all the drivers and teams participating in the current season or `season`.
+    """Display all the drivers and teams participating in the current season or `season`.
 
     Usage:
     ------
         !f1 grid            All drivers and teams in the current season as of last race.
         !f1 grid [season]   All drivers and teams at the end of [season].
-    '''
+    """
     await check_season(ctx, season)
     result = await api.get_all_drivers_and_teams(season)
     # Use simple table to not exceed content limit
@@ -114,7 +114,7 @@ async def grid(ctx, season='current'):
 
 @f1.command(aliases=['calendar', 'schedule'])
 async def races(ctx, *args):
-    '''Display the full race schedule for the current season.'''
+    """Display the full race schedule for the current season."""
     result = await api.get_race_schedule()
     # Use simple table to not exceed content limit
     table = make_table(result['data'], fmt='simple')
@@ -124,7 +124,7 @@ async def races(ctx, *args):
 
 @f1.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
-    '''Display an Embed with details and countdown to the next calendar race.'''
+    """Display an Embed with details and countdown to the next calendar race."""
     # ## TODO - Display thumbnail for circuits ##
 
     result = await api.get_next_race()
@@ -146,7 +146,7 @@ async def countdown(ctx, *args):
 
 @f1.command(aliases=['times', 'laps'])
 async def timings(ctx, rnd='last', filter=None):
-    '''Display fastest lap times and delta per driver for `round`.
+    """Display fastest lap times and delta per driver for `round`.
 
     If no `round` specified returns results for the most recent race.
 
@@ -161,7 +161,7 @@ async def timings(ctx, rnd='last', filter=None):
     `slowest` -  Only show the slowest lap of the race.
     `top`     -  Top 5 fastest drivers.
     `bottom`  -  Bottom 5 slowest drivers.
-    '''
+    """
     results = await api.get_race_results(rnd, season='current')
     filtered = await api.rank_lap_times(results, filter)
     table = make_table(filtered)
@@ -172,7 +172,7 @@ async def timings(ctx, rnd='last', filter=None):
 
 @f1.command(aliases=['finish', 'result'])
 async def results(ctx, rnd='last', season='current'):
-    '''Results for race `round`. Default most recent.
+    """Results for race `round`. Default most recent.
 
     Displays an embed with details about the race event and wikipedia link. Followed by table
     of results. Data includes finishing position, fastest lap, finish status, pit stops per driver.
@@ -182,7 +182,7 @@ async def results(ctx, rnd='last', season='current'):
         !f1 results                     Results for last race.
         !f1 results [round]             Results for [round] in current season.
         !f1 results [round] [season]    Results for [round] in [season].
-    '''
+    """
     await check_season(ctx, season)
     result = await api.get_race_results(rnd, season)
     table = make_table(result['data'], fmt='simple')
@@ -197,7 +197,7 @@ async def results(ctx, rnd='last', season='current'):
 
 @f1.command(aliases=['qual', 'quali'])
 async def qualifying(ctx, rnd='last', season='current'):
-    '''Qualifying results for `round`. Defaults to latest.
+    """Qualifying results for `round`. Defaults to latest.
 
     Includes best Q1, Q2 and Q3 times per driver.
 
@@ -206,7 +206,7 @@ async def qualifying(ctx, rnd='last', season='current'):
         !f1 quali                    Latest results.
         !f1 quali [round]            Results for [round] in current season.
         !f1 quali [round] [season]   Results for [round] in [season].
-    '''
+    """
     await check_season(ctx, season)
     result = await api.get_qualifying_results(rnd, season)
     table = make_table(result['data'])
@@ -220,14 +220,49 @@ async def qualifying(ctx, rnd='last', season='current'):
 
 
 @f1.command(aliases=['driver'])
-async def career(ctx, driver):
-    '''Career stats for the `driver` (code).
+async def career(ctx, driver_id):
+    """Career stats for the `driver_id`.
 
     Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
 
+    Parameters:
+    -----------
+    `driver_id`
+        Supported Ergast API ID, e.g. 'alonso', 'michael_schumacher', 'vettel', 'di_resta'.
+
     Usage:
     --------
-        !f1 career VET     Get career stats for Vettel (code VET).
-    '''
-
-    await ctx.send('no')
+        !f1 career vettel     Get career stats for Sebastian Vettel.
+    """
+    # TODO - support JSON file to convert driver codes/names to ID's for easier use
+    result = await api.get_driver_career(driver_id)
+    season_list = result['data']['Seasons']['years']
+    embed = Embed(
+        title=f"{result['driver']['firstname']} {result['driver']['surname']} Career",
+        url=result['driver']['url'],
+        colour=Colour.dark_blue(),
+    )
+    embed.add_field(name='No.', value=result['driver']['number'], inline=False)
+    embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=False)
+    embed.add_field(name='Age', value=result['driver']['age'], inline=True)
+    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
+    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
+    embed.add_field(
+        name='Championships',
+        # Total and list of seasons
+        value=f"{result['data']['Championships']['total']} ({result['data']['Championships']['years']})",
+        inline=True
+    )
+    embed.add_field(
+        name='Seasons',
+        # Total and start to latest season
+        value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
+        inline=True
+    )
+    embed.add_field(
+        name='Teams',
+        # Total and list of teams
+        value=f"{result['data']['Teams']['total']} ({result['data']['Teams']['names']})",
+        inline=True
+    )
+    await ctx.send(embed=embed)
