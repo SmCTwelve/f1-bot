@@ -381,7 +381,7 @@ async def get_driver_teams(driver_id):
         constructors = soup.constructortable.find_all('constructor')
         res = {
             'total': int(soup.MRData['total']),
-            'teams': [constructor.name.string for constructor in constructors]
+            'names': [constructor.name.string for constructor in constructors]
         }
         return res
     return MissingDataError()
@@ -428,14 +428,24 @@ async def get_driver_career(driver_id):
         get_driver_seasons(driver_id),
         get_driver_teams(driver_id),
     )
-    driver_name = f"{wins['driver']['firstname']} {wins['driver']['surname']}"
     res = {
-        'Name': driver_name,
-        'Wins': wins['total'],
-        'Poles': poles['total'],
-        'Championships': champs['total'],
-        'Seasons': seasons['total'],
-        'Teams': teams['total'],
+        'driver': wins['driver'],
+        'data': {
+            'Wins': wins['total'],
+            'Poles': poles['total'],
+            'Championships': {
+                'total': champs['total'],
+                'years': [x['Season'] for x in champs['data']],
+            },
+            'Seasons': {
+                'total': seasons['total'],
+                'years': [x['Season'] for x in seasons['data']],
+            },
+            'Teams': {
+                'total': teams['total'],
+                'names': teams['names'],
+            },
+        }
     }
     return res
 
