@@ -44,8 +44,9 @@ def make_table(data, headers='keys', fmt='fancy_grid'):
 
 def age(yob):
     current_year = date.today().year
-    age = (current_year - int(yob))
-    return age
+    if current_year < int(yob):
+        return 0
+    return current_year - int(yob)
 
 
 def date_parser(date_str):
