@@ -65,7 +65,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_none_result_raises_error(self, mock_fetch):
         # return None to simulate invalid API response
-        mock_fetch.return_value = get_mock_response('none')
+        mock_fetch.return_value = get_mock_response(None)
         with self.assertRaises(MissingDataError):
             await api.get_driver_standings('current')
 
@@ -109,18 +109,18 @@ class LiveAPITests(BaseTest):
     @async_test
     async def test_response_structure(self):
         # test response for alonso info against mocked data
-        actual_result = await api.get_driver_info('alonso')
+        # Get BeautifulSoup obj from API response to test tags
+        actual_result = await api.get_soup(f'{api.BASE_URL}/drivers/alonso')
         with patch(fetch_path) as mock_get:
-            mock_get.return_value = await get_mock_response('driver_info')
+            mock_get.return_value = get_mock_response('driver_info')
             # url never used as fetch is mocked
             expected_result = await api.get_soup('mock_url')
-
-        self.assertTrue(actual_result.find('MRData'), "Parent response tag not as expected, API may have changed.")
-
-        for expected_tag in expected_result:
-            for actual_tag in actual_result:
-                self.assertEqual(expected_tag, actual_tag,
-                                 "Expected and actual tags don't match. Check API data structure.")
+        # Check root tag of real response body for changes
+        self.assertTrue(actual_result.body.find('mrdata'),
+                        "Parent response tag not as expected, API may have changed.")
+        # Check tag structure matches for real and mocked
+        self.assertEqual(expected_result.drivertable, actual_result.drivertable,
+                         "Expected and actual tags don't match. Check API data structure.")
 
     @async_test
     async def test_get_past_race_results(self):
