@@ -38,9 +38,9 @@ async def get_driver_info(driver_id):
             'firstname': driver.givenname.string,
             'surname': driver.familyname.string,
             'code': driver['code'],
-            'id': driver['id'],
+            'id': driver['driverid'],
             'url': driver['url'],
-            'number': driver.permenantnumber.string,
+            'number': driver.permanentnumber.string,
             'age': utils.age(driver.dateofbirth.string[:4]),
             'nationality': driver.nationality.string,
         }
