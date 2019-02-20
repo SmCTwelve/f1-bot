@@ -15,7 +15,6 @@ responses = {
     'driver_championships': models.driver_championships,
     'driver_seaons': models.driver_seasons,
     'driver_teams': models.driver_teams,
-    'none': None,
 }
 
 
@@ -48,4 +47,6 @@ async def get_mock_response(res_type):
             - 'driver_seasons'
             - 'driver_teams'
     """
-    return responses.get(res_type, None)
+    if res_type is None:
+        return None
+    return generate_res(responses.get(res_type, ''))

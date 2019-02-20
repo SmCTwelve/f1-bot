@@ -4,12 +4,11 @@
 def standings_wrapper(body):
     """Helper wraps `body` XML string in <StandingsTable> and <StandingsList> tags."""
     return f'''
-    <StandingsTable season="2018">
-        <StandingsList season="2018" round="21">
-            {body}
-        </StandingsList>
-    </StandingsTable>
-    '''
+        <StandingsTable season="2018">
+            <StandingsList season="2018" round="21">
+                {body}
+            </StandingsList>
+        </StandingsTable>'''
 
 
 def result_wrapper(body, quali=False):
