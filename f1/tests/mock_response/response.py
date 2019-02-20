@@ -15,6 +15,7 @@ responses = {
     'driver_championships': models.driver_championships,
     'driver_seaons': models.driver_seasons,
     'driver_teams': models.driver_teams,
+    'none': None,
 }
 
 
