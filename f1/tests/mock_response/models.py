@@ -240,6 +240,25 @@ driver_teams = '''
         </Constructor>
     </ConstructorTable>'''
 
+driver_laps = result_wrapper('''
+    <LapsList>
+        <Lap number="1">
+            <Timing driverId="alonso" lap="1" position="1" time="1:34.494"/>
+        </Lap>
+        <Lap number="2">
+            <Timing driverId="alonso" lap="2" position="1" time="1:30.812"/>
+        </Lap>
+        <Lap number="3">
+            <Timing driverId="alonso" lap="3" position="1" time="1:30.606"/>
+        </Lap>
+        <Lap number="4">
+            <Timing driverId="alonso" lap="4" position="1" time="1:30.012"/>
+        </Lap>
+        <Lap number="5">
+            <Timing driverId="alonso" lap="5" position="1" time="1:30.318"/>
+        </Lap>
+    </LapsList>''')
+
 # Seasons is just total of standings results
 driver_seasons = driver_wins
 
