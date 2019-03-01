@@ -256,6 +256,44 @@ async def get_race_results(rnd, season):
     raise MissingDataError()
 
 
+async def get_all_driver_lap_times(driver_id, rnd, season):
+    """Returns a list of dicts of times and speed per lap of the race `rnd` in `season`.
+
+    Each dict entry contains lap number, race position and lap time. `driver_id` must be a valid Ergast API id, e.g.
+    'alonso', 'di_resta'.
+
+    The API can take time to process all of the lap time data.
+
+    Raises `MissingDataError` if response invalid.
+    """
+    url = f'{BASE_URL}/{season}/{rnd}/drivers/{driver_id}/laps'
+    soup = await get_soup(url)
+    if soup:
+        race = soup.race
+        laps = race.lapslist.find_all('lap')
+        date, time = (race.date.string, race.time.string)
+        res = {
+            'driver': await get_driver_info(driver_id),
+            'season': race['season'],
+            'round': race['round'],
+            'race': race.racename.string,
+            'url': race['url'],
+            'date': f"{utils.date_parser(date)} {race['season']}",
+            'time': utils.time_parser(time),
+            'data': []
+        }
+        for lap in laps:
+            res['data'].append(
+                {
+                    'no': int(lap['number']),
+                    'position': int(lap.timing['position']),
+                    'time': lap.timing['time'],
+                }
+            )
+        return res
+    raise MissingDataError()
+
+
 async def get_qualifying_results(rnd, season):
     """Returns qualifying results for `round` in `season` as dict.
 
