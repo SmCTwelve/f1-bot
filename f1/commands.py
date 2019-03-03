@@ -5,11 +5,12 @@ from discord.embeds import Embed
 from discord.ext import commands
 
 from f1 import api
+from f1.config import CONFIG
 from f1.utils import is_future, make_table
 
 logger = logging.getLogger(__name__)
 
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix=CONFIG['BOT']['PREFIX'])
 
 
 async def check_season(ctx, season):
@@ -23,7 +24,7 @@ async def check_season(ctx, season):
 async def on_ready():
     logger.info('Bot ready...')
     job = Activity(name='!f1', type=ActivityType.watching)
-    bot.change_presence(activity=job)
+    await bot.change_presence(activity=job)
 
 
 @bot.event

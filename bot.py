@@ -1,6 +1,6 @@
 import logging
-import os
 
+from f1 import config
 from f1 import commands  # noqa
 
 logging.basicConfig(
@@ -8,4 +8,7 @@ logging.basicConfig(
     format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
 )
 
-commands.bot.run(os.getenv('BOT_TOKEN'))
+logger = logging.getLogger(__name__)
+
+logger.warn('Starting bot...')
+commands.bot.run(config.CONFIG['BOT']['TOKEN'])
