@@ -4,8 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from f1.api import get_all_driver_lap_times
+from f1.utils import lap_time_to_seconds
+
 
 logger = logging.getLogger(__name__)
+
+FIGSIZE = (12, 6)
 
 
 def plot_data(ax, data1, data2, param_dict):
@@ -41,12 +45,16 @@ async def plot_driver_vs_driver_lap_timings(driver1, driver2, rnd, season):
         get_all_driver_lap_times(driver1, rnd, season),
         get_all_driver_lap_times(driver2, rnd, season),
     )
-    laps = np.array([x['no'] for x in driver1_res['data']])
-    driver1_data = np.array([x['time'] for x in driver1_res['data']])
-    driver2_data = np.array([x['time'] for x in driver2_res['data']])
+    laps = np.array([int(x['no']) for x in driver1_res['data']])
+    driver1_times = np.array([lap_time_to_seconds(lap['time']) for lap in driver1_res['data']])
+    driver2_times = np.array([lap_time_to_seconds(lap['time']) for lap in driver2_res['data']])
 
-    # TODO:
-    #   Parse laptime strs as time/datetime
-    #   Convert to seconds to plt on Y
+    fig = plt.figure(figsize=FIGSIZE)
+    plt.plot(laps, driver1_times, figure=fig, label=driver1)
+    plt.plot(laps, driver2_times, figure=fig, label=driver2)
 
-    fig, ax = plt.subplots(1, 1)
+    plt.title('Lap Time Comparison')
+    plt.xlabel('Laps')
+    plt.ylabel('Time (s)')
+
+    plt.savefig('../../fig.png', bbox_inches='tight')
