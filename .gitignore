@@ -3,6 +3,9 @@
 *.pyc
 .env
 
+# Config
+config.ini
+
 __pycache__/
 db.sqlite3
 
