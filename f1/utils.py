@@ -75,3 +75,13 @@ def countdown(target: datetime):
         f"{s} {'seconds' if s is not 1 else 'second'} "
     )
     return [stringify, (d, h, m, s)]
+
+
+def lap_time_to_seconds(time_str):
+    """Returns the lap time string as a float representing total seconds.
+
+    E.g. '1:30.202' -> 90.202
+    """
+    min, secs = time_str.split(':')
+    total = int(min) * 60 + float(secs)
+    return total
