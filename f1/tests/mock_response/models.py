@@ -240,7 +240,7 @@ driver_teams = '''
         </Constructor>
     </ConstructorTable>'''
 
-driver_laps = result_wrapper('''
+driver1_laps = result_wrapper('''
     <LapsList>
         <Lap number="1">
             <Timing driverId="alonso" lap="1" position="1" time="1:34.494"/>
@@ -259,8 +259,53 @@ driver_laps = result_wrapper('''
         </Lap>
     </LapsList>''')
 
+driver2_laps = result_wrapper('''
+    <LapsList>
+        <Lap number="1">
+            <Timing driverId="vettel" lap="1" position="1" time="1:34.194"/>
+        </Lap>
+        <Lap number="2">
+            <Timing driverId="vettel" lap="2" position="1" time="1:30.512"/>
+        </Lap>
+        <Lap number="3">
+            <Timing driverId="vettel" lap="3" position="1" time="1:30.806"/>
+        </Lap>
+        <Lap number="4">
+            <Timing driverId="vettel" lap="4" position="1" time="1:29.912"/>
+        </Lap>
+        <Lap number="5">
+            <Timing driverId="vettel" lap="5" position="1" time="1:29.718"/>
+        </Lap>
+    </LapsList>''')
+
 # Seasons is just total of standings results
 driver_seasons = driver_wins
 
 # All drivers and teams is taken from driver standings results
 grid = driver_standings
+
+# Model for testing rank_best_lap_times()
+best_laps = [{
+    'timings': [
+        {
+            'Rank': 1,
+            'Time': '1:30.202',
+        },
+        {
+            'Rank': 2,
+            'Time': '1:29.200',
+        },
+        {
+            'Rank': 3,
+            'Time': '1:29:190',
+        },
+        {
+            'Rank': 4,
+            'Time': '1:29.150',
+        },
+        {
+            'Rank': 5,
+            'Time': '1:28.100',
+        }
+    ]
+}]

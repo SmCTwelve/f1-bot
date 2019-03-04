@@ -46,7 +46,9 @@ async def get_mock_response(res_type):
             - 'driver_championships'
             - 'driver_seasons'
             - 'driver_teams'
-            - 'driver_laps'
+            - 'driver1_laps'
+            - 'driver2_laps'
+            - 'best_laps'
     """
     if res_type is None:
         return None

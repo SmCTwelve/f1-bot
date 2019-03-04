@@ -1,5 +1,6 @@
 import re
 import unittest
+import asyncio
 from unittest.mock import patch
 from datetime import datetime
 
@@ -47,6 +48,13 @@ class UtilityTests(BaseTest):
     def test_is_future_with_past_year(self):
         year = '1999'
         self.assertFalse(utils.is_future(year))
+
+    def test_lap_time_to_seconds(self):
+        laps = ['1:30.202', '1:29.505', '0:00.000']
+        seconds = [utils.lap_time_to_seconds(x) for x in laps]
+        self.assertEqual(seconds[0], 90.202)
+        self.assertEqual(seconds[1], 89.505)
+        self.assertEqual(seconds[2], 0.0)
 
     def test_countdown_with_past_date(self):
         past_date = datetime(1999, 1, 1)
@@ -98,7 +106,34 @@ class MockAPITests(BaseTest):
         res = await api.get_qualifying_results('last', 'current')
         self.assertTrue(utils.make_table(res['data']), "Table empty.")
 
+    @patch(fetch_path)
+    @async_test
+    async def test_get_all_driver_lap_times(self, mock_fetch):
+        # Two fetch calls are made, first to get laps, second to get driver info
+        mock_fetch.side_effect = [get_mock_response('driver1_laps'), get_mock_response('driver_info')]
+        res = await api.get_all_driver_lap_times('alonso', 15, 2008)
+        self.check_data(res['data'])
+        self.check_data(res['driver'])
+
     # test career
+
+    @async_test
+    async def test_rank_best_lap_times(self):
+        times = get_mock_response('best_laps')
+        fast, slow, top, bottom = await asyncio.gather(
+            api.rank_best_lap_times(times, 'fastest'),
+            api.rank_best_lap_times(times, 'slowest'),
+            api.rank_best_lap_times(times, 'top'),
+            api.rank_best_lap_times(times, 'bottom')
+        )
+        # Check lengths
+        self.assertEqual(len(fast), 1, "Fastest filter should return 1 item.")
+        self.assertEqual(len(slow), 1, "Slowest filter should return 1 item.")
+        self.assertEqual(len(top), 5, "Should return top 5.")
+        self.assertEqual(len(bottom), 5, "Should return bottom 5.")
+        # Compare data with mocked model data which has 5 laps
+        self.assertEqual(fast[0]['Rank'], 1, "Fastest should return top rank.")
+        self.assertEqual(slow[0]['Rank'], 5, "Slowest should return bottom rank.")
 
     # boundary tests
 
