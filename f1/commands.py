@@ -44,6 +44,9 @@ async def ping(ctx, *args):
     """Display the current latency."""
     await ctx.send(bot.latency)
 
+# Main command group
+# ==================
+
 
 @bot.group(invoke_without_command=True, case_insensitive=True)
 async def f1(ctx, *args):
@@ -145,32 +148,6 @@ async def countdown(ctx, *args):
     await ctx.send(embed=embed)
 
 
-@f1.command(aliases=['times', 'laps'])
-async def timings(ctx, rnd='last', filter=None):
-    """Display fastest lap times and delta per driver for `round`.
-
-    If no `round` specified returns results for the most recent race.
-
-    Usage:
-    ---------------
-        !f1 timings [<round>]           Return all fastet laps.
-        !f1 timings [<round>] [filter]  Return fastet laps sorted by [filter].
-
-    Optional filter:
-    ---------------
-    `fastest` -  Only show the fastest lap of the race.
-    `slowest` -  Only show the slowest lap of the race.
-    `top`     -  Top 5 fastest drivers.
-    `bottom`  -  Bottom 5 slowest drivers.
-    """
-    results = await api.get_race_results(rnd, season='current')
-    filtered = await api.rank_lap_times(results, filter)
-    table = make_table(filtered)
-    await ctx.send(f"**Fastest laps ranked {filter}**")
-    await ctx.send(f"{results['season']} {results['race']}")
-    await ctx.send(f"```\n{table}\n```")
-
-
 @f1.command(aliases=['finish', 'result'])
 async def results(ctx, rnd='last', season='current'):
     """Results for race `round`. Default most recent.
@@ -267,3 +244,48 @@ async def career(ctx, driver_id):
         inline=True
     )
     await ctx.send(embed=embed)
+
+
+@f1.command(aliases=['timings'])
+async def laps(ctx, driver_id, rnd='last', season='current'):
+    """Display all lap times for the driver in `rnd` of `season`.
+
+    A valid `driver_id` is required, other parameters may be omitted to get lastest race.
+
+    Usage:
+    ------
+        !f1 laps <driver_id> [round] [season]
+    """
+    await check_season(ctx, season)
+    await ctx.send("*Getting results...*")
+    result = await api.get_all_driver_lap_times(driver_id, rnd, season)
+    table = make_table(result['data'], fmt='simple')
+    await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
+    await ctx.send(f"{result['season']} {result['race']}")
+    await ctx.send(f"```\n{table}\n```")
+
+
+@f1.command(aliases=['fastest'])
+async def best(ctx, rnd='last', filter=None):
+    """Display fastest lap times and delta for each driver in `round`.
+
+    If no `round` specified returns results for the most recent race.
+
+    Usage:
+    ---------------
+        !f1 best [<round>]           Return all fastest laps.
+        !f1 best [<round>] [filter]  Return fastet laps sorted by [filter].
+
+    Optional filter:
+    ---------------
+    `fastest` -  Only show the fastest lap of the race.
+    `slowest` -  Only show the slowest lap of the race.
+    `top`     -  Top 5 fastest drivers.
+    `bottom`  -  Bottom 5 slowest drivers.
+    """
+    results = await api.get_race_results(rnd, season='current')
+    filtered = await api.rank_lap_times(results, filter)
+    table = make_table(filtered)
+    await ctx.send(f"**Fastest laps ranked {filter}**")
+    await ctx.send(f"{results['season']} {results['race']}")
+    await ctx.send(f"```\n{table}\n```")
