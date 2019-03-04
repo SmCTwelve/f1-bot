@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_soup(url):
-    """Request the URL and parse response as BeautifulSoup object."""
+    """Request the URL and return response as BeautifulSoup object or None."""
     res = await fetch(url)
     if res is None:
         logger.warning('Unable to get soup, response was None.')
@@ -26,9 +26,30 @@ async def get_soup(url):
 
 
 async def get_driver_info(driver_id):
-    """Returns a dict with driver first and last name, age, nationality, code and number.
+    """Get the driver name, age, nationality, code and number.
 
-    `driver_id` - must be a valid ID used by Ergast API, e.g. 'alonso', 'michael_schumacher'.
+    Parameters
+    ----------
+    `driver_id`
+        must be a valid ID used by Ergast API, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    dict
+        {
+            'firstname': str,
+            'surname': str,
+            'code': str,
+            'id': str,
+            'url': str,
+            'number': str,
+            'age': int,
+            'nationality': str
+        }
+
+    Raises
+    ------
+    `MissingDataError`
     """
     url = f'{BASE_URL}/drivers/{driver_id}'
     soup = await get_soup(url)
@@ -49,12 +70,33 @@ async def get_driver_info(driver_id):
 
 
 async def get_driver_standings(season):
-    """Returns the driver championship standings as dict.
+    """Get the driver championship standings.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, driver code, total points and wins.
 
-    Raises `MissingDataError` if API response unavailable.
+    Parameters
+    ----------
+    `season` : int
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'round': str,
+            'data': list[dict] [{
+                'Pos': int,
+                'Driver': str,
+                'Points': int,
+                'Wins': int,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
@@ -80,12 +122,33 @@ async def get_driver_standings(season):
 
 
 async def get_team_standings(season):
-    """Returns the constructor championship standings as dict.
+    """Get the constructor championship standings.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
     Data includes position, team, total points and wins.
 
-    Raises `MissingDataError` if API response unavailable.
+    Parameters
+    ----------
+    `season` : int
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'round': str,
+            'data': list[dict] [{
+                'Pos': int,
+                'Team': str,
+                'Points': int,
+                'Wins': int,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     url = f'{BASE_URL}/{season}/constructorStandings'
     soup = await get_soup(url)
@@ -110,9 +173,32 @@ async def get_team_standings(season):
 
 
 async def get_all_drivers_and_teams(season):
-    """Return all drivers and teams on the grid as dict.
+    """Get all drivers and teams on the grid.
 
-    Raises `MissingDataError` if API response unavailable.
+    Parameters
+    ----------
+    `season` : int
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'round': str,
+            'data': list[dict] [{
+                'Code': str,
+                'No': int,
+                'Name': str,
+                'Age': int,
+                'Nationality': str,
+                'Team': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
@@ -141,9 +227,26 @@ async def get_all_drivers_and_teams(season):
 
 
 async def get_race_schedule():
-    """Return full race calendar with circuit names and date as dict.
+    """Get full race calendar with circuit names and date as dict.
 
-    Raises `MissingDataError` if API response unavailable.
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'data': list[dict] [{
+                'Round': int,
+                'Circuit': str,
+                'Date': str,
+                'Time': str,
+                'Country': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     url = f'{BASE_URL}/current'
     soup = await get_soup(url)
@@ -168,9 +271,29 @@ async def get_race_schedule():
 
 
 async def get_next_race():
-    """Returns the next race in the calendar and a countdown (from moment of req) as dict.
+    """Get the next race in the calendar and a countdown (from moment of req) as dict.
 
-    Raises `MissingDataError` if API response unavailable.
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'countdown': str,
+            'url': str,
+            'data': list[dict] [{
+                'Round': int,
+                'Name': str,
+                'Date': str,
+                'Time': str,
+                'Circuit': str,
+                'Country': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     #  TODO - Get image of circuit
 
@@ -200,12 +323,49 @@ async def get_next_race():
 
 
 async def get_race_results(rnd, season):
-    """Returns race results for `round` in `season` as dict.
+    """Get race results for `round` in `season` as dict.
 
     E.g. `get_race_results(12, 2008)` --> Results for 2008 season, round 12.
 
     Data includes finishing position, fastest lap, finish status, pit stops per driver.
-    Raises `MissingDataError` if API response unavailable.
+
+    Parameters
+    ----------
+    `rnd` : int
+    `season` : int
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'round': str,
+            'race': str,
+            'url': str,
+            'date': str,
+            'time': str,
+            'data': list[dict] [{
+                'Pos': int,
+                'Driver': str,
+                'Team': str,
+                'Laps': int,
+                'Start': int,
+                'Time': str,
+                'Status': str,
+                'Points': int,
+            }],
+            'timings': list[dict] [{
+                'Rank': int,
+                'Driver': str,
+                'Time': str,
+                'Speed': int,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response unavailable.
     """
     url = f'{BASE_URL}/{season}/{rnd}/results'
     soup = await get_soup(url)
@@ -249,7 +409,7 @@ async def get_race_results(rnd, season):
                         'Rank': int(fastest_lap['rank']),
                         'Driver': driver['code'],
                         'Time': fastest_lap.time.string,
-                        'Speed (kph)': int(float(fastest_lap.averagespeed.string)),
+                        'Speed': int(float(fastest_lap.averagespeed.string)),
                     }
                 )
         return res
@@ -257,14 +417,41 @@ async def get_race_results(rnd, season):
 
 
 async def get_all_driver_lap_times(driver_id, rnd, season):
-    """Returns a list of dicts of times and speed per lap of the race `rnd` in `season`.
+    """Get the driver's lap times for each lap of the race.
 
-    Each dict entry contains lap number, race position and lap time. `driver_id` must be a valid Ergast API id, e.g.
-    'alonso', 'di_resta'.
+    Each dict entry contains lap number, race position and lap time. The API can take time to process all of the lap time data.
 
-    The API can take time to process all of the lap time data.
+    Parameters
+    ----------
+    `driver_id` : str
+        must be a valid Ergast API id, e.g. 'alonso', 'di_resta'.
+    `rnd` : int or str
+        Round number or 'last' for the latest race
+    `season` : int or str
+        Season year or 'current'
 
-    Raises `MissingDataError` if response invalid.
+    Returns
+    -------
+    res : dict
+        {
+            'driver': dict,
+            'season': str,
+            'round': str,
+            'race': str,
+            'url': str,
+            'date': str,
+            'time': str,
+            'data': list[dict] [{
+                'No': int,
+                'Position': int,
+                'Time': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if response invalid.
     """
     url = f'{BASE_URL}/{season}/{rnd}/drivers/{driver_id}/laps'
     soup = await get_soup(url)
@@ -295,11 +482,43 @@ async def get_all_driver_lap_times(driver_id, rnd, season):
 
 
 async def get_qualifying_results(rnd, season):
-    """Returns qualifying results for `round` in `season` as dict.
+    """Gets qualifying results for `round` in `season`.
 
     E.g. `get_qualifying_results(12, 2008)` --> Results for round 12 in 2008 season.
 
-    Data includes Q1, Q2, Q3 times per driver, position, laps per driver. Raises `MissingDataError`.
+    Data includes Q1, Q2, Q3 times per driver, position, laps per driver.
+
+    Parameters
+    ----------
+    `rnd` : int or str
+        Race number or 'last' for the latest race
+    `season` : int or str
+        Season year or 'current'
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'season': str,
+            'round': str,
+            'race': str,
+            'url': str,
+            'date': str,
+            'time': str,
+            'data': list[dict] [{
+                'Pos': int,
+                'Driver': str,
+                'Team': str,
+                'Q1': str,
+                'Q2': str,
+                'Q3': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
     """
     url = f'{BASE_URL}/{season}/{rnd}/qualifying'
     soup = await get_soup(url)
@@ -332,7 +551,35 @@ async def get_qualifying_results(rnd, season):
 
 
 async def get_driver_wins(driver_id):
-    """Returns dict with total wins for the driver and a list of dicts for each race."""
+    """Get total wins for the driver and a list of dicts with details for each race.
+
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'driver': dict,
+            'data': list[dict] [{
+                'Race': str,
+                'Circuit': str,
+                'Date': str,
+                'Team': str,
+                'Grid': int,
+                'Laps': int,
+                'Time': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
+    """
     url = f'{BASE_URL}/drivers/{driver_id}/results/1'
     soup = await get_soup(url)
     if soup:
@@ -350,8 +597,8 @@ async def get_driver_wins(driver_id):
                     'Circuit': race.circuitname.string,
                     'Date': utils.date_parser(race.date.string),
                     'Team': race_result.constructor.name.string,
-                    'Grid': race_result.grid.string,
-                    'Laps': race_result.laps.string,
+                    'Grid': int(race_result.grid.string),
+                    'Laps': int(race_result.laps.string),
                     'Time': race_result.time.string,
                 }
             )
@@ -360,7 +607,35 @@ async def get_driver_wins(driver_id):
 
 
 async def get_driver_poles(driver_id):
-    """Returns total pole positions for driver with list of dicts for each race."""
+    """Get total pole positions for driver with details for each race.
+
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'driver': dict,
+            'data': list[dict] [{
+                'Race': str,
+                'Circuit': str,
+                'Date': str,
+                'Team': str,
+                'Q1': str,
+                'Q2': str,
+                'Q3': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
+    """
     url = f'{BASE_URL}/drivers/{driver_id}/grid/1'
     soup = await get_soup(url)
     if soup:
@@ -388,7 +663,32 @@ async def get_driver_poles(driver_id):
 
 
 async def get_driver_championships(driver_id):
-    """Returns total championship wins for the driver and list of dicts for each season, team, points and wins."""
+    """Get total championship wins for the driver and details for each season, team, points and wins.
+
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'driver': dict,
+            'data': list[dict] [{
+                'Season': str,
+                'Points': int,
+                'Wins': int,
+                'Team': str,
+            }]
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
+    """
     url = f'{BASE_URL}/drivers/{driver_id}/driverStandings/1'
     soup = await get_soup(url)
     if soup:
@@ -402,8 +702,8 @@ async def get_driver_championships(driver_id):
             res['data'].append(
                 {
                     'Season': standing['season'],
-                    'Points': standing.driverstanding['points'],
-                    'Wins': standing.driverstanding['wins'],
+                    'Points': int(standing.driverstanding['points']),
+                    'Wins': int(standing.driverstanding['wins']),
                     'Team': standing.driverstanding.constructor.name.string,
                 }
             )
@@ -412,7 +712,26 @@ async def get_driver_championships(driver_id):
 
 
 async def get_driver_teams(driver_id):
-    """Returns a dict with total number of teams the driver has driven for and a list of names."""
+    """Get total number of teams the driver has driven for and a list of names.
+
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'names': list,
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
+    """
     url = f'{BASE_URL}/drivers/{driver_id}/constructors'
     soup = await get_soup(url)
     if soup:
@@ -426,12 +745,32 @@ async def get_driver_teams(driver_id):
 
 
 async def get_driver_seasons(driver_id):
-    """Returns a dict with the total number of seasons in F1 and a list of dicts with year, team, and pos.
+    """Get the total number of seasons in F1 and a list of dicts with year, team, and pos.
 
     The Ergast API is queried for all driver championships that `driver_id` has participated in, which may cause a
     slight delay in processing for veteran drivers with many seasons.
 
-    Raises `MissingDataError` if results not found or invalid.
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'data': list[dict] [{
+                'Season': str,
+                'Pos': int,
+                'Team': str,
+            }],
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
     """
     url = f'{BASE_URL}/drivers/{driver_id}/driverStandings'
     soup = await get_soup(url)
@@ -445,7 +784,7 @@ async def get_driver_seasons(driver_id):
             res['data'].append(
                 {
                     'Season': standing['season'],
-                    'Pos': standing['position'],
+                    'Pos': int(standing['position']),
                     'Team': standing.constructor.name.string,
                 }
             )
@@ -463,8 +802,31 @@ async def get_driver_career(driver_id):
 
     Returns
     -------
-    res : dict
-        Driver name, wins, champs, seasons and teams.
+    `res` : dict
+        {
+            'driver': str,
+            'data': dict {
+                'Wins': int,
+                'Poles': int,
+                'Championships': dict {
+                    'total': int,
+                    'years': list
+                },
+                'Seasons': dict {
+                    'total': int,
+                    'years': list
+                },
+                'Teams': dict {
+                    'total': int,
+                    'names': list
+                }
+            }
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
     """
     # Get results concurrently
     [wins, poles, champs, seasons, teams] = await asyncio.gather(
