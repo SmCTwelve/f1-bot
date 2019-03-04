@@ -285,9 +285,9 @@ async def get_all_driver_lap_times(driver_id, rnd, season):
         for lap in laps:
             res['data'].append(
                 {
-                    'no': int(lap['number']),
-                    'position': int(lap.timing['position']),
-                    'time': lap.timing['time'],
+                    'No': int(lap['number']),
+                    'Position': int(lap.timing['position']),
+                    'Time': lap.timing['time'],
                 }
             )
         return res
@@ -454,9 +454,17 @@ async def get_driver_seasons(driver_id):
 
 
 async def get_driver_career(driver_id):
-    """Returns total wins, poles, points, seasons, teams and DNF's for the driver as dict.
+    """Total wins, poles, points, seasons, teams and DNF's for the driver.
 
-    `driver_id` must be valid, e.g. 'alonso', 'vettel', 'di_resta'.
+    Parameters
+    ----------
+    `driver_id` : str
+        Must be valid, e.g. 'alonso', 'vettel', 'di_resta'.
+
+    Returns
+    -------
+    res : dict
+        Driver name, wins, champs, seasons and teams.
     """
     # Get results concurrently
     [wins, poles, champs, seasons, teams] = await asyncio.gather(
@@ -488,8 +496,8 @@ async def get_driver_career(driver_id):
     return res
 
 
-async def rank_lap_times(data, filter):
-    """Returns filtered best lap times based on race results data obtained
+async def rank_best_lap_times(data, filter):
+    """Returns filtered best lap times per driver based on data obtained
     from `get_race_results()`.
 
     Sorts the list of lap times returned by `get_race_results()` dataset and splits
@@ -501,10 +509,15 @@ async def rank_lap_times(data, filter):
         Returned data from `get_race_results()`.
     `filter` : str
         Type of filter to be applied:
-            'slowest' - slowest lap
-            'fastest' - fastest lap
-            'top'     - top 5 laps
-            'bottom'  - bottom 5 laps
+            'slowest' - slowest lap of race
+            'fastest' - fastest lap of race
+            'top'     - top 5 fastest drivers
+            'bottom'  - bottom 5 slowest drivers
+
+    Returns
+    -------
+    list[dict]
+        Sorted list of dicts for each lap
     """
     sorted_times = sorted(data['timings'], key=itemgetter('Rank'))
     # slowest lap
