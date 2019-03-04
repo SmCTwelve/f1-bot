@@ -23,7 +23,7 @@ async def check_season(ctx, season):
 @bot.event
 async def on_ready():
     logger.info('Bot ready...')
-    job = Activity(name='!f1', type=ActivityType.watching)
+    job = Activity(name=f'{bot.command_prefix}f1', type=ActivityType.watching)
     await bot.change_presence(activity=job)
 
 
