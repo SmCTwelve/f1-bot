@@ -858,6 +858,45 @@ async def get_driver_career(driver_id):
     return res
 
 
+async def get_best_laps(rnd, season):
+    """Get the best lap for each driver.
+
+    Parameters
+    ----------
+    `rnd` : int or str
+        Race number or 'last' for the latest race
+    `season` : int or str
+        Season year or 'current'
+
+    Returns
+    -------
+    `res` : dict
+        {   'season': str,
+            'round': str,
+            'race': str,
+            'data': list[dict] {
+                'Rank': int,
+                'Driver': str,
+                'Time': str,
+                'Speed': str,
+            }
+        }
+
+    Raises
+    ------
+    `MissingDataError`
+        If response invalid.
+    """
+    race_results = await get_race_results(rnd, season)
+    res = {
+        'season': race_results['season'],
+        'round': race_results['round'],
+        'race': race_results['race'],
+        'data': race_results['timings'],
+    }
+    return res
+
+
 async def rank_best_lap_times(data, filter):
     """Returns filtered best lap times per driver based on data obtained
     from `get_race_results()`.
