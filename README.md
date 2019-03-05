@@ -42,18 +42,22 @@ A Procfile is included for easy hosting on Heroku as a worker dyno. For other ho
 
 ## Commands
 Commands are invoked with the prefix `!` (can be changed in config) and base `f1` command followed by one of the following subcommands:
-```
-!help f1                           Display help text for the available commands
-!f1 drivers | wdc                  Display the current World Driver Championship standings
-!f1 teams | wcc                    Display the current Constructors Championship standings
-!f1 schedule | races               Display the race calendar for the current season
-!f1 next                           Show a countdown to the next race and details
-!f1 grid                           Return details of all drivers and teams participating in the season
-!f1 timings [round, [season]]      Display fastest lap times per driver for [round] in [season]
-!f1 results [round, [season]]      Race results for [round] in [season]
-!f1 quali [round, [season]]        Qualifying results for [round] in [season]
-!f1 career <driver_id>             Career stats for the driver
-```
+
+- `!help f1` -  Display help text for the available commands
+- `!f1 drivers | wdc` - Display the current World Driver Championship standings
+- `!f1 teams | wcc` - Display the current Constructors Championship standings
+- `!f1 schedule | races` -  Display the race calendar for the current season
+- `!f1 next` -  Show a countdown to the next race and details
+- `!f1 grid` -  Return details of all drivers and teams participating in the season
+- `!f1 best [round, [season]] [filter]` - Display best lap time per driver. Optional `[filter]` keyword:
+  - `top` - Top 5 fastest laps of the race
+  - `bottom` -  Bottom 5 slowest laps of the race
+  - `fastest` - Fastest ranked lap
+  - `slowest` - Slowest ranked lap 
+- `!f1 laps <driver_id> [round, [season]]` -  Times for every race lap in `[round]` driven by `<driver_id>` 
+- `!f1 results [round, [season]]` - Race results for `[round]` in `[season]`
+- `!f1 quali [round, [season]]` - Qualifying results for `[round]` in `[season]`
+- `!f1 career <driver_id>` -  Career stats for the driver
 
 Commands which take `round` and `season` parameters will default to the latest race of the current season if omitted. If only the `round` parameter is provided, then `season` will be the current season. Otherwise, both parameters should be given in the order `round` `season`.
 
