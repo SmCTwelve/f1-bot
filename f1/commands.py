@@ -1,5 +1,6 @@
 import logging
-from discord import Colour
+import asyncio
+from discord import Colour, File
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
@@ -7,6 +8,7 @@ from discord.ext import commands
 from f1 import api
 from f1.config import CONFIG
 from f1.utils import is_future, make_table
+from f1.stats import chart
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ async def f1(ctx, *args):
     Function is only called when the invoked command does not match one of the subcommands
     in `f1.commands`. Otherwise context and args are passed down to the approriate subcommand.
     """
-    await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}. Type `!help f1`.')
+    await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}. Type `{bot.command_prefix}help f1`.')
 
 
 @f1.command(aliases=['wdc'])
@@ -276,12 +278,12 @@ async def best(ctx, rnd='last', filter=None):
         !f1 best [<round>]           Return all fastest laps.
         !f1 best [<round>] [filter]  Return fastet laps sorted by [filter].
 
-    Optional filter:
-    ---------------
-    `fastest` -  Only show the fastest lap of the race.
-    `slowest` -  Only show the slowest lap of the race.
-    `top`     -  Top 5 fastest drivers.
-    `bottom`  -  Bottom 5 slowest drivers.
+        Optional filter:
+        ----------------
+        `fastest` -  Only show the fastest lap of the race.
+        `slowest` -  Only show the slowest lap of the race.
+        `top`     -  Top 5 fastest drivers.
+        `bottom`  -  Bottom 5 slowest drivers.
     """
     results = await api.get_race_results(rnd, season='current')
     filtered = await api.rank_lap_times(results, filter)
@@ -289,3 +291,60 @@ async def best(ctx, rnd='last', filter=None):
     await ctx.send(f"**Fastest laps ranked {filter}**")
     await ctx.send(f"{results['season']} {results['race']}")
     await ctx.send(f"```\n{table}\n```")
+
+# Plotting commands
+# ==================
+
+# Stats
+# compare [type] [driver1] [driver2]
+
+
+@f1.group(invoke_without_command=True, case_insensitive=True)
+async def plot(ctx, *args):
+    """Command group for all plotting functions."""
+    await ctx.send(f"Command not recognised, type `{bot.command_prefix}help f1`.")
+
+
+@plot.command()
+async def timings(ctx, driver1_id, driver2_id=None, rnd='last', season='current'):
+    """Plot all lap data between the two drivers or a single driver.
+
+    It may take a few moments to gather the data.
+
+    Usage:
+    ------
+        !f1 plot timings <driver1_id> [<driver2_id>] [round] [season]
+    """
+    await check_season(ctx, season)
+    await ctx.send("Gathering data. This will take a few moments...")
+    # Gather all lap data for both drivers concurrently
+    # API can take a while to process
+    if driver2_id is not None:
+        driver1_res, driver2_res = await asyncio.gather(
+            api.get_all_driver_lap_times(driver1_id, rnd, season),
+            api.get_all_driver_lap_times(driver2_id, rnd, season)
+        )
+        await chart.plot_driver_vs_driver_lap_timings(driver1_res, driver2_res)
+    # No second driver given so plotting for one
+    else:
+        driver1_res = await api.get_all_driver_lap_times(driver1_id, rnd, season)
+        await chart.plot_all_driver_laps(driver1_res)
+
+    f = File(f"{CONFIG.OUT_DIR}/plot.png", filename='plot')
+    await ctx.send(file=f)
+
+
+@plot.command()
+async def fastest(ctx, rnd, season):
+    """Plot fastest lap times for all drivers in the race as a bar chart.
+
+    Usage:
+    ------
+        !f1 plot fastest [round] [season]
+    """
+    await check_season(ctx, season)
+    res = await api.get_best_laps(rnd, season)
+    await chart.plot_best_laps(res)
+
+    f = File(f"{CONFIG.OUT_DIR}/plot.png", filename='plot')
+    await ctx.send(file=f)

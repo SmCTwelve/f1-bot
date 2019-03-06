@@ -419,7 +419,8 @@ async def get_race_results(rnd, season):
 async def get_all_driver_lap_times(driver_id, rnd, season):
     """Get the driver's lap times for each lap of the race.
 
-    Each dict entry contains lap number, race position and lap time. The API can take time to process all of the lap time data.
+    Each dict entry contains lap number, race position and lap time. The API can take time to
+    process all of the lap time data.
 
     Parameters
     ----------
