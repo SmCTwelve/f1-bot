@@ -19,6 +19,14 @@ CONFIG_FILE = os.path.join(BASE_DIR, 'config.ini')
 OUT_DIR = os.path.join(BASE_DIR, 'out')
 
 
+def create_output_dir():
+    try:
+        os.mkdir(OUT_DIR)
+        logger.info(f"Created output directory at {OUT_DIR}.")
+    except FileExistsError:
+        logger.info(f"Output directory already exists at {OUT_DIR}.")
+
+
 def load_config():
     try:
         with open(CONFIG_FILE, 'r') as f:
@@ -30,3 +38,4 @@ def load_config():
 
 
 load_config()
+create_output_dir()
