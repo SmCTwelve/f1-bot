@@ -3,6 +3,8 @@
 *.pyc
 .env
 
+out/
+
 # Config
 config.ini
 
