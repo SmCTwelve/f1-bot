@@ -65,7 +65,7 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 - `!f1 career <driver_id>` -  Career stats for the driver
 
 **Plotting**
-- `!f1 plot laps <driver1_id> [driver2_id] [round] [season]` - Plot a line chart comparing all lap times in the race. An optional second driver can be given to compare times between the two drivers. The API can take some time to get every lap of the race, so 2 drivers is the max.
+- `!f1 plot timings <driver1_id> [driver2_id] [round] [season]` - Plot a line chart comparing all lap times in the race. An optional second driver can be given to compare times between the two drivers. The API can take some time to get every lap of the race, so 2 drivers is the max.
 - `!f1 plot fastest [round] [season]` - Plot a bar chart comparing the fastest lap for each driver. This is faster than `plot laps` as it doesn't require fetching every lap of the race.
 
 More functionality is planned, including lap time comparisons between drivers, component usage and generating plots.
