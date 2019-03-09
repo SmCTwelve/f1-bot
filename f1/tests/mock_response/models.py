@@ -285,7 +285,7 @@ driver_seasons = driver_wins
 grid = driver_standings
 
 # Model for testing rank_best_lap_times()
-best_laps = [{
+best_laps = {
     'timings': [
         {
             'Rank': 1,
@@ -306,6 +306,14 @@ best_laps = [{
         {
             'Rank': 5,
             'Time': '1:28.100',
+        },
+        {
+            'Rank': 6,
+            'Time': '1:28.100',
+        },
+        {
+            'Rank': 7,
+            'Time': '1:28.100',
         }
     ]
-}]
+}

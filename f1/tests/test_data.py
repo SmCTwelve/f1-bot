@@ -8,6 +8,7 @@ from f1 import api
 from f1 import utils
 from f1.errors import MissingDataError, MessageTooLongError
 from f1.tests.async_test import async_test
+from f1.tests.mock_response.response import models
 from f1.tests.mock_response.response import get_mock_response
 
 # Path for patch should be module where it is used, not where defined
@@ -104,7 +105,7 @@ class MockAPITests(BaseTest):
     async def test_get_qualifying_results(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('qualifying_results')
         res = await api.get_qualifying_results('last', 'current')
-        self.assertTrue(utils.make_table(res['data']), "Table empty.")
+        self.check_data(res['data'])
 
     @patch(fetch_path)
     @async_test
@@ -119,7 +120,7 @@ class MockAPITests(BaseTest):
 
     @async_test
     async def test_rank_best_lap_times(self):
-        times = get_mock_response('best_laps')
+        times = models.best_laps
         fast, slow, top, bottom = await asyncio.gather(
             api.rank_best_lap_times(times, 'fastest'),
             api.rank_best_lap_times(times, 'slowest'),
@@ -131,9 +132,9 @@ class MockAPITests(BaseTest):
         self.assertEqual(len(slow), 1, "Slowest filter should return 1 item.")
         self.assertEqual(len(top), 5, "Should return top 5.")
         self.assertEqual(len(bottom), 5, "Should return bottom 5.")
-        # Compare data with mocked model data which has 5 laps
+        # Compare data with mocked model data which has 7 laps
         self.assertEqual(fast[0]['Rank'], 1, "Fastest should return top rank.")
-        self.assertEqual(slow[0]['Rank'], 5, "Slowest should return bottom rank.")
+        self.assertEqual(slow[0]['Rank'], 7, "Slowest should return bottom rank.")
 
     # boundary tests
 
