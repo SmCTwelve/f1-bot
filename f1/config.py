@@ -1,10 +1,15 @@
-# flake8: noqa
 import os
 import sys
 import logging
 import configparser
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
+)
+
 logger = logging.getLogger(__name__)
+
 
 # Dict parsed from config file
 CONFIG = configparser.ConfigParser()
