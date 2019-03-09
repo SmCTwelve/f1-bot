@@ -386,8 +386,14 @@ async def get_race_results(rnd, season):
         for result in race_results:
             driver = result.driver
             # Finish time and fastest lap both use <time> tag, soup.find() will return first match
-            # use sibling search instead to get second time
-            finish_time = result.find_next_sibling('time')
+            # If the finish time is missing then first match will be the fastest lap time
+            # Check parent of tag to ensure it's the correct element
+            if result.time is not None:
+                if result.time.parent.name == 'fastestlap':
+                    finish_time = None
+                else:
+                    finish_time = result.time
+            # Now get the fastest lap time element
             fastest_lap = result.fastestlap
             res['data'].append(
                 {
@@ -564,7 +570,6 @@ async def get_driver_wins(driver_id):
     `res` : dict
         {
             'total': int,
-            'driver': dict,
             'data': list[dict] [{
                 'Race': str,
                 'Circuit': str,
@@ -587,7 +592,6 @@ async def get_driver_wins(driver_id):
         races = soup.racetable.find_all('race')
         res = {
             'total': int(soup.MRData['total']),
-            'driver': await get_driver_info(driver_id),
             'data': []
         }
         for race in races:
@@ -620,7 +624,6 @@ async def get_driver_poles(driver_id):
     `res` : dict
         {
             'total': int,
-            'driver': dict,
             'data': list[dict] [{
                 'Race': str,
                 'Circuit': str,
@@ -637,13 +640,12 @@ async def get_driver_poles(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/grid/1'
+    url = f'{BASE_URL}/drivers/{driver_id}/qualifying/1'
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
         res = {
             'total':  int(soup.MRData['total']),
-            'driver': await get_driver_info(driver_id),
             'data': []
         }
         for race in races:
@@ -676,7 +678,6 @@ async def get_driver_championships(driver_id):
     `res` : dict
         {
             'total': int,
-            'driver': dict,
             'data': list[dict] [{
                 'Season': str,
                 'Points': int,
@@ -696,7 +697,6 @@ async def get_driver_championships(driver_id):
         standings = soup.standingstable.find_all('standingslist')
         res = {
             'total': int(soup.MRData['total']),
-            'driver': await get_driver_info(driver_id),
             'data': []
         }
         for standing in standings:
@@ -838,7 +838,7 @@ async def get_driver_career(driver_id):
         get_driver_teams(driver_id),
     )
     res = {
-        'driver': wins['driver'],
+        'driver': await get_driver_info(driver_id),
         'data': {
             'Wins': wins['total'],
             'Poles': poles['total'],
@@ -898,17 +898,17 @@ async def get_best_laps(rnd, season):
     return res
 
 
-async def rank_best_lap_times(data, filter):
+async def rank_best_lap_times(timings, filter):
     """Returns filtered best lap times per driver based on data obtained
-    from `get_race_results()`.
+    from `get_best_laps()`.
 
-    Sorts the list of lap times returned by `get_race_results()` dataset and splits
+    Sorts the list of lap times returned by `get_best_laps()` dataset and splits
     the results based on the filter keyword.
 
     Parameters
     ----------
-    `data` : list
-        Returned data from `get_race_results()`.
+    `timings` : list[dict]
+        Returned data from `get_best_laps()`.
     `filter` : str
         Type of filter to be applied:
             'slowest' - slowest lap of race
@@ -921,18 +921,20 @@ async def rank_best_lap_times(data, filter):
     list[dict]
         Sorted list of dicts for each lap
     """
-    sorted_times = sorted(data['timings'], key=itemgetter('Rank'))
+    sorted_times = sorted(timings['data'], key=itemgetter('Rank'))
+    # Force list return type instead of pulling out single string element for slowest and fastest
+    # Top/Bottom already outputs a list type with slicing
     # slowest lap
-    if filter is 'slowest':
-        return sorted_times[len(sorted_times) - 1]
+    if filter == 'slowest':
+        return [sorted_times[len(sorted_times) - 1]]
     # fastest lap
-    elif filter is 'fastest':
-        return sorted_times[0]
+    elif filter == 'fastest':
+        return [sorted_times[0]]
     # fastest 5 laps
-    elif filter is 'top':
+    elif filter == 'top':
         return sorted_times[:5]
     # slowest 5 laps
-    elif filter is 'bottom':
+    elif filter == 'bottom':
         return sorted_times[len(sorted_times) - 5:]
     # no filter given, return full sorted results
     else:
