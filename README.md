@@ -41,7 +41,7 @@ Run the application by executing `python -m bot.py` from the main directory. The
 A Procfile is included for easy hosting on Heroku as a worker dyno. For other hosting configurations ensure `bot.py` is used as the entry point.
 
 ## Commands
-Commands which take `round` and `season` parameters will default to the latest race of the current season if omitted. If only the `round` parameter is provided, then `season` will be the current season. Otherwise, both parameters should be given in the order `round` `season`.
+Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `drivers`, `teams` and `grid` which only use a `season`.
 
 Commands which take the `driver_id` parameter must be a valid ID used by the Ergast API. Typically, this is the driver's surnane, e.g. 'alonso', 'vettel'. However, in cases where the surname applies to multiple drivers, the ID will typically be `firstname_surname`, e.g. 'michael_schumacher', 'max_verstappen'. A future update will add the ability to provide the driver code such as 'HAM' instead for easier use.
 
@@ -49,23 +49,23 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 
 - `!help f1` -  Display help text for the available commands
 
-- `!f1 drivers | wdc` - Display the current World Driver Championship standings
-- `!f1 teams | wcc` - Display the current Constructors Championship standings
-- `!f1 schedule | races` -  Display the race calendar for the current season
+- `!f1 drivers | wdc [season]` - Display the current World Driver Championship standings
+- `!f1 teams | wcc [season]` - Display the current Constructors Championship standings
+- `!f1 grid [season]` -  Return details of all drivers and teams participating in the season
+- `!f1 schedule` -  Display the race calendar for the current season
 - `!f1 next` -  Show a countdown to the next race and details
-- `!f1 grid` -  Return details of all drivers and teams participating in the season
-- `!f1 best [round, [season]] [filter]` - Display best lap time per driver. Optional `[filter]` keyword:
+- `!f1 best [<season> <round>] [filter]` - Display best lap time per driver. Optional `[filter]` keyword:
   - `top` - Top 5 fastest laps of the race
   - `bottom` -  Bottom 5 slowest laps of the race
   - `fastest` - Fastest ranked lap
   - `slowest` - Slowest ranked lap
-- `!f1 laps <driver_id> [round, [season]]` -  Times for every race lap in `[round]` driven by `<driver_id>`
-- `!f1 results [round, [season]]` - Race results for `[round]` in `[season]`
-- `!f1 quali [round, [season]]` - Qualifying results for `[round]` in `[season]`
+- `!f1 laps <driver_id> [<season> <round>]` -  Times for every race lap driven by `<driver_id>`
+- `!f1 results [<season> <round>]` - Race results for `[round]` in `[season]`
+- `!f1 quali [<season> <round>]` - Qualifying results for `[round]` in `[season]`
 - `!f1 career <driver_id>` -  Career stats for the driver
 
 **Plotting**
-- `!f1 plot timings <driver1_id> [driver2_id] [round] [season]` - Plot a line chart comparing all lap times in the race. An optional second driver can be given to compare times between the two drivers. The API can take some time to get every lap of the race, so 2 drivers is the max.
-- `!f1 plot fastest [round] [season]` - Plot a bar chart comparing the fastest lap for each driver. This is faster than `plot laps` as it doesn't require fetching every lap of the race.
+- `!f1 plot laps <season> <round> <driver1_id> [driver2_id] ` - Plot a line chart comparing all lap times in the race. An optional second driver can be given to compare times between the two drivers. The API can take some time to get every lap of the race, so 2 drivers is the max.
+- `!f1 plot fastest [<season> <round>] ` - Plot a bar chart comparing the fastest lap for each driver. This is faster than `plot laps` as it doesn't require fetching every lap of the race.
 
 More functionality is planned, including lap time comparisons between drivers, component usage and generating plots.
