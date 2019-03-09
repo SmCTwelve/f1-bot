@@ -31,9 +31,10 @@ Copy the **Token** of your Bot to the `config.ini` file in the main directory, r
 To add the bot to a server you need to generate an OAauth2 URL for authentication and permissions.
 
 1. Open the [Application](https://discordapp.com/developers/applications/) page of your Bot and under settings choose OAuth2.
-2. At the bottom under Scopes, check bot
-3. Scroll down further to Permissions and enable the features shown [here](https://i.imgur.com/1bQ9xD8.png)
-4. Scroll back up to Scopes and copy the URL to invite your Bot to a server which you have permission
+2. In the Scopes section, check 'bot'
+3. Scroll down to the Permissions section and enable the features shown [here](https://i.imgur.com/1bQ9xD8.png)
+4. The Scopes section will now show a URL representing the scope and permissions your bot has
+5. Copy the URL to invite your Bot to a server which you have permission
 
 ## Usage
 Run the application by executing `python -m bot.py` from the main directory. The console will display log messages to monitor the bot status.
