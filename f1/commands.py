@@ -57,7 +57,7 @@ async def ping(ctx, *args):
 
 @bot.group(invoke_without_command=True, case_insensitive=True)
 async def f1(ctx, *args):
-    """Command group of all F1 related commands.
+    """Commands to get F1 data. Check the list of subcommands and usage: https://bit.ly/2tYRNSd
 
     Function is only called when the invoked command does not match one of the subcommands
     in `f1.commands`. Otherwise context and args are passed down to the approriate subcommand.
