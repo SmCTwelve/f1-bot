@@ -262,15 +262,17 @@ async def laps(ctx, driver_id, season='current', rnd='last', ):
 
 
 @f1.command(aliases=['fastest'])
-async def best(ctx, season='current', rnd='last', filter=None):
-    """Display fastest lap times and delta for each driver in `round`.
+async def best(ctx, filter=None, season='current', rnd='last'):
+    """Display the best lap times and delta for each driver in `round`.
 
     If no `round` specified returns results for the most recent race.
 
     Usage:
     ---------------
-        !f1 best [season] [round]           Return all fastest laps for [round] in [season].
-        !f1 best [season] [round] [filter]  Return fastet laps sorted by [filter].
+        !f1 best                            Return all best laps for the latest race.
+        !f1 best [filter]                   Return best laps for latest race sorted by [filter].
+        !f1 best [season] [round]           Return all best laps for [round] in [season].
+        !f1 best [filter] [season] [round]  Return best laps sorted by [filter].
 
         Optional filter:
         ----------------
