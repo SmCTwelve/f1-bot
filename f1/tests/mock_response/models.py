@@ -286,7 +286,7 @@ grid = driver_standings
 
 # Model for testing rank_best_lap_times()
 best_laps = {
-    'timings': [
+    'data': [
         {
             'Rank': 1,
             'Time': '1:30.202',
