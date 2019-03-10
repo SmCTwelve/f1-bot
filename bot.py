@@ -1,11 +1,11 @@
 import logging
-import os
 
+import f1.config
 from f1 import commands  # noqa
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
-)
 
-commands.bot.run(os.getenv('BOT_TOKEN'))
+logger = logging.getLogger(__name__)
+logger.warn('Starting bot...')
+
+
+commands.bot.run(f1.config.CONFIG['BOT']['TOKEN'])
