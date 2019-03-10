@@ -208,7 +208,7 @@ async def career(ctx, driver_id):
         !f1 career vettel     Get career stats for Sebastian Vettel.
     """
     # TODO - support JSON file to convert driver codes/names to ID's for easier use
-    await ctx.send("Gathering results...")
+    await ctx.send("*Gathering lap data; this may take a few moments*...")
     result = await api.get_driver_career(driver_id)
     season_list = result['data']['Seasons']['years']
     embed = Embed(
@@ -311,7 +311,7 @@ async def timings(ctx, season, rnd, *, drivers):
         !f1 plot timings [season] [round] <driver1_id> [driver2_id]
     """
     drivers_list = drivers.split(' ')
-    await ctx.send("Gathering data. This will take a few moments...")
+    await ctx.send("*Gathering lap data; this may take a few moments...*")
     # Too many drivers
     if len(drivers_list) > 2:
         raise commands.TooManyArguments("More than 2 drivers given.")
