@@ -591,7 +591,7 @@ async def get_driver_wins(driver_id):
     if soup:
         races = soup.racetable.find_all('race')
         res = {
-            'total': int(soup.MRData['total']),
+            'total': int(soup.mrdata['total']),
             'data': []
         }
         for race in races:
@@ -645,7 +645,7 @@ async def get_driver_poles(driver_id):
     if soup:
         races = soup.racetable.find_all('race')
         res = {
-            'total':  int(soup.MRData['total']),
+            'total':  int(soup.mrdata['total']),
             'data': []
         }
         for race in races:
@@ -696,7 +696,7 @@ async def get_driver_championships(driver_id):
     if soup:
         standings = soup.standingstable.find_all('standingslist')
         res = {
-            'total': int(soup.MRData['total']),
+            'total': int(soup.mrdata['total']),
             'data': []
         }
         for standing in standings:
@@ -738,7 +738,7 @@ async def get_driver_teams(driver_id):
     if soup:
         constructors = soup.constructortable.find_all('constructor')
         res = {
-            'total': int(soup.MRData['total']),
+            'total': int(soup.mrdata['total']),
             'names': [constructor.name.string for constructor in constructors]
         }
         return res
@@ -776,9 +776,10 @@ async def get_driver_seasons(driver_id):
     url = f'{BASE_URL}/drivers/{driver_id}/driverStandings'
     soup = await get_soup(url)
     if soup:
+        print('SOUP:', soup)
         standings = soup.standingstable.find_all('standingslist')
         res = {
-            'total': int(soup.MRData['total']),
+            'total': int(soup.mrdata['total']),
             'data': []
         }
         for standing in standings:
@@ -823,11 +824,6 @@ async def get_driver_career(driver_id):
                 }
             }
         }
-
-    Raises
-    ------
-    `MissingDataError`
-        if API response invalid.
     """
     # Get results concurrently
     [wins, poles, champs, seasons, teams] = await asyncio.gather(
