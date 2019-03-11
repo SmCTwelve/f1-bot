@@ -19,13 +19,11 @@ Or if using Pipenv you can install from the Pipfile and automatically create a v
 ```bash
 $ pipenv install
 ```
-In the main directory, rename `example_config.ini` to `config.ini`.
-Do not share this file publicly once you have renamed it as it will contain your bot Token.
 
 ## Creating a Bot User
 Open [Discord Developer Portal](https://discordapp.com/developers/applications/) and create a new application. The name will be the username displayed for your Bot. On your application page choose Bot from the settings menu, then click 'Add Bot' to turn your application into a Bot user.
 
-Copy the **Token** of your Bot to the `config.ini` file in the main directory, replacing the value of the `TOKEN` key. **Do not share your token**, treat it like a password.
+Copy the **Token** of your Bot to the `config.ini` file in the main directory, replacing the value of the `TOKEN` key. **Do not share your token**, treat it like a password. Alternatively, you can store the Token by setting an environment variable called `BOT_TOKEN` so you can avoid adding it to the config file. The environment variable will be checked first when loading the bot. This is useful if you plan to host on Heroku to store the Token as a config variable on the app.
 
 ### Inviting your Bot
 To add the bot to a server you need to generate an OAauth2 URL for authentication and permissions.
