@@ -595,13 +595,13 @@ async def get_driver_wins(driver_id):
             'data': []
         }
         for race in races:
-            race_result = race.racelist.result
+            race_result = race.resultlist.result
             res['data'].append(
                 {
                     'Race': race.racename.string,
                     'Circuit': race.circuitname.string,
                     'Date': utils.date_parser(race.date.string),
-                    'Team': race_result.constructor.name.string,
+                    'Team': race_result.constructor.find('name').string,
                     'Grid': int(race_result.grid.string),
                     'Laps': int(race_result.laps.string),
                     'Time': race_result.time.string,
@@ -655,10 +655,10 @@ async def get_driver_poles(driver_id):
                     'Race': race.racename.string,
                     'Circuit': race.circuitname.string,
                     'Date': utils.date_parser(race.date.string),
-                    'Team': quali_result.constructor.name.string,
-                    'Q1': quali_result.q1.string,
-                    'Q2': quali_result.q2.string,
-                    'Q3': quali_result.q3.string,
+                    'Team': quali_result.constructor.find('name').string,
+                    'Q1': quali_result.q1.string if quali_result.q1 is not None else None,
+                    'Q2': quali_result.q2.string if quali_result.q2 is not None else None,
+                    'Q3': quali_result.q3.string if quali_result.q3 is not None else None,
                 }
             )
         return res
@@ -705,7 +705,7 @@ async def get_driver_championships(driver_id):
                     'Season': standing['season'],
                     'Points': int(standing.driverstanding['points']),
                     'Wins': int(standing.driverstanding['wins']),
-                    'Team': standing.driverstanding.constructor.name.string,
+                    'Team': standing.driverstanding.constructor.find('name').string,
                 }
             )
         return res
@@ -739,7 +739,7 @@ async def get_driver_teams(driver_id):
         constructors = soup.constructortable.find_all('constructor')
         res = {
             'total': int(soup.mrdata['total']),
-            'names': [constructor.name.string for constructor in constructors]
+            'names': [constructor.find('name').string for constructor in constructors]
         }
         return res
     return MissingDataError()
@@ -776,7 +776,6 @@ async def get_driver_seasons(driver_id):
     url = f'{BASE_URL}/drivers/{driver_id}/driverStandings'
     soup = await get_soup(url)
     if soup:
-        print('SOUP:', soup)
         standings = soup.standingstable.find_all('standingslist')
         res = {
             'total': int(soup.mrdata['total']),
@@ -786,8 +785,8 @@ async def get_driver_seasons(driver_id):
             res['data'].append(
                 {
                     'Season': standing['season'],
-                    'Pos': int(standing['position']),
-                    'Team': standing.constructor.name.string,
+                    'Pos': int(standing.driverstanding['position']),
+                    'Team': standing.constructor.find('name').string,
                 }
             )
         return res

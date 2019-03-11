@@ -366,6 +366,3 @@ async def fastest(ctx, season, rnd):
 
     f = File(f"{CONFIG.OUT_DIR}/plot.png", filename='plot')
     await ctx.send(file=f)
-
-# None value somewhere in driver career
-# Plot fastest NoneType resultslist
