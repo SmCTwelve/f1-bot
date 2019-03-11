@@ -15,12 +15,16 @@ responses = {
     'driver_championships': models.driver_championships,
     'driver_seaons': models.driver_seasons,
     'driver_teams': models.driver_teams,
+    'driver1_laps': models.driver1_laps,
+    'driver2_laps': models.driver2_laps,
+    'driver_seasons': models.driver_seasons,
+    'best_laps': models.best_laps,
 }
 
 
 def generate_res(body):
     """Wraps `body` in XML parent tags to mirror API response."""
-    return f'<?xml version="1.0" encoding="utf-8"?><MRData total="30">{body}</MRData>'
+    return f'<?xml version="1.0" encoding="utf-8"?><MRData total="1">{body}</MRData>'
 
 
 async def get_mock_response(res_type):

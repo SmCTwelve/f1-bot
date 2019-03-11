@@ -51,19 +51,6 @@ driver_standings = standings_wrapper('''
             <Name>Mercedes</Name>
             <Nationality>German</Nationality>
         </Constructor>
-    </DriverStanding>
-    <DriverStanding position="2" positionText="2" points="320" wins="5">
-        <Driver driverId="vettel" code="VET" url="http://en.wikipedia.org/wiki/Sebastian_Vettel">
-            <PermanentNumber>5</PermanentNumber>
-            <GivenName>Sebastian</GivenName>
-            <FamilyName>Vettel</FamilyName>
-            <DateOfBirth>1987-07-03</DateOfBirth>
-            <Nationality>German</Nationality>
-        </Driver>
-        <Constructor constructorId="ferrari" url="http://en.wikipedia.org/wiki/Scuderia_Ferrari">
-            <Name>Ferrari</Name>
-            <Nationality>Italian</Nationality>
-        </Constructor>
     </DriverStanding>''')
 
 constructor_standings = standings_wrapper('''
@@ -71,12 +58,6 @@ constructor_standings = standings_wrapper('''
         <Constructor constructorId="mercedes" url="http://en.wikipedia.org/wiki/Mercedes-Benz_in_Formula_One">
             <Name>Mercedes</Name>
             <Nationality>German</Nationality>
-        </Constructor>
-    </ConstructorStanding>
-    <ConstructorStanding position="2" positionText="2" points="571" wins="6">
-        <Constructor constructorId="ferrari" url="http://en.wikipedia.org/wiki/Scuderia_Ferrari">
-            <Name>Ferrari</Name>
-            <Nationality>Italian</Nationality>
         </Constructor>
     </ConstructorStanding>''')
 
@@ -211,7 +192,7 @@ driver_poles = result_wrapper('''
             <Nationality>French</Nationality>
         </Constructor>
         <Q1>1:37.044</Q1>
-    </QualifyingResult>''')
+    </QualifyingResult>''', quali=True)
 
 driver_championships = standings_wrapper('''
     <DriverStanding position="1" positionText="1" points="133" wins="7">
@@ -233,10 +214,6 @@ driver_teams = '''
         <Constructor constructorId="ferrari" url="http://en.wikipedia.org/wiki/Scuderia_Ferrari">
             <Name>Ferrari</Name>
             <Nationality>Italian</Nationality>
-        </Constructor>
-        <Constructor constructorId="mclaren" url="http://en.wikipedia.org/wiki/McLaren">
-            <Name>McLaren</Name>
-            <Nationality>British</Nationality>
         </Constructor>
     </ConstructorTable>'''
 
@@ -279,7 +256,7 @@ driver2_laps = result_wrapper('''
     </LapsList>''')
 
 # Seasons is just total of standings results
-driver_seasons = driver_wins
+driver_seasons = driver_standings
 
 # All drivers and teams is taken from driver standings results
 grid = driver_standings
