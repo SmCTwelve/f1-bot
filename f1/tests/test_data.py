@@ -19,8 +19,12 @@ class BaseTest(unittest.TestCase):
     """Base testing class."""
 
     def check_data(self, data):
-        self.assertTrue(data, "Results are empty.")
+        self.assertTrue(len(data) > 0, "Results are empty.")
         self.assertNotIn(None, [i for i in data[0]], "None values present. Check keys.")
+
+    def check_total_and_num_results(self, total, data):
+        self.assertTrue(isinstance(total, int), "Total is not valid.")
+        self.assertEqual(total, len(data), "Total and number of results don't match.")
 
 
 class UtilityTests(BaseTest):
@@ -111,17 +115,75 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_all_driver_lap_times(self, mock_fetch):
         # Two fetch calls are made, first to get laps, second to get driver info
+        # Mock.side_effect iterates over return values for each call
         mock_fetch.side_effect = [get_mock_response('driver1_laps'), get_mock_response('driver_info')]
         res = await api.get_all_driver_lap_times('alonso', 15, 2008)
         self.check_data(res['data'])
-        self.check_data(res['driver'])
+        self.assertEqual(res['driver']['surname'], 'Alonso')
 
     # test career
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_wins(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_wins')
+        res = await api.get_driver_wins('alonso')
+        self.check_data(res['data'])
+        self.check_total_and_num_results(res['total'], res['data'])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_poles(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_poles')
+        res = await api.get_driver_poles('alonso')
+        self.check_data(res['data'])
+        self.check_total_and_num_results(res['total'], res['data'])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_championships(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_championships')
+        res = await api.get_driver_championships('alonso')
+        self.check_data(res['data'])
+        self.check_total_and_num_results(res['total'], res['data'])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_teams(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_teams')
+        res = await api.get_driver_teams('alonso')
+        self.check_total_and_num_results(res['total'], res['names'])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_seasons(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_seasons')
+        res = await api.get_driver_seasons('alonso')
+        self.check_data(res['data'])
+        self.check_total_and_num_results(res['total'], res['data'])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_career(self, mock_fetch):
+        mock_fetch.side_effect = [
+            get_mock_response('driver_wins'),
+            get_mock_response('driver_poles'),
+            get_mock_response('driver_championships'),
+            get_mock_response('driver_seasons'),
+            get_mock_response('driver_teams'),
+            get_mock_response('driver_info'),
+        ]
+        res = await api.get_driver_career('alonso')
+        self.assertEqual(res['driver']['surname'], 'Alonso')
+        # Check length of results
+        data = res['data']
+        self.check_total_and_num_results(data['Championships']['total'], data['Championships']['years'])
+        self.check_total_and_num_results(data['Seasons']['total'], data['Seasons']['years'])
+        self.check_total_and_num_results(data['Teams']['total'], data['Teams']['names'])
 
     @async_test
     async def test_rank_best_lap_times(self):
         times = models.best_laps
-        fast, slow, top, bottom = await asyncio.gather(
+        [fast, slow, top, bottom] = await asyncio.gather(
             api.rank_best_lap_times(times, 'fastest'),
             api.rank_best_lap_times(times, 'slowest'),
             api.rank_best_lap_times(times, 'top'),
