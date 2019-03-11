@@ -109,7 +109,7 @@ async def grid(ctx, season='current'):
 
     Usage:
     ------
-        !f1 grid            All drivers and teams in the current season as of last race.
+        !f1 grid            All drivers and teams in the current season as of the last race.
         !f1 grid [season]   All drivers and teams at the end of [season].
     """
     await check_season(ctx, season)
