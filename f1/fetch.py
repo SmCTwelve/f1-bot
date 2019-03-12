@@ -4,7 +4,7 @@ Perform asyncronous web requests.
 import aiohttp
 import logging
 
-SESSION_TIMEOUT = 90
+SESSION_TIMEOUT = 120
 
 logger = logging.getLogger(__name__)
 
