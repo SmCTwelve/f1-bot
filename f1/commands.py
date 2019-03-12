@@ -247,6 +247,7 @@ async def laps(ctx, driver_id, season='current', rnd='last', ):
     """Display all lap times for the driver in `rnd` of `season`.
 
     A valid `driver_id` is required, other parameters may be omitted to get lastest race.
+    **Note**: This command can take a long time to respond. Consider using `best` command instead.
 
     Usage:
     ------
