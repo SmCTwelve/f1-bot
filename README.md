@@ -60,7 +60,8 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
   - `bottom` -  Bottom 5 slowest laps of the race
   - `fastest` - Fastest ranked lap
   - `slowest` - Slowest ranked lap
-- `!f1 laps <driver_id> [<season> <round>]` -  Times for every race lap driven by `<driver_id>`
+- `!f1 laps <driver_id> [<season> <round>]` -  Times for every race lap driven by `<driver_id>`. 
+  - **Note**: This command can take a long time to respond as the API must collect and join every race lap. Use this command sparingly. Consider using `!f1 best` instead. 
 - `!f1 results [<season> <round>]` - Race results for `[round]` in `[season]`
 - `!f1 quali [<season> <round>]` - Qualifying results for `[round]` in `[season]`
 - `!f1 career <driver_id>` -  Career stats for the driver
