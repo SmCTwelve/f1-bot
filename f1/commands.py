@@ -6,7 +6,7 @@ from discord.embeds import Embed
 from discord.ext import commands
 
 from f1 import api
-from f1.config import CONFIG
+from f1.config import CONFIG, OUT_DIR
 from f1.utils import is_future, make_table
 from f1.stats import chart
 
@@ -39,8 +39,8 @@ async def on_command(ctx):
 @bot.event
 async def on_command_error(ctx, err):
     logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
-    if isinstance(err, asyncio.TimeoutError):
-        await ctx.send(f"Response timed out. Check `{bot.command_prefix} f1 status`.")
+    if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
+        await ctx.send(f"Response timed out. Check `{bot.command_prefix}f1 status`.")
     else:
         await ctx.send(f":confused: Command failed: {err.message if hasattr(err, 'message') else ''}")
         await ctx.send(f"Try `{bot.command_prefix}help f1 <command>`.")
@@ -208,7 +208,7 @@ async def career(ctx, driver_id):
         !f1 career vettel     Get career stats for Sebastian Vettel.
     """
     # TODO - support JSON file to convert driver codes/names to ID's for easier use
-    await ctx.send("*Gathering lap data; this may take a few moments*...")
+    await ctx.send("*Gathering driver data...*")
     result = await api.get_driver_career(driver_id)
     season_list = result['data']['Seasons']['years']
     embed = Embed(
@@ -253,16 +253,16 @@ async def laps(ctx, driver_id, season='current', rnd='last', ):
         !f1 laps <driver_id> [season] [round]
     """
     await check_season(ctx, season)
-    await ctx.send("*Getting results...*")
+    await ctx.send("*Gathering lap data; this may take a few moments...*")
     result = await api.get_all_driver_lap_times(driver_id, rnd, season)
-    table = make_table(result['data'], fmt='simple')
+    table = make_table(result['data'])
     await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
     await ctx.send(f"{result['season']} {result['race']}")
     await ctx.send(f"```\n{table}\n```")
 
 
 @f1.command(aliases=['fastest'])
-async def best(ctx, filter=None, season='current', rnd='last'):
+async def best(ctx, season='current', rnd='last', filter=None,):
     """Display the best lap times and delta for each driver in `round`.
 
     If no `round` specified returns results for the most recent race.
@@ -270,9 +270,8 @@ async def best(ctx, filter=None, season='current', rnd='last'):
     Usage:
     ---------------
         !f1 best                            Return all best laps for the latest race.
-        !f1 best [filter]                   Return best laps for latest race sorted by [filter].
         !f1 best [season] [round]           Return all best laps for [round] in [season].
-        !f1 best [filter] [season] [round]  Return best laps sorted by [filter].
+        !f1 best [season] [round] [filter]  Return best laps sorted by [filter].
 
         Optional filter:
         ----------------
@@ -298,7 +297,7 @@ async def plot(ctx, *args):
     await ctx.send(f"Command not recognised, type `{bot.command_prefix}help f1`.")
 
 
-@plot.command()
+@plot.command(aliases=['laps'])
 async def timings(ctx, season, rnd, *, drivers):
     """Plot all lap data between the two drivers or a single driver.
 
@@ -333,7 +332,7 @@ async def timings(ctx, season, rnd, *, drivers):
             driver1_res = await api.get_all_driver_lap_times(drivers_list[0], rnd, season)
             await chart.plot_all_driver_laps(driver1_res)
 
-        f = File(f"{CONFIG.OUT_DIR}/plot.png", filename='plot')
+        f = File(f"{OUT_DIR}/plot.png", filename='plot.png')
         await ctx.send(file=f)
 
 
@@ -352,8 +351,8 @@ async def timings_handler(ctx, error):
             )
 
 
-@plot.command()
-async def fastest(ctx, season, rnd):
+@plot.command(aliases=['best'])
+async def fastest(ctx, season='current', rnd='last'):
     """Plot fastest lap times for all drivers in the race as a bar chart.
 
     Usage:
@@ -364,5 +363,5 @@ async def fastest(ctx, season, rnd):
     res = await api.get_best_laps(rnd, season)
     await chart.plot_best_laps(res)
 
-    f = File(f"{CONFIG.OUT_DIR}/plot.png", filename='plot')
+    f = File(f"{OUT_DIR}/plot.png", filename='plot.png')
     await ctx.send(file=f)
