@@ -26,7 +26,7 @@ async def plot_all_driver_laps(driver_laps):
     """
     # Get data arrays
     times = np.array([lap_time_to_seconds(lap['Time']) for lap in driver_laps['data']])
-    laps = np.array([int(x['No']) for x in driver_laps['data']])
+    laps = np.array([int(x['Lap']) for x in driver_laps['data']])
 
     # Plot data
     fig = plt.figure(figsize=FIGSIZE)
@@ -51,7 +51,7 @@ async def plot_driver_vs_driver_lap_timings(driver1_laps, driver2_laps):
     """
     # Get data arrays for plot
     race, sn = driver1_laps['race'], driver1_laps['season']
-    laps = np.array([int(x['No']) for x in driver1_laps['data']])
+    laps = np.array([int(x['Lap']) for x in driver1_laps['data']])
     driver1_times = np.array([lap_time_to_seconds(lap['Time']) for lap in driver1_laps['data']])
     driver2_times = np.array([lap_time_to_seconds(lap['Time']) for lap in driver2_laps['data']])
 
@@ -67,6 +67,8 @@ async def plot_driver_vs_driver_lap_timings(driver1_laps, driver2_laps):
     plt.legend()
 
     save_figure(fig)
+
+# line chart option, plot best laps for all drivers as line with legend
 
 
 async def plot_best_laps(timings):
@@ -91,3 +93,22 @@ async def plot_best_laps(timings):
     plt.grid(True, axis='x')
 
     save_figure(fig)
+
+# quali
+#   y time x q1/2/3
+#   2 drivers, test more
+
+# race pos
+#   y pos
+#   x laps
+#   long res time
+
+# wins
+#   pie chart
+#   total races % wins
+
+# poles
+#   pie chart
+#   total qualis % poles
+
+# pit stops

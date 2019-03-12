@@ -479,8 +479,8 @@ async def get_all_driver_lap_times(driver_id, rnd, season):
         for lap in laps:
             res['data'].append(
                 {
-                    'No': int(lap['number']),
-                    'Position': int(lap.timing['position']),
+                    'Lap': int(lap['number']),
+                    'Pos': int(lap.timing['position']),
                     'Time': lap.timing['time'],
                 }
             )
