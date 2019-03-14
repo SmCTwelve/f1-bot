@@ -1,8 +1,10 @@
+import json
 import logging
 from tabulate import tabulate
 from datetime import date, datetime
 
-from f1.errors import MessageTooLongError
+from f1.config import DATA_DIR
+from f1.errors import MessageTooLongError, DriverNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -85,3 +87,43 @@ def lap_time_to_seconds(time_str):
     min, secs = time_str.split(':')
     total = int(min) * 60 + float(secs)
     return total
+
+
+def load_drivers():
+    """Load drivers JSON from file and return as dict."""
+    with open(f'{DATA_DIR}/drivers.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        DRIVERS = data['MRData']['DriverTable']['Drivers']
+        logger.info('Drivers loaded.')
+        return DRIVERS
+
+
+def find_driver(id, drivers):
+    """Find the driver entry and return as a dict.
+
+    Parameters
+    ----------
+    `id` : str
+        Can be either a valid Ergast API ID e.g. 'alonso', 'max_verstappen' or the
+        driver code e.g. 'HAM' or the driver number e.g. '44'.
+    `drivers` : list[dict]
+        The drivers dataset to search.
+
+    Returns
+    -------
+    `driver` : dict
+
+    Raises
+    ------
+    `DriverNotFoundError`
+    """
+    for d in drivers:
+        if d.get('driverId', '') == str(id):
+            return d
+        elif d.get('code', '') == str(id):
+            return d
+        elif d.get('permanentNumber', '') == str(id):
+            return d
+        else:
+            continue
+    raise DriverNotFoundError()

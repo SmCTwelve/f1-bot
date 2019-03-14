@@ -8,10 +8,13 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 from f1 import utils
-from f1.errors import MissingDataError
 from f1.fetch import fetch
+from f1.errors import MissingDataError
+
 
 BASE_URL = 'http://ergast.com/api/f1'
+
+DRIVERS = utils.load_drivers()
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,16 @@ async def get_soup(url):
         logger.warning('Unable to get soup, response was None.')
         return None
     return BeautifulSoup(res, 'lxml')
+
+
+async def get_all_drivers():
+    """Fetch all driver data as JSON. Returns a dict."""
+    url = f'{BASE_URL}/drivers.json?limit=1000'
+    # Get JSON data as dict
+    res = await fetch(url)
+    if res is None:
+        raise MissingDataError()
+    return res
 
 
 async def get_driver_info(driver_id):
@@ -51,19 +64,17 @@ async def get_driver_info(driver_id):
     ------
     `MissingDataError`
     """
-    url = f'{BASE_URL}/drivers/{driver_id}'
-    soup = await get_soup(url)
-    if soup:
-        driver = soup.find('driver')
+    driver = utils.find_driver(driver_id, DRIVERS)
+    if driver:
         res = {
-            'firstname': driver.givenname.string,
-            'surname': driver.familyname.string,
+            'firstname': driver['givenName'],
+            'surname': driver['familyName'],
             'code': driver['code'],
-            'id': driver['driverid'],
+            'id': driver['driverId'],
             'url': driver['url'],
-            'number': driver.permanentnumber.string,
-            'age': utils.age(driver.dateofbirth.string[:4]),
-            'nationality': driver.nationality.string,
+            'number': driver['permanentNumber'],
+            'age': utils.age(driver['dateOfBirth'][:4]),
+            'nationality': driver['nationality'],
         }
         return res
     raise MissingDataError()
@@ -460,14 +471,15 @@ async def get_all_driver_lap_times(driver_id, rnd, season):
     `MissingDataError`
         if response invalid.
     """
-    url = f'{BASE_URL}/{season}/{rnd}/drivers/{driver_id}/laps'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/{season}/{rnd}/drivers/{dvr['id']}/laps"
     soup = await get_soup(url)
     if soup:
         race = soup.race
         laps = race.lapslist.find_all('lap')
         date, time = (race.date.string, race.time.string)
         res = {
-            'driver': await get_driver_info(driver_id),
+            'driver': dvr,
             'season': race['season'],
             'round': race['round'],
             'race': race.racename.string,
@@ -586,7 +598,8 @@ async def get_driver_wins(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/results/1'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/drivers/{dvr['id']}/results/1"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -640,7 +653,8 @@ async def get_driver_poles(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/qualifying/1'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/drivers/{dvr['id']}/qualifying/1"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -691,7 +705,8 @@ async def get_driver_championships(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/driverStandings/1'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/drivers/{dvr['id']}/driverStandings/1"
     soup = await get_soup(url)
     if soup:
         standings = soup.standingstable.find_all('standingslist')
@@ -733,7 +748,8 @@ async def get_driver_teams(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/constructors'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/drivers/{dvr['id']}/constructors"
     soup = await get_soup(url)
     if soup:
         constructors = soup.constructortable.find_all('constructor')
@@ -773,7 +789,8 @@ async def get_driver_seasons(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f'{BASE_URL}/drivers/{driver_id}/driverStandings'
+    dvr = await get_driver_info(driver_id)
+    url = f"{BASE_URL}/drivers/{dvr['id']}/driverStandings"
     soup = await get_soup(url)
     if soup:
         standings = soup.standingstable.find_all('standingslist')
@@ -824,6 +841,7 @@ async def get_driver_career(driver_id):
             }
         }
     """
+    dvr = await get_driver_info(driver_id)
     # Get results concurrently
     [wins, poles, champs, seasons, teams] = await asyncio.gather(
         get_driver_wins(driver_id),
@@ -833,7 +851,7 @@ async def get_driver_career(driver_id):
         get_driver_teams(driver_id),
     )
     res = {
-        'driver': await get_driver_info(driver_id),
+        'driver': dvr,
         'data': {
             'Wins': wins['total'],
             'Poles': poles['total'],
@@ -891,6 +909,17 @@ async def get_best_laps(rnd, season):
         'data': race_results['timings'],
     }
     return res
+
+# Get all wins for a season with /results/1 and no driver filter
+#   Iterate over results, create dict with keys being driver no
+#   On each result check if dict key already exists, if so simply update the total for that driver
+#   Do the same for quali
+#   Can get constructor from the results too in order to plot total constructor wins
+
+# Consider using /laps url without driver id, seems faster to get all laps
+    # Then filter the response to find the driver id
+
+# Get DNF's, filter results by not (statusID == 1 or status == 'Finished')
 
 
 async def rank_best_lap_times(timings, filter):

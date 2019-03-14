@@ -114,9 +114,7 @@ class MockAPITests(BaseTest):
     @patch(fetch_path)
     @async_test
     async def test_get_all_driver_lap_times(self, mock_fetch):
-        # Two fetch calls are made, first to get laps, second to get driver info
-        # Mock.side_effect iterates over return values for each call
-        mock_fetch.side_effect = [get_mock_response('driver1_laps'), get_mock_response('driver_info')]
+        mock_fetch.return_value = get_mock_response('driver1_laps')
         res = await api.get_all_driver_lap_times('alonso', 15, 2008)
         self.check_data(res['data'])
         self.assertEqual(res['driver']['surname'], 'Alonso')
@@ -170,7 +168,6 @@ class MockAPITests(BaseTest):
             get_mock_response('driver_championships'),
             get_mock_response('driver_seasons'),
             get_mock_response('driver_teams'),
-            get_mock_response('driver_info'),
         ]
         res = await api.get_driver_career('alonso')
         self.assertEqual(res['driver']['surname'], 'Alonso')
