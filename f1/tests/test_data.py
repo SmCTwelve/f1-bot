@@ -1,6 +1,5 @@
 import re
 import unittest
-import asyncio
 from unittest.mock import patch
 from datetime import datetime
 
@@ -60,6 +59,31 @@ class UtilityTests(BaseTest):
         self.assertEqual(seconds[0], 90.202)
         self.assertEqual(seconds[1], 89.505)
         self.assertEqual(seconds[2], 0.0)
+
+    def test_rank_best_lap_times(self):
+        times = models.best_laps
+        sorted_times = utils.rank_best_lap_times(times)
+        self.assertTrue(sorted_times[0]['Rank'] == 1)
+        prev_rank = 0
+        self.assertTrue(t['Rank'] > prev_rank for t in sorted_times)
+
+    def test_filter_times(self):
+        times = models.best_laps
+        sorted_times = utils.rank_best_lap_times(times)
+        [fast, slow, top, bottom] = [
+            utils.filter_times(sorted_times, 'fastest'),
+            utils.filter_times(sorted_times, 'slowest'),
+            utils.filter_times(sorted_times, 'top'),
+            utils.filter_times(sorted_times, 'bottom')
+        ]
+        # Check lengths
+        self.assertEqual(len(fast), 1, "Fastest filter should return 1 item.")
+        self.assertEqual(len(slow), 1, "Slowest filter should return 1 item.")
+        self.assertEqual(len(top), 5, "Should return top 5.")
+        self.assertEqual(len(bottom), 5, "Should return bottom 5.")
+        # Compare data with mocked model data which has 7 laps
+        self.assertEqual(fast[0]['Rank'], 1, "Fastest should return top rank.")
+        self.assertEqual(slow[0]['Rank'], 7, "Slowest should return bottom rank.")
 
     def test_countdown_with_past_date(self):
         past_date = datetime(1999, 1, 1)
@@ -176,24 +200,6 @@ class MockAPITests(BaseTest):
         self.check_total_and_num_results(data['Championships']['total'], data['Championships']['years'])
         self.check_total_and_num_results(data['Seasons']['total'], data['Seasons']['years'])
         self.check_total_and_num_results(data['Teams']['total'], data['Teams']['names'])
-
-    @async_test
-    async def test_rank_best_lap_times(self):
-        times = models.best_laps
-        [fast, slow, top, bottom] = await asyncio.gather(
-            api.rank_best_lap_times(times, 'fastest'),
-            api.rank_best_lap_times(times, 'slowest'),
-            api.rank_best_lap_times(times, 'top'),
-            api.rank_best_lap_times(times, 'bottom')
-        )
-        # Check lengths
-        self.assertEqual(len(fast), 1, "Fastest filter should return 1 item.")
-        self.assertEqual(len(slow), 1, "Slowest filter should return 1 item.")
-        self.assertEqual(len(top), 5, "Should return top 5.")
-        self.assertEqual(len(bottom), 5, "Should return bottom 5.")
-        # Compare data with mocked model data which has 7 laps
-        self.assertEqual(fast[0]['Rank'], 1, "Fastest should return top rank.")
-        self.assertEqual(slow[0]['Rank'], 7, "Slowest should return bottom rank.")
 
     # boundary tests
 

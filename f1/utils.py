@@ -1,5 +1,6 @@
 import json
 import logging
+from operator import itemgetter
 from tabulate import tabulate
 from datetime import date, datetime
 
@@ -127,3 +128,63 @@ def find_driver(id, drivers):
         else:
             continue
     raise DriverNotFoundError()
+
+
+def rank_best_lap_times(timings):
+    """Returns filtered best lap times per driver based on data obtained
+    from `get_best_laps()`.
+
+    Sorts the list of lap times returned by `get_best_laps()` dataset and splits
+    the results based on the filter keyword.
+
+    Parameters
+    ----------
+    `timings` : list[dict]
+        Returned data from `get_best_laps()`.
+
+    Returns
+    -------
+    list[dict]
+        Sorted list of dicts for each lap
+    """
+    sorted_times = sorted(timings['data'], key=itemgetter('Rank'))
+    return sorted_times
+
+
+def filter_times(sorted_times, filter):
+    """Filters the list of times by the filter keyword. If no filter is given the
+    times are returned unfiltered.
+
+    Parameters
+    -----------
+    `sorted_times` : list
+        Collection of already sorted items, e.g. pitstops or laptimes data.
+    `filter` : str
+        The type of filter to apply;
+            'slowest' - single slowest time
+            'fastest' - single fastest time
+            'top'     - top 5 fastest times
+            'bottom'  - bottom 5 slowest times
+
+    Returns
+    -------
+    list
+        A subset of the `sorted_times` according to the filter.
+    """
+    # Force list return type instead of pulling out single string element for slowest and fastest
+    # Top/Bottom already outputs a list type with slicing
+    # slowest
+    if filter == 'slowest':
+        return [sorted_times[len(sorted_times) - 1]]
+    # fastest
+    elif filter == 'fastest':
+        return [sorted_times[0]]
+    # fastest 5
+    elif filter == 'top':
+        return sorted_times[:5]
+    # slowest 5
+    elif filter == 'bottom':
+        return sorted_times[len(sorted_times) - 5:]
+    # no filter given, return full sorted results
+    else:
+        return sorted_times

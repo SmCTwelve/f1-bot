@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from f1 import api
 from f1.config import CONFIG, OUT_DIR
-from f1.utils import is_future, make_table
+from f1.utils import is_future, make_table, filter_times, rank_best_lap_times
 from f1.stats import chart
 
 logger = logging.getLogger(__name__)
@@ -282,7 +282,8 @@ async def best(ctx, season='current', rnd='last', filter=None,):
         `bottom`  -  Bottom 5 slowest drivers.
     """
     results = await api.get_best_laps(rnd, season='current')
-    filtered = await api.rank_best_lap_times(results, filter)
+    sorted_times = rank_best_lap_times(results)
+    filtered = filter_times(sorted_times, filter)
     table = make_table(filtered)
     await ctx.send(f"**Fastest laps ranked {filter}**")
     await ctx.send(f"{results['season']} {results['race']}")

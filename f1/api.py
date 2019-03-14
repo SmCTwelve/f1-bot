@@ -3,7 +3,6 @@ Utilities to grab latest F1 results from Ergast API.
 """
 import logging
 import asyncio
-from operator import itemgetter
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -426,11 +425,14 @@ async def get_race_results(rnd, season):
                         'Rank': int(fastest_lap['rank']),
                         'Driver': driver['code'],
                         'Time': fastest_lap.time.string,
-                        'Speed': int(float(fastest_lap.averagespeed.string)),
+                        'Speed (kph)': int(float(fastest_lap.averagespeed.string)),
                     }
                 )
         return res
     raise MissingDataError()
+
+# Consider using /laps url without driver id, seems faster to get all laps
+    # Then filter the response to find the driver id
 
 
 async def get_all_driver_lap_times(driver_id, rnd, season):
@@ -567,6 +569,29 @@ async def get_qualifying_results(rnd, season):
             )
         return res
     raise MissingDataError()
+
+
+async def get_pitstops(season, rnd):
+    """Get the race pitstop times for each driver.
+
+    Parameters
+    ----------
+    `season`, `rnd` : int
+
+    Returns
+    -------
+    `res` : dict
+
+    Raises
+    ------
+    `MissingDataError`
+        if API response invalid.
+    """
+    pass
+    # get all stops
+    # filter by driver, option
+    # sort by duration
+    # filter fast, top, slow etc
 
 
 async def get_driver_wins(driver_id):
@@ -910,56 +935,5 @@ async def get_best_laps(rnd, season):
     }
     return res
 
-# Get all wins for a season with /results/1 and no driver filter
-#   Iterate over results, create dict with keys being driver no
-#   On each result check if dict key already exists, if so simply update the total for that driver
-#   Do the same for quali
-#   Can get constructor from the results too in order to plot total constructor wins
-
-# Consider using /laps url without driver id, seems faster to get all laps
-    # Then filter the response to find the driver id
 
 # Get DNF's, filter results by not (statusID == 1 or status == 'Finished')
-
-
-async def rank_best_lap_times(timings, filter):
-    """Returns filtered best lap times per driver based on data obtained
-    from `get_best_laps()`.
-
-    Sorts the list of lap times returned by `get_best_laps()` dataset and splits
-    the results based on the filter keyword.
-
-    Parameters
-    ----------
-    `timings` : list[dict]
-        Returned data from `get_best_laps()`.
-    `filter` : str
-        Type of filter to be applied:
-            'slowest' - slowest lap of race
-            'fastest' - fastest lap of race
-            'top'     - top 5 fastest drivers
-            'bottom'  - bottom 5 slowest drivers
-
-    Returns
-    -------
-    list[dict]
-        Sorted list of dicts for each lap
-    """
-    sorted_times = sorted(timings['data'], key=itemgetter('Rank'))
-    # Force list return type instead of pulling out single string element for slowest and fastest
-    # Top/Bottom already outputs a list type with slicing
-    # slowest lap
-    if filter == 'slowest':
-        return [sorted_times[len(sorted_times) - 1]]
-    # fastest lap
-    elif filter == 'fastest':
-        return [sorted_times[0]]
-    # fastest 5 laps
-    elif filter == 'top':
-        return sorted_times[:5]
-    # slowest 5 laps
-    elif filter == 'bottom':
-        return sorted_times[len(sorted_times) - 5:]
-    # no filter given, return full sorted results
-    else:
-        return sorted_times
