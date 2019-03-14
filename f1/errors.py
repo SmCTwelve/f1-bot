@@ -3,7 +3,9 @@ from discord.ext.commands import errors
 
 class BotError(errors.CommandError):
     """Base error class for the bot."""
-    pass
+
+    def __init__(self, message=''):
+        self.message = message
 
 
 class MissingDataError(BotError):
@@ -13,8 +15,8 @@ class MissingDataError(BotError):
     can be handled by `bot.on_command_error()`.
     """
 
-    def __init__(self, message="Returned data missing or invalid, results could not be processed."):
-        self.message = message
+    def __init__(self):
+        self.message = "Returned data missing or invalid, results could not be processed."
 
 
 class MessageTooLongError(BotError):
@@ -24,3 +26,10 @@ class MessageTooLongError(BotError):
         self.message = message
         self.length = len(orig_message)
         self.diff = self.length - 2000
+
+
+class DriverNotFoundError(BotError):
+    """Raised if the driver ID given to a command does not match a known driver."""
+
+    def __init__(self):
+        self.message = "The provided driver could not be found."
