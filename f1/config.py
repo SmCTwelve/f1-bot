@@ -20,8 +20,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Path to config file
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.ini')
 
-# Output directory, for plot images
+# Output directory for temp files, like plot images
 OUT_DIR = os.path.join(BASE_DIR, 'out')
+
+# Where to store static data files
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 
 def create_output_dir():
@@ -37,10 +40,10 @@ def load_config():
         with open(CONFIG_FILE, 'r') as f:
             CONFIG.read_file(f)
             logger.info('Config loaded!')
+            create_output_dir()
     except IOError:
         logger.critical(f'Could not load config.ini file at {CONFIG_FILE}, check it exists.')
         sys.exit(0)
 
 
 load_config()
-create_output_dir()
