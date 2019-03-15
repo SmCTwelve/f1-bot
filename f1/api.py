@@ -474,7 +474,7 @@ async def get_all_driver_lap_times(driver_id, rnd, season):
         if response invalid.
     """
     dvr = await get_driver_info(driver_id)
-    url = f"{BASE_URL}/{season}/{rnd}/drivers/{dvr['id']}/laps"
+    url = f"{BASE_URL}/{season}/{rnd}/drivers/{dvr['id']}/laps?limit=100"
     soup = await get_soup(url)
     if soup:
         race = soup.race
@@ -663,7 +663,7 @@ async def get_driver_wins(driver_id):
         if API response invalid.
     """
     dvr = await get_driver_info(driver_id)
-    url = f"{BASE_URL}/drivers/{dvr['id']}/results/1"
+    url = f"{BASE_URL}/drivers/{dvr['id']}/results/1?limit=300"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -718,7 +718,7 @@ async def get_driver_poles(driver_id):
         if API response invalid.
     """
     dvr = await get_driver_info(driver_id)
-    url = f"{BASE_URL}/drivers/{dvr['id']}/qualifying/1"
+    url = f"{BASE_URL}/drivers/{dvr['id']}/qualifying/1?limit=300"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
