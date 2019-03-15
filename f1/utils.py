@@ -131,23 +131,14 @@ def find_driver(id, drivers):
 
 
 def rank_best_lap_times(timings):
-    """Returns filtered best lap times per driver based on data obtained
-    from `get_best_laps()`.
-
-    Sorts the list of lap times returned by `get_best_laps()` dataset and splits
-    the results based on the filter keyword.
-
-    Parameters
-    ----------
-    `timings` : list[dict]
-        Returned data from `get_best_laps()`.
-
-    Returns
-    -------
-    list[dict]
-        Sorted list of dicts for each lap
-    """
+    """Sorts the list of lap times returned by `api.get_best_laps()` dataset."""
     sorted_times = sorted(timings['data'], key=itemgetter('Rank'))
+    return sorted_times
+
+
+def rank_pitstops(times):
+    """Sort pitstop times based on the duration. `times` is the response from `api.get_pitstops()`."""
+    sorted_times = sorted(times['data'], key=itemgetter('Duration'))
     return sorted_times
 
 

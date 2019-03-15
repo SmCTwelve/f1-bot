@@ -6,9 +6,10 @@ from discord.embeds import Embed
 from discord.ext import commands
 
 from f1 import api
-from f1.config import CONFIG, OUT_DIR
-from f1.utils import is_future, make_table, filter_times, rank_best_lap_times
 from f1.stats import chart
+from f1.config import CONFIG, OUT_DIR
+from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops
+
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +264,7 @@ async def laps(ctx, driver_id, season='current', rnd='last', ):
 
 
 @f1.command(aliases=['fastest'])
-async def best(ctx, season='current', rnd='last', filter=None,):
+async def best(ctx, season='current', rnd='last', filter=None):
     """Display the best lap times and delta for each driver in `round`.
 
     If no `round` specified returns results for the most recent race.
@@ -287,6 +288,37 @@ async def best(ctx, season='current', rnd='last', filter=None,):
     table = make_table(filtered)
     await ctx.send(f"**Fastest laps ranked {filter}**")
     await ctx.send(f"{results['season']} {results['race']}")
+    await ctx.send(f"```\n{table}\n```")
+
+
+@f1.command(aliases=['pits', 'pitstops'])
+async def stops(ctx, season='current', rnd='last', filter=None):
+    """Display pitstops for each driver in the race with, optionally sorted with filter.
+
+    If no `round` specified returns results for the most recent race.
+
+    Usage:
+    ---------------
+        !f1 stops                           Return all pitstops for the latest race.
+        !f1 stops [season] [round]          Return all pitstops for [round] in [season].
+        !f1 stops [season] [round] [filter] Return pitstops sorted by [filter].
+
+        Optional filter:
+        ----------------
+        `fastest` -  Only show the fastest pitstop the race.
+        `slowest` -  Only show the slowest pitstop the race.
+        `top`     -  Top 5 fastest pitstops.
+        `bottom`  -  Bottom 5 slowest pitstops.
+    """
+    res = await api.get_pitstops(season, rnd)
+    if filter is not None:
+        sorted_times = rank_pitstops(res)
+        filtered = filter_times(sorted_times, filter)
+        table = make_table(filtered)
+    else:
+        table = make_table(res)
+    await ctx.send(f"**Pitstops ranked {filter}**")
+    await ctx.send(f"{res['season']} {res['race']}")
     await ctx.send(f"```\n{table}\n```")
 
 # Plotting commands

@@ -580,18 +580,57 @@ async def get_pitstops(season, rnd):
 
     Returns
     -------
-    `res` : dict
+    `res` : list[dict] {
+        'season': str,
+        'round': str,
+        'race': str,
+        'date': str,
+        'time': str,
+        'data': list[dict] {
+            'Driver_id': str,
+            'Stop_no': int,
+            'Lap': int,
+            'Time': str,
+            'Duration': str,
+        }
+    }
 
     Raises
     ------
     `MissingDataError`
         if API response invalid.
     """
-    pass
-    # get all stops
-    # filter by driver, option
+    url = f"{BASE_URL}/{season}/{rnd}/pitstops"
+    soup = await get_soup(url)
+    if soup:
+        race = soup.race
+        pitstops = race.pitstopslist.find_all('pitstop')
+        date, time = (race.date.string, race.time.string)
+        res = {
+            'season': race['season'],
+            'round': race['round'],
+            'race': race.racename.string,
+            'date': f"{utils.date_parser(date)} {race['season']}",
+            'time': utils.time_parser(time),
+            'data': []
+        }
+        for stop in pitstops:
+            res['data'].append(
+                {
+                    'Driver_id': stop['driverid'],
+                    'Stop_no': int(stop['stop']),
+                    'Lap': int(stop['lap']),
+                    'Time': stop['time'],
+                    'Duration': stop['duration'],
+                }
+            )
+        return res
+    raise MissingDataError()
+
+    # how to filter by driver
+    # count stops
     # sort by duration
-    # filter fast, top, slow etc
+    # plot
 
 
 async def get_driver_wins(driver_id):
