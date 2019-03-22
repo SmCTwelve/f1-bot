@@ -15,10 +15,12 @@ responses = {
     'driver_championships': models.driver_championships,
     'driver_seaons': models.driver_seasons,
     'driver_teams': models.driver_teams,
+    'all_laps': models.all_laps,
     'driver1_laps': models.driver1_laps,
     'driver2_laps': models.driver2_laps,
     'driver_seasons': models.driver_seasons,
     'best_laps': models.best_laps,
+    'pitstops': models.pitstops,
 }
 
 
@@ -50,9 +52,11 @@ async def get_mock_response(res_type):
             - 'driver_championships'
             - 'driver_seasons'
             - 'driver_teams'
+            - 'all_laps'
             - 'driver1_laps'
             - 'driver2_laps'
             - 'best_laps'
+            - 'pitsops'
     """
     if res_type is None:
         return None

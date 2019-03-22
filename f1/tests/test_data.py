@@ -5,7 +5,7 @@ from datetime import datetime
 
 from f1 import api
 from f1 import utils
-from f1.errors import MissingDataError, MessageTooLongError
+from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
 from f1.tests.async_test import async_test
 from f1.tests.mock_response.response import models
 from f1.tests.mock_response.response import get_mock_response
@@ -66,6 +66,37 @@ class UtilityTests(BaseTest):
         self.assertTrue(sorted_times[0]['Rank'] == 1)
         prev_rank = 0
         self.assertTrue(t['Rank'] > prev_rank for t in sorted_times)
+
+    def test_filter_laps(self):
+        laps = {
+            1: [{'id': 'alonso', 'pos': 1, 'time': '1:30.202'},
+                {'id': 'vettel', 'pos': 2, 'time': '1:30.205'},
+                {'id': 'bottas', 'pos': 3, 'time': '1:30.205'}],
+            2: [{'id': 'alonso', 'pos': 2, 'time': '1:30.102'},
+                {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
+                {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
+        }
+        filtered_laps = utils.filter_laps_by_driver(laps, 'vettel')
+        # Only one driver given, so check only one timing
+        self.assertEqual(len(filtered_laps[1]), 1, "Timing entries for 1 driver arg don't match result.")
+        # Check driver matches
+        self.assertEqual(filtered_laps[1][0]['id'], 'vettel', "Driver ID doesn't match provided arg.")
+
+    def test_filter_laps_multiple_drivers(self):
+        laps = {
+            1: [{'id': 'alonso', 'pos': 1, 'time': '1:30.202'},
+                {'id': 'vettel', 'pos': 2, 'time': '1:30.205'},
+                {'id': 'bottas', 'pos': 3, 'time': '1:30.205'}],
+            2: [{'id': 'alonso', 'pos': 2, 'time': '1:30.102'},
+                {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
+                {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
+        }
+        filtered_laps = utils.filter_laps_by_driver(laps, 'alonso', 'vettel')
+        # Two drivers given, check timings for both
+        self.assertEqual(len(filtered_laps[1]), 2, "Timing entries for 2 drivers args don't match result.")
+        # Check the drivers
+        self.assertEqual(filtered_laps[1][0]['id'], 'alonso')
+        self.assertEqual(filtered_laps[1][1]['id'], 'vettel')
 
     def test_filter_times(self):
         times = models.best_laps
@@ -137,11 +168,32 @@ class MockAPITests(BaseTest):
 
     @patch(fetch_path)
     @async_test
-    async def test_get_all_driver_lap_times(self, mock_fetch):
-        mock_fetch.return_value = get_mock_response('driver1_laps')
-        res = await api.get_all_driver_lap_times('alonso', 15, 2008)
+    async def test_get_all_laps(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('all_laps')
+        res = await api.get_all_laps(1, 2019)
+        self.assertNotIn(None, res['data'][1])
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_all_laps_for_driver(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('all_laps')
+        res = await api.get_all_laps_for_driver('alonso', 15, 2008)
         self.check_data(res['data'])
-        self.assertEqual(res['driver']['surname'], 'Alonso')
+        self.assertEqual(res['data'][0]['Lap'], 1, "First lap should be 1.")
+        self.assertEqual(res['driver']['surname'], 'Alonso', "Driver doesn't match that provided.")
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_all_laps_with_invalid_driver(self, mock_fetch):
+        with self.assertRaises(DriverNotFoundError):
+            await api.get_all_laps_for_driver('smc12', 15, 2008)
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_pitstops(self, mock_fetch):
+        mock_fetch.side_effect = [get_mock_response('pitstops'), get_mock_response('race_results')]
+        res = await api.get_pitstops('last', 'current')
+        self.check_data(res['data'])
 
     # test career
     @patch(fetch_path)

@@ -217,6 +217,18 @@ driver_teams = '''
         </Constructor>
     </ConstructorTable>'''
 
+all_laps = result_wrapper('''
+    <LapsList>
+        <Lap number="1">
+            <Timing driverId="alonso" lap="1" position="1" time="1:34.494"/>
+            <Timing driverId="vettel" lap="1" position="2" time="1:34.294"/>
+        </Lap>
+        <Lap number="2">
+            <Timing driverId="alonso" lap="2" position="2" time="1:30.612"/>
+            <Timing driverId="vettel" lap="2" position="1" time="1:34.194"/>
+        </Lap>
+    </LapsList>''')
+
 driver1_laps = result_wrapper('''
     <LapsList>
         <Lap number="1">
@@ -254,6 +266,19 @@ driver2_laps = result_wrapper('''
             <Timing driverId="vettel" lap="5" position="1" time="1:29.718"/>
         </Lap>
     </LapsList>''')
+
+pitstops = result_wrapper('''
+    <PitStopsList>
+        <PitStop driverId="brendon_hartley" stop="1" lap="1" time="17:16:20" duration="41.012"/>
+        <PitStop driverId="hamilton" stop="1" lap="7" time="17:29:33" duration="21.283"/>
+        <PitStop driverId="leclerc" stop="1" lap="7" time="17:29:43" duration="21.828"/>
+        <PitStop driverId="grosjean" stop="1" lap="7" time="17:29:48" duration="22.354"/>
+        <PitStop driverId="vettel" stop="1" lap="15" time="17:44:11" duration="22.630"/>
+        <PitStop driverId="bottas" stop="1" lap="16" time="17:45:52" duration="21.600"/>
+        <PitStop driverId="max_verstappen" stop="1" lap="17" time="17:47:44" duration="21.057"/>
+        <PitStop driverId="ocon" stop="1" lap="18" time="17:49:58" duration="21.979"/>
+        <PitStop driverId="perez" stop="1" lap="26" time="18:04:04" duration="22.112"/>
+    </PitStopsList>''')
 
 # Seasons is just total of standings results
 driver_seasons = driver_standings

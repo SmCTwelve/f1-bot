@@ -142,6 +142,27 @@ def rank_pitstops(times):
     return sorted_times
 
 
+def filter_laps_by_driver(laps, *drivers):
+    """Filter lap time data to get only laps driven by the driver in `drivers`.
+
+    Parameters
+    ----------
+    `laps` : dict
+        Timings for each driver per lap as returned by `api.get_all_laps` data key
+    `*drivers` : str
+        A valid driver_id used by Ergast API
+
+    Returns
+    -------
+    dict
+        `laps` filtered to contain only a list of timings per lap for the specified drivers
+    """
+    result = {}
+    for lap, times in laps.items():
+        result[lap] = [t for t in times if t['id'] in drivers]
+    return result
+
+
 def filter_times(sorted_times, filter):
     """Filters the list of times by the filter keyword. If no filter is given the
     times are returned unfiltered.
