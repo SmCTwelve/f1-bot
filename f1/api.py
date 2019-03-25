@@ -37,7 +37,7 @@ async def get_all_drivers():
     return res
 
 
-async def get_driver_info(driver_id):
+def get_driver_info(driver_id):
     """Get the driver name, age, nationality, code and number.
 
     Searches a dictionary containing all drivers from the Ergast API for an
@@ -65,23 +65,21 @@ async def get_driver_info(driver_id):
 
     Raises
     ------
-    `MissingDataError`
+    `DriverNotFoundError`
         if no match found.
     """
     driver = utils.find_driver(driver_id, DRIVERS)
-    if driver:
-        res = {
-            'firstname': driver['givenName'],
-            'surname': driver['familyName'],
-            'code': driver['code'],
-            'id': driver['driverId'],
-            'url': driver['url'],
-            'number': driver['permanentNumber'],
-            'age': utils.age(driver['dateOfBirth'][:4]),
-            'nationality': driver['nationality'],
-        }
-        return res
-    raise MissingDataError()
+    res = {
+        'firstname': driver['givenName'],
+        'surname': driver['familyName'],
+        'code': driver.get('code', None),
+        'id': driver['driverId'],
+        'url': driver.get('url', None),
+        'number': driver.get('permanentNumber', None),
+        'age': utils.age(driver['dateOfBirth'][:4]),
+        'nationality': driver['nationality'],
+    }
+    return res
 
 
 async def get_driver_standings(season):
@@ -493,15 +491,15 @@ async def get_all_laps(rnd, season):
             res['data'][int(lap['number'])] = [
                 {
                     'id': t['driverid'],
-                    'pos': t['position'],
-                    'time': t['time']
+                    'Pos': int(t['position']),
+                    'Time': t['time']
                 }
                 for t in lap.find_all('timing')]
         return res
     raise MissingDataError()
 
 
-async def get_all_laps_for_driver(driver_id, rnd, season):
+async def get_all_laps_for_driver(driver_id, laps):
     """Get the lap times for each lap of the race for one driver to tabulate.
 
     Each dict entry contains lap number, race position and lap time. The API can take time to
@@ -511,22 +509,20 @@ async def get_all_laps_for_driver(driver_id, rnd, season):
     ----------
     `driver_id` : str
         must be a valid Ergast API id, e.g. 'alonso', 'di_resta'.
-    `rnd` : int or str
-        Round number or 'last' for the latest race
-    `season` : int or str
-        Season year or 'current'
+    `laps` : dict
+        lap and timing data for the race as returned by `api.get_all_laps`.
 
     Returns
     -------
     `res` : dict
         {
             'driver': dict,
-            'season': str,
-            'round': str,
-            'race': str,
-            'url': str,
-            'date': str,
-            'time': str,
+            'season': race['season'],
+            'round': race['round'],
+            'race': race.racename.string,
+            'url': race['url'],
+            'date': f"{utils.date_parser(date)} {race['season']}",
+            'time': utils.time_parser(time),
             'data': list[dict] [{
                 'No': int,
                 'Position': int,
@@ -539,9 +535,8 @@ async def get_all_laps_for_driver(driver_id, rnd, season):
     `MissingDataError`
         if response invalid.
     """
-    dvr = await get_driver_info(driver_id)
-    laps = await get_all_laps(rnd, season)
-    driver_laps = utils.filter_laps_by_driver(laps['data'], driver_id)
+    dvr = get_driver_info(driver_id)
+    driver_laps = utils.filter_laps_by_driver(laps, driver_id)
     res = {
         'driver': dvr,
         'season': laps['season'],
@@ -554,12 +549,12 @@ async def get_all_laps_for_driver(driver_id, rnd, season):
     }
     # Loop over lap:timing_list pairs from filtered laps dict
     # Only one driver to filter so each lap's timing list should have single entry at index 0
-    for lap, timing in driver_laps.items():
+    for lap, timing in driver_laps['data'].items():
         res['data'].append(
             {
                 'Lap': int(lap),
-                'Pos': int(timing[0]['pos']),
-                'Time': timing[0]['time'],
+                'Pos': int(timing[0]['Pos']),
+                'Time': timing[0]['Time'],
             }
         )
     return res
@@ -682,7 +677,7 @@ async def get_pitstops(rnd, season):
             'data': []
         }
         for stop in pitstops:
-            driver = await get_driver_info(stop['driverid'])
+            driver = get_driver_info(stop['driverid'])
             res['data'].append(
                 {
                     'Driver': f"{driver['code']}",
@@ -963,7 +958,7 @@ async def get_driver_career(driver_id):
             }
         }
     """
-    dvr = await get_driver_info(driver_id)
+    dvr = get_driver_info(driver_id)
     id = dvr['id']
     # Get results concurrently
     [wins, poles, champs, seasons, teams] = await asyncio.gather(

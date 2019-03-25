@@ -68,35 +68,35 @@ class UtilityTests(BaseTest):
         self.assertTrue(t['Rank'] > prev_rank for t in sorted_times)
 
     def test_filter_laps(self):
-        laps = {
+        laps = {'data': {
             1: [{'id': 'alonso', 'pos': 1, 'time': '1:30.202'},
                 {'id': 'vettel', 'pos': 2, 'time': '1:30.205'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.205'}],
             2: [{'id': 'alonso', 'pos': 2, 'time': '1:30.102'},
                 {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
-        }
+        }}
         filtered_laps = utils.filter_laps_by_driver(laps, 'vettel')
         # Only one driver given, so check only one timing
-        self.assertEqual(len(filtered_laps[1]), 1, "Timing entries for 1 driver arg don't match result.")
+        self.assertEqual(len(filtered_laps['data'][1]), 1, "Timing entries for 1 driver arg don't match result.")
         # Check driver matches
-        self.assertEqual(filtered_laps[1][0]['id'], 'vettel', "Driver ID doesn't match provided arg.")
+        self.assertEqual(filtered_laps['data'][1][0]['id'], 'vettel', "Driver ID doesn't match provided arg.")
 
     def test_filter_laps_multiple_drivers(self):
-        laps = {
+        laps = {'data': {
             1: [{'id': 'alonso', 'pos': 1, 'time': '1:30.202'},
                 {'id': 'vettel', 'pos': 2, 'time': '1:30.205'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.205'}],
             2: [{'id': 'alonso', 'pos': 2, 'time': '1:30.102'},
                 {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
-        }
+        }}
         filtered_laps = utils.filter_laps_by_driver(laps, 'alonso', 'vettel')
         # Two drivers given, check timings for both
-        self.assertEqual(len(filtered_laps[1]), 2, "Timing entries for 2 drivers args don't match result.")
+        self.assertEqual(len(filtered_laps['data'][1]), 2, "Timing entries for 2 drivers args don't match result.")
         # Check the drivers
-        self.assertEqual(filtered_laps[1][0]['id'], 'alonso')
-        self.assertEqual(filtered_laps[1][1]['id'], 'vettel')
+        self.assertEqual(filtered_laps['data'][1][0]['id'], 'alonso')
+        self.assertEqual(filtered_laps['data'][1][1]['id'], 'vettel')
 
     def test_filter_times(self):
         times = models.best_laps
@@ -128,6 +128,26 @@ class UtilityTests(BaseTest):
 
 class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
+
+    def test_get_driver_info(self):
+        res_with_id = api.get_driver_info('alonso')
+        res_with_no = api.get_driver_info('14')
+        res_with_code = api.get_driver_info('ALO')
+        self.assertEqual(res_with_id['id'], 'alonso')
+        self.assertEqual(res_with_no['id'], 'alonso')
+        self.assertEqual(res_with_no['number'], '14')
+        self.assertEqual(res_with_code['id'], 'alonso')
+        self.assertEqual(res_with_code['code'], 'ALO')
+
+    def test_get_driver_info_with_no_number_or_code(self):
+        res = api.get_driver_info('abate')
+        self.assertEqual(res['id'], 'abate')
+        self.assertTrue(res['number'] is None)
+        self.assertTrue(res['code'] is None)
+
+    def test_get_driver_info_with_invalid_driver(self):
+        with self.assertRaises(DriverNotFoundError):
+            api.get_driver_info('smc12')
 
     @patch(fetch_path)
     @async_test
@@ -177,7 +197,8 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_all_laps_for_driver(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('all_laps')
-        res = await api.get_all_laps_for_driver('alonso', 15, 2008)
+        laps = await api.get_all_laps(15, 2008)
+        res = await api.get_all_laps_for_driver('alonso', laps)
         self.check_data(res['data'])
         self.assertEqual(res['data'][0]['Lap'], 1, "First lap should be 1.")
         self.assertEqual(res['driver']['surname'], 'Alonso', "Driver doesn't match that provided.")
@@ -186,7 +207,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_all_laps_with_invalid_driver(self, mock_fetch):
         with self.assertRaises(DriverNotFoundError):
-            await api.get_all_laps_for_driver('smc12', 15, 2008)
+            await api.get_all_laps_for_driver('smc12', [])
 
     @patch(fetch_path)
     @async_test
