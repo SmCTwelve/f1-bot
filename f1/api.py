@@ -27,6 +27,25 @@ async def get_soup(url):
     return BeautifulSoup(res, 'lxml')
 
 
+async def check_status():
+    """Monitor connection to Ergast API by recording connection status and time for response.
+
+    Returns int: 1 = Good, 2 = Medium, 3 = Bad, 0 = Down.
+    """
+    start_time = datetime.now()
+    res = await get_soup(f'{BASE_URL}/current/driverStandings')
+    end_time = datetime.now()
+    delta = end_time - start_time
+    if res is None:
+        return 0
+    if delta.seconds > 20:
+        return 2
+    elif delta.seconds > 60:
+        return 3
+    else:
+        return 1
+
+
 async def get_all_drivers():
     """Fetch all driver data as JSON. Returns a dict."""
     url = f'{BASE_URL}/drivers.json?limit=1000'

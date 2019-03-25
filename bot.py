@@ -3,6 +3,7 @@ import os
 
 import f1.config
 from f1 import commands  # noqa
+from f1 import admin  # noqa
 
 
 logger = logging.getLogger(__name__)
