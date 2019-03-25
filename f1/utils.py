@@ -157,10 +157,19 @@ def filter_laps_by_driver(laps, *drivers):
     dict
         `laps` filtered to contain only a list of timings per lap for the specified drivers
     """
-    result = {}
-    for lap, times in laps.items():
-        result[lap] = [t for t in times if t['id'] in drivers]
-    return result
+    if len(drivers) == 0:
+        return laps
+    else:
+        result = {
+            'data': {},
+            'race': laps.get('race', ''),
+            'season': laps.get('season', ''),
+            'round': laps.get('round', '')
+        }
+
+        for lap, times in laps['data'].items():
+            result['data'][lap] = [t for t in times if t['id'] in drivers]
+        return result
 
 
 def filter_times(sorted_times, filter):
