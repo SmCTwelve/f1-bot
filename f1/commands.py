@@ -8,7 +8,7 @@ from discord.ext import commands
 from f1 import api
 from f1.stats import chart
 from f1.config import CONFIG, OUT_DIR
-from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops
+from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
 
 
 logger = logging.getLogger(__name__)
@@ -244,10 +244,15 @@ async def career(ctx, driver_id):
 
 
 @f1.command(aliases=['timings'])
-async def laps(ctx, driver_id, season='current', rnd='last', ):
-    """Display all lap times for the driver in `rnd` of `season`.
+async def laps(ctx, driver_id, season='current', rnd='last'):
+    """Display all lap times for the driver.
 
-    A valid `driver_id` is required, other parameters may be omitted to get lastest race.
+    Season and round may be omitted to get latest race. A valid driver ID must be given as the first parameter
+    in either one of the following formats:
+        - name-based ID as used by Ergast API e.g. 'alonso', 'vettel', 'max_verstappen';
+        - driver code e.g. 'VET', 'HAM';
+        - driver number e.g. 44, 6
+
     **Note**: This command can take a long time to respond. Consider using `best` command instead.
 
     Usage:
@@ -255,8 +260,9 @@ async def laps(ctx, driver_id, season='current', rnd='last', ):
         !f1 laps <driver_id> [season] [round]
     """
     await check_season(ctx, season)
+    laps_future = api.get_all_laps(rnd, season)
     await ctx.send("*Gathering lap data; this may take a few moments...*")
-    result = await api.get_all_driver_lap_times(driver_id, rnd, season)
+    result = await api.get_all_laps_for_driver(driver_id, await laps_future)
     table = make_table(result['data'])
     await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
     await ctx.send(f"{result['season']} {result['race']}")
@@ -293,7 +299,7 @@ async def best(ctx, season='current', rnd='last', filter=None):
 
 @f1.command(aliases=['pits', 'pitstops'])
 async def stops(ctx, season='current', rnd='last', filter=None):
-    """Display pitstops for each driver in the race with, optionally sorted with filter.
+    """Display pitstops for each driver in the race, optionally sorted with filter.
 
     If no `round` specified returns results for the most recent race.
 
@@ -310,14 +316,14 @@ async def stops(ctx, season='current', rnd='last', filter=None):
         `top`     -  Top 5 fastest pitstops.
         `bottom`  -  Bottom 5 slowest pitstops.
     """
-    res = await api.get_pitstops(season, rnd)
+    res = await api.get_pitstops(rnd, season)
     if filter is not None:
         sorted_times = rank_pitstops(res)
         filtered = filter_times(sorted_times, filter)
         table = make_table(filtered)
     else:
         table = make_table(res)
-    await ctx.send(f"**Pitstops ranked {filter}**")
+    await ctx.send(f"**Pit stops ranked {filter}**")
     await ctx.send(f"{res['season']} {res['race']}")
     await ctx.send(f"```\n{table}\n```")
 
@@ -332,44 +338,78 @@ async def plot(ctx, *args):
 
 
 @plot.command(aliases=['laps'])
-async def timings(ctx, season, rnd, *, drivers):
-    """Plot all lap data between the two drivers or a single driver.
+async def timings(ctx, season, rnd, *drivers):
+    """Plot all lap data for the specified driver(s) or all drivers.
+    **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
-    Both the season and round must be specified.
+    Both the season and round must be given first. A single driver or multiple drivers seperated by
+    a space may be given as the last parameter.
 
-    It may take a few moments to gather the data.
+    Suppling 'all' or not specifying any drivers will return all driver laps. Supplying 'top' or 'bottom' will
+    plot the top 3 or bottom 3 drivers, respectively.
+
+    A valid driver ID must be used, which can be either of:
+        - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
+        - driver code, e.g. 'HAM', 'VET';
+        - driver number e.g. 44, 6
 
     Usage:
     ------
-        !f1 plot timings [season] [round] <driver1_id> [driver2_id]
+        !f1 plot timings <season> <round> ['all']
+        !f1 plot timings <season> <round> ['driver1' 'driver2'...]
     """
-    drivers_list = drivers.split(' ')
+    await check_season(ctx, season)
+    laps_future = api.get_all_laps(rnd, season)
     await ctx.send("*Gathering lap data; this may take a few moments...*")
-    # Too many drivers
-    if len(drivers_list) > 2:
-        raise commands.TooManyArguments("More than 2 drivers given.")
-    # No drivers
-    elif len(drivers_list) == 0:
-        raise commands.MissingRequiredArgument(drivers)
+
+    # No drivers specified, skip filter and plot all
+    if len(drivers) == 0 or drivers[0] == 'all':
+        chart.plot_all_driver_laps(await laps_future)
     else:
-        await check_season(ctx, season)
-        # Two drivers
-        # Gather all lap data for both drivers concurrently
-        if len(drivers_list) == 2:
-            driver1_res, driver2_res = await asyncio.gather(
-                api.get_all_driver_lap_times(drivers_list[0], rnd, season),
-                api.get_all_driver_lap_times(drivers_list[1], rnd, season)
-            )
-            await chart.plot_driver_vs_driver_lap_timings(driver1_res, driver2_res)
-        # No second driver given so plotting for one
-        else:
-            driver1_res = await api.get_all_driver_lap_times(drivers_list[0], rnd, season)
-            await chart.plot_all_driver_laps(driver1_res)
+        filtered_laps = filter_laps_by_driver(await laps_future, drivers)
+        chart.plot_all_driver_laps(filtered_laps)
 
-        f = File(f"{OUT_DIR}/plot.png", filename='plot.png')
-        await ctx.send(file=f)
+    f = File(f"{OUT_DIR}/plot.png", filename='plot_laps.png')
+    await ctx.send(file=f)
 
 
+@plot.command(aliases=['pos', 'overtakes'])
+async def position(ctx, season, rnd, *drivers):
+    """Plot race position per lap for the specified driver(s) or all drivers.
+    **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
+
+    Both the season and round must be given first. A single driver or multiple drivers seperated by
+    a space may be given as the last parameter.
+
+    Suppling 'all' or not specifying any drivers will return all driver laps. Supplying 'top' or 'bottom' will
+    plot the top 3 or bottom 3 drivers, respectively.
+
+    A valid driver ID must be used, which can be either of:
+        - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
+        - driver code, e.g. 'HAM', 'VET';
+        - driver number e.g. 44, 6
+
+    Usage:
+    ------
+        !f1 plot position <season> <round> ['all']
+        !f1 plot position <season> <round> ['driver1' 'driver2'...]
+    """
+    await check_season(ctx, season)
+    laps_future = api.get_all_laps(rnd, season)
+    await ctx.send("*Gathering lap data; this may take a few moments...*")
+
+    # No drivers specified, skip filter and plot all
+    if len(drivers) == 0 or drivers[0] == 'all':
+        chart.plot_race_pos(await laps_future)
+    else:
+        filtered_laps = filter_laps_by_driver(await laps_future, drivers)
+        chart.plot_race_pos(filtered_laps)
+
+    f = File(f"{OUT_DIR}/plot.png", filename='plot_pos.png')
+    await ctx.send(file=f)
+
+
+@position.error
 @timings.error
 async def timings_handler(ctx, error):
     # Check error is missing arguments
@@ -395,7 +435,22 @@ async def fastest(ctx, season='current', rnd='last'):
     """
     await check_season(ctx, season)
     res = await api.get_best_laps(rnd, season)
-    await chart.plot_best_laps(res)
+    chart.plot_best_laps(res)
 
-    f = File(f"{OUT_DIR}/plot.png", filename='plot.png')
+    f = File(f"{OUT_DIR}/plot.png", filename='plot_fastest.png')
+    await ctx.send(file=f)
+
+
+@plot.command(aliases=['stops', 'pits', 'pitstops'])
+async def stints(ctx, season='current', rnd='last'):
+    """Plot race stints and pit stops per driver.
+
+    Usage:
+        !f1 plot stints [season] [round]
+    """
+    await check_season(ctx, season)
+    res = await api.get_pitstops(rnd, season)
+    chart.plot_pitstops(res)
+
+    f = File(f"{OUT_DIR}/plot.png", filename='plot_pitstops.png')
     await ctx.send(file=f)
