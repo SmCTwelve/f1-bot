@@ -25,7 +25,7 @@ Open [Discord Developer Portal](https://discordapp.com/developers/applications/)
 
 Copy the **Token** of your Bot to the `config.ini` file in the main directory, replacing the value of the `TOKEN` key. **Do not share your token**, treat it like a password.
 
-Alternatively, you can store the Token by setting an environment variable called `BOT_TOKEN` so you can avoid adding it to the config file. The environment variable will be checked first when loading the bot. This is useful if you plan to host on Heroku to store the Token as a config variable on the app.
+Alternatively, you can store the Token by setting an environment variable called `BOT_TOKEN` so you can avoid adding it to the config file. The environment variable will be checked first when loading the bot. This is useful if you plan to use a cloud host such as Heroku to store the Token as a config variable on the app.
 
 ### Inviting your Bot
 To add the bot to a server you need to generate an OAauth2 URL for authentication and permissions.
@@ -34,10 +34,10 @@ To add the bot to a server you need to generate an OAauth2 URL for authenticatio
 2. In the Scopes section, check 'bot'
 3. Scroll down to the Permissions section and enable the features shown [here](https://i.imgur.com/1bQ9xD8.png)
 4. The Scopes section will now show a URL representing the scope and permissions your bot has
-5. Copy the URL to invite your Bot to a server which you have permission
+5. Copy this URL to invite your Bot to a server which you have permission
 
 ## Usage
-Run the application by executing `python -m bot.py` from the main directory. This will start the bot process and attempt to connect with the provided Token. The console will display log messages to monitor the bot status. `Ctrl + C` will stop the process and close the bot connection.
+Run the application by executing `python -m bot.py` from the main directory. This will start the bot process and attempt to connect with the provided Token. The console will display log messages to monitor the bot status. `Ctrl + C` will stop the process and close the connection.
 
 A Procfile is included for easy hosting on Heroku as a worker dyno. For other hosting configurations ensure `bot.py` is used as the entry point.
 
@@ -47,7 +47,7 @@ The `/data` directory contains a JSON dump of all drivers archived by Ergast API
 
 **Parameters**
 
-Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `drivers`, `teams` and `grid` which only use a `season`.
+Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `drivers`, `teams` and `grid` commands which only use a `season`.
 
 Commands which take the `driver_id` parameter must be either of the following:
   - Driver code; e.g. HAM, VET
@@ -60,18 +60,18 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 
 - `!help f1 | !help f1 <command>` -  Display help text for the available commands
 - `!f1 status` - Information about the bot and connection status
-
-- `!f1 drivers | wdc [season]` - Display World Driver Championship standings
-- `!f1 teams | wcc [season]` - Display Constructors Championship standings
+- `!f1 github` - A link to this repository
+- `!f1 wdc | drivers [season]` - Display World Driver Championship standings
+- `!f1 wcc | constructors [season]` - Display Constructors Championship standings
 - `!f1 grid [season]` -  Return details of all drivers and teams participating in the season
 - `!f1 schedule` -  Display the race calendar for the current season
 - `!f1 next` -  Show a countdown to the next race and details
-- `!f1 stops [<season> <round>] [filter]` - Display pit stops for each driver in the race. Optional `[filter]` keyword:
+- `!f1 stops [filter] [<season> <round>]` - Display pit stops for each driver in the race. Optional `[filter]` keyword:
   - `top` - Top 5 fastest pit stops
   - `bottom` -  Bottom 5 slowest pit stops
   - `fastest` - Fastest ranked pit stop
   - `slowest` - Slowest ranked pit stop
-- `!f1 best [<season> <round>] [filter]` - Display best lap time per driver. Optional `[filter]` keyword:
+- `!f1 best [filter] [<season> <round>]` - Display best lap time per driver. Optional `[filter]` keyword:
   - `top` - Top 5 fastest laps of the race
   - `bottom` -  Bottom 5 slowest laps of the race
   - `fastest` - Fastest ranked lap
