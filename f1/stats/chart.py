@@ -1,4 +1,5 @@
 import logging
+import os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
@@ -36,8 +37,8 @@ plt.rcParams['axes.prop_cycle'] = cycler(color=colors)
 
 def save_figure(fig, path=cfg.OUT_DIR, name='plot.png'):
     """Save the figure as a file."""
-    fig.savefig(f'{path}/{name}', bbox_inches='tight')
-    logger.info(f"Figure saved at {path}/{name}")
+    fig.savefig(os.path.join(path, name), bbox_inches='tight')
+    logger.info(f"Figure saved at {os.path.join(path, name)}")
 
 
 def plot_all_driver_laps(lap_timings):
@@ -62,7 +63,7 @@ def plot_all_driver_laps(lap_timings):
     for i, driver in enumerate(drivers, 0):
         driver_info = get_driver_info(driver)
         # Get only the data for current driver
-        filtered_laps = filter_laps_by_driver(lap_timings, driver)
+        filtered_laps = filter_laps_by_driver(lap_timings, [driver])
         # Get the times for each lap and convert to seconds
         # or fill with 0 if there is no data for that lap (e.g. retired)
         times = np.array([
@@ -99,7 +100,7 @@ def plot_race_pos(lap_timings):
     for i, driver in enumerate(drivers, 0):
         driver_info = get_driver_info(driver)
         # Get only the data for current driver
-        filtered_laps = filter_laps_by_driver(lap_timings, driver)
+        filtered_laps = filter_laps_by_driver(lap_timings, [driver])
         # Add the race pos per lap to the list of positions for the current driver
         positions = np.array([
             int(x[0]['Pos']) if x else None
@@ -135,6 +136,7 @@ def plot_best_laps(timings):
     plt.title(f"Best Laps Per Driver {race} ({sn})")
     plt.ylabel('Drivers')
     plt.yticks(y_pos, labels=drivers)
+    plt.gca().invert_yaxis()
     plt.xlabel('Time (s)')
     plt.xlim(left=min(times) - 1, right=max(times) + 1)
     plt.gca().get_xaxis().set_minor_locator(AutoMinorLocator())
