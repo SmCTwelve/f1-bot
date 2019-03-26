@@ -21,6 +21,7 @@ responses = {
     'driver_seasons': models.driver_seasons,
     'best_laps': models.best_laps,
     'pitstops': models.pitstops,
+    'all_standings_for_driver': models.all_standings_for_driver,
 }
 
 
@@ -57,6 +58,7 @@ async def get_mock_response(res_type):
             - 'driver2_laps'
             - 'best_laps'
             - 'pitsops'
+            - 'all_standings_for_driver'
     """
     if res_type is None:
         return None

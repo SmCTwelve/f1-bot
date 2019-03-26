@@ -38,9 +38,9 @@ async def check_status():
     delta = end_time - start_time
     if res is None:
         return 0
-    if delta.seconds > 20:
+    if delta.seconds > 5:
         return 2
-    elif delta.seconds > 60:
+    elif delta.seconds > 15:
         return 3
     else:
         return 1
@@ -555,7 +555,7 @@ async def get_all_laps_for_driver(driver_id, laps):
         if response invalid.
     """
     dvr = get_driver_info(driver_id)
-    driver_laps = utils.filter_laps_by_driver(laps, driver_id)
+    driver_laps = utils.filter_laps_by_driver(laps, [driver_id])
     res = {
         'driver': dvr,
         'season': laps['season'],
@@ -710,6 +710,53 @@ async def get_pitstops(rnd, season):
     raise MissingDataError()
 
 
+async def get_all_standings_for_driver(driver_id):
+    """Returns dict with only driver standings results for the given driver. Results can be used
+    to calculate driver championship wins and total seasons.
+
+    Parameters
+    ----------
+    `driver_id` : str
+        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
+
+    Returns
+    -------
+    `res` : dict
+        {
+            'total': int,
+            'data': list[dict] [{
+                'Season': str,
+                'Points': int,
+                'Wins': int,
+                'Team': str,
+            }]
+        }
+    Raises
+    ------
+    `MissingDataError`
+    """
+    url = f"{BASE_URL}/drivers/{driver_id}/driverStandings?limit=1000"
+    soup = await get_soup(url)
+    if soup:
+        standings = soup.standingstable.find_all('standingslist')
+        res = {
+            'total': int(soup.mrdata['total']),
+            'data': []
+        }
+        for standing in standings:
+            res['data'].append(
+                {
+                    'Season': standing['season'],
+                    'Pos': int(standing.driverstanding['position']),
+                    'Wins': int(standing.driverstanding['wins']),
+                    'Points': int(standing.driverstanding['points']),
+                    'Team': standing.driverstanding.constructor.find('name').string,
+                }
+            )
+        return res
+    raise MissingDataError()
+
+
 async def get_driver_wins(driver_id):
     """Get total wins for the driver and a list of dicts with details for each race.
 
@@ -739,7 +786,7 @@ async def get_driver_wins(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f"{BASE_URL}/drivers/{driver_id}/results/1?limit=300"
+    url = f"{BASE_URL}/drivers/{driver_id}/results/1?limit=1000"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -748,7 +795,7 @@ async def get_driver_wins(driver_id):
             'data': []
         }
         for race in races:
-            race_result = race.resultlist.result
+            race_result = race.resultslist.result
             res['data'].append(
                 {
                     'Race': race.racename.string,
@@ -793,7 +840,7 @@ async def get_driver_poles(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f"{BASE_URL}/drivers/{driver_id}/qualifying/1?limit=300"
+    url = f"{BASE_URL}/drivers/{driver_id}/qualifying/1?limit=1000"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -816,134 +863,6 @@ async def get_driver_poles(driver_id):
             )
         return res
     return MissingDataError()
-
-
-async def get_driver_championships(driver_id):
-    """Get total championship wins for the driver and details for each season, team, points and wins.
-
-    Parameters
-    ----------
-    `driver_id` : str
-        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
-
-    Returns
-    -------
-    `res` : dict
-        {
-            'total': int,
-            'data': list[dict] [{
-                'Season': str,
-                'Points': int,
-                'Wins': int,
-                'Team': str,
-            }]
-        }
-
-    Raises
-    ------
-    `MissingDataError`
-        if API response invalid.
-    """
-    url = f"{BASE_URL}/drivers/{driver_id}/driverStandings/1"
-    soup = await get_soup(url)
-    if soup:
-        standings = soup.standingstable.find_all('standingslist')
-        res = {
-            'total': int(soup.mrdata['total']),
-            'data': []
-        }
-        for standing in standings:
-            res['data'].append(
-                {
-                    'Season': standing['season'],
-                    'Points': int(standing.driverstanding['points']),
-                    'Wins': int(standing.driverstanding['wins']),
-                    'Team': standing.driverstanding.constructor.find('name').string,
-                }
-            )
-        return res
-    raise MissingDataError()
-
-
-async def get_driver_teams(driver_id):
-    """Get total number of teams the driver has driven for and a list of names.
-
-    Parameters
-    ----------
-    `driver_id` : str
-        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
-
-    Returns
-    -------
-    `res` : dict
-        {
-            'total': int,
-            'names': list,
-        }
-
-    Raises
-    ------
-    `MissingDataError`
-        if API response invalid.
-    """
-    url = f"{BASE_URL}/drivers/{driver_id}/constructors"
-    soup = await get_soup(url)
-    if soup:
-        constructors = soup.constructortable.find_all('constructor')
-        res = {
-            'total': int(soup.mrdata['total']),
-            'names': [constructor.find('name').string for constructor in constructors]
-        }
-        return res
-    return MissingDataError()
-
-
-async def get_driver_seasons(driver_id):
-    """Get the total number of seasons in F1 and a list of dicts with year, team, and pos.
-
-    The Ergast API is queried for all driver championships that `driver_id` has participated in, which may cause a
-    slight delay in processing for veteran drivers with many seasons.
-
-    Parameters
-    ----------
-    `driver_id` : str
-        must be valid Eargast API ID, e.g. 'alonso', 'michael_schumacher'.
-
-    Returns
-    -------
-    `res` : dict
-        {
-            'total': int,
-            'data': list[dict] [{
-                'Season': str,
-                'Pos': int,
-                'Team': str,
-            }],
-        }
-
-    Raises
-    ------
-    `MissingDataError`
-        if API response invalid.
-    """
-    url = f"{BASE_URL}/drivers/{driver_id}/driverStandings"
-    soup = await get_soup(url)
-    if soup:
-        standings = soup.standingstable.find_all('standingslist')
-        res = {
-            'total': int(soup.mrdata['total']),
-            'data': []
-        }
-        for standing in standings:
-            res['data'].append(
-                {
-                    'Season': standing['season'],
-                    'Pos': int(standing.driverstanding['position']),
-                    'Team': standing.constructor.find('name').string,
-                }
-            )
-        return res
-    raise MissingDataError()
 
 
 async def get_driver_career(driver_id):
@@ -979,30 +898,32 @@ async def get_driver_career(driver_id):
     """
     dvr = get_driver_info(driver_id)
     id = dvr['id']
+    # prefire standings req first as it takes longest
+    standings_future = get_all_standings_for_driver(id)
     # Get results concurrently
-    [wins, poles, champs, seasons, teams] = await asyncio.gather(
+    [wins, poles, standings] = await asyncio.gather(
         get_driver_wins(id),
         get_driver_poles(id),
-        get_driver_championships(id),
-        get_driver_seasons(id),
-        get_driver_teams(id),
+        standings_future,
     )
+    champs = [s for s in standings['data'] if s['Pos'] == 1]
+    teams = set(t['Team'] for t in standings['data'])
     res = {
         'driver': dvr,
         'data': {
             'Wins': wins['total'],
             'Poles': poles['total'],
             'Championships': {
-                'total': champs['total'],
-                'years': [x['Season'] for x in champs['data']],
+                'total': int(len(champs)),
+                'years': [x['Season'] for x in champs],
             },
             'Seasons': {
-                'total': seasons['total'],
-                'years': [x['Season'] for x in seasons['data']],
+                'total': int(len(standings['data'])),
+                'years': [x['Season'] for x in standings['data']],
             },
             'Teams': {
-                'total': teams['total'],
-                'names': teams['names'],
+                'total': int(len(teams)),
+                'names': teams,
             },
         }
     }

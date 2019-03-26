@@ -14,12 +14,12 @@ def standings_wrapper(body):
 def result_wrapper(body, quali=False):
     """Wraps `body` XML string in parent <RaceTable><ResultsList> and <Race> tags.
 
-    If `quali` is True <ResultList> is replaced with <QualifyingList>.
+    If `quali` is True <ResultsList> is replaced with <QualifyingList>.
     """
     if quali is True:
         wrapper = f'''<QualifyingList>{body}</QualifyingList>'''
     else:
-        wrapper = f'''<ResultList>{body}</ResultList>'''
+        wrapper = f'''<ResultsList>{body}</ResultsList>'''
     return f'''
         <RaceTable season="2018" round="21">
             <Race season="2018" round="21" url="https://en.wikipedia.org/wiki/2018_Abu_Dhabi_Grand_Prix">
@@ -217,6 +217,56 @@ driver_teams = '''
         </Constructor>
     </ConstructorTable>'''
 
+all_standings_for_driver = ('''
+    <StandingsTable driverId="alonso">
+        <StandingsList season="2004" round="18">
+            <DriverStanding position="4" positionText="4" points="59" wins="0">
+                <Driver driverId="alonso" code="ALO" url="http://en.wikipedia.org/wiki/Fernando_Alonso">
+                    <PermanentNumber>14</PermanentNumber>
+                    <GivenName>Fernando</GivenName>
+                    <FamilyName>Alonso</FamilyName>
+                    <DateOfBirth>1981-07-29</DateOfBirth>
+                    <Nationality>Spanish</Nationality>
+                </Driver>
+                <Constructor constructorId="renault" url="https://en.wikipedia.org/wiki/Renault_in_Formula_One">
+                    <Name>Renault</Name>
+                    <Nationality>French</Nationality>
+                </Constructor>
+            </DriverStanding>
+        </StandingsList>
+        <StandingsList season="2005" round="19">
+            <DriverStanding position="1" positionText="1" points="133" wins="7">
+                <Driver driverId="alonso" code="ALO" url="http://en.wikipedia.org/wiki/Fernando_Alonso">
+                    <PermanentNumber>14</PermanentNumber>
+                    <GivenName>Fernando</GivenName>
+                    <FamilyName>Alonso</FamilyName>
+                    <DateOfBirth>1981-07-29</DateOfBirth>
+                    <Nationality>Spanish</Nationality>
+                </Driver>
+                <Constructor constructorId="renault" url="https://en.wikipedia.org/wiki/Renault_in_Formula_One">
+                    <Name>Renault</Name>
+                    <Nationality>French</Nationality>
+                </Constructor>
+            </DriverStanding>
+        </StandingsList>
+        <StandingsList season="2006" round="18">
+            <DriverStanding position="1" positionText="1" points="134" wins="7">
+                <Driver driverId="alonso" code="ALO" url="http://en.wikipedia.org/wiki/Fernando_Alonso">
+                    <PermanentNumber>14</PermanentNumber>
+                    <GivenName>Fernando</GivenName>
+                    <FamilyName>Alonso</FamilyName>
+                    <DateOfBirth>1981-07-29</DateOfBirth>
+                    <Nationality>Spanish</Nationality>
+                </Driver>
+                <Constructor constructorId="renault" url="https://en.wikipedia.org/wiki/Renault_in_Formula_One">
+                    <Name>Renault</Name>
+                    <Nationality>French</Nationality>
+                </Constructor>
+            </DriverStanding>
+        </StandingsList>
+    </StandingsTable>
+''')
+
 all_laps = result_wrapper('''
     <LapsList>
         <Lap number="1">
@@ -279,6 +329,7 @@ pitstops = result_wrapper('''
         <PitStop driverId="ocon" stop="1" lap="18" time="17:49:58" duration="21.979"/>
         <PitStop driverId="perez" stop="1" lap="26" time="18:04:04" duration="22.112"/>
     </PitStopsList>''')
+
 
 # Seasons is just total of standings results
 driver_seasons = driver_standings

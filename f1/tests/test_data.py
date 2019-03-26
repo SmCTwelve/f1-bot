@@ -76,7 +76,7 @@ class UtilityTests(BaseTest):
                 {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
         }}
-        filtered_laps = utils.filter_laps_by_driver(laps, 'vettel')
+        filtered_laps = utils.filter_laps_by_driver(laps, ['vettel'])
         # Only one driver given, so check only one timing
         self.assertEqual(len(filtered_laps['data'][1]), 1, "Timing entries for 1 driver arg don't match result.")
         # Check driver matches
@@ -91,7 +91,7 @@ class UtilityTests(BaseTest):
                 {'id': 'vettel', 'pos': 1, 'time': '1:29.905'},
                 {'id': 'bottas', 'pos': 3, 'time': '1:30.105'}]
         }}
-        filtered_laps = utils.filter_laps_by_driver(laps, 'alonso', 'vettel')
+        filtered_laps = utils.filter_laps_by_driver(laps, ['alonso', 'vettel'])
         # Two drivers given, check timings for both
         self.assertEqual(len(filtered_laps['data'][1]), 2, "Timing entries for 2 drivers args don't match result.")
         # Check the drivers
@@ -235,36 +235,11 @@ class MockAPITests(BaseTest):
 
     @patch(fetch_path)
     @async_test
-    async def test_get_driver_championships(self, mock_fetch):
-        mock_fetch.return_value = get_mock_response('driver_championships')
-        res = await api.get_driver_championships('alonso')
-        self.check_data(res['data'])
-        self.check_total_and_num_results(res['total'], res['data'])
-
-    @patch(fetch_path)
-    @async_test
-    async def test_get_driver_teams(self, mock_fetch):
-        mock_fetch.return_value = get_mock_response('driver_teams')
-        res = await api.get_driver_teams('alonso')
-        self.check_total_and_num_results(res['total'], res['names'])
-
-    @patch(fetch_path)
-    @async_test
-    async def test_get_driver_seasons(self, mock_fetch):
-        mock_fetch.return_value = get_mock_response('driver_seasons')
-        res = await api.get_driver_seasons('alonso')
-        self.check_data(res['data'])
-        self.check_total_and_num_results(res['total'], res['data'])
-
-    @patch(fetch_path)
-    @async_test
     async def test_get_driver_career(self, mock_fetch):
         mock_fetch.side_effect = [
             get_mock_response('driver_wins'),
             get_mock_response('driver_poles'),
-            get_mock_response('driver_championships'),
-            get_mock_response('driver_seasons'),
-            get_mock_response('driver_teams'),
+            get_mock_response('all_standings_for_driver'),
         ]
         res = await api.get_driver_career('alonso')
         self.assertEqual(res['driver']['surname'], 'Alonso')
