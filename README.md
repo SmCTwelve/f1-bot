@@ -6,6 +6,8 @@ A simple bot application incorporating the [discord.py](https://github.com/Rappt
 
 Please be aware this was originally designed as a personal project and is provided as-is, it has not been tested on a large scale. Effort has been made to ensure the stated functionality. Further contributions or forks are welcome.
 
+<p align="center"><img src="https://i.imgur.com/Up0Oo1g.gif" /></p>
+
 ## Installation
 The application requires **Python 3.7+** to be installed.
 
@@ -14,11 +16,14 @@ $ git clone https://github.com/SmCTwelve/f1-bot.git
 $ cd f1-bot/
 $ pip install -r requirements.txt
 ```
+Or download the latest stable [release](https://github.com/SmCTwelve/f1-bot/releases), extract the files and run `pip install -r requirements.txt` in the directory. 
 
-Or if using Pipenv you can install from the Pipfile and automatically create a virtual environment:
+If using Pipenv you can install from the Pipfile and automatically create a virtual environment:
 ```bash
 $ pipenv install
 ```
+
+
 
 ## Creating a Bot User
 Open [Discord Developer Portal](https://discordapp.com/developers/applications/) and create a new application. The name will be the username displayed for your Bot. On your application page choose Bot from the settings menu, then click 'Add Bot' to turn your application into a Bot user.
