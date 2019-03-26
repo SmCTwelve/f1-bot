@@ -93,8 +93,10 @@ The following `!f1 plot` subcommands will create a data visualisation uploaded a
 
 - `!f1 plot fastest [<season> <round>]` - Plot fastest lap times per driver as a bar chart
 - `!f1 plot stints [<season> <round>]` - Plot each driver's race stints and pit stops as a stacked bar chart
-- `!f1 plot timings <season> <round> [drivers]` - Plot each driver lap time per lap of the race as a line graph. Both `season` and `round` are required. `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
-- `!f1 plot position <season> <round> [drivers]` - Plot the race position for the drivers per lap of the race. Both `season` and `round` are required. `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
+- `!f1 plot timings <season> <round> [drivers]` - Plot each driver lap time per lap of the race as a line graph. Both `season` and `round` are required. 
+  - `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
+- `!f1 plot position <season> <round> [drivers]` - Plot the race position for the drivers per lap of the race. Both `season` and `round` are required. 
+  - `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
 
 **Note**: Both `plot timings` and `plot positions` may take some time to process as all lap data must be gathered from the API. Use these commands sparingly, consider using `plot fastest` instead.
 
