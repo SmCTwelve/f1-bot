@@ -6,7 +6,7 @@ A simple bot application incorporating the [discord.py](https://github.com/Rappt
 
 Please be aware this was originally designed as a personal project and is provided as-is, it has not been tested on a large scale. Effort has been made to ensure the stated functionality. Further contributions or forks are welcome.
 
-<p align="center"><img src="https://i.imgur.com/Up0Oo1g.gif" /></p>
+<p align="center"><img src="https://i.imgur.com/bdd7emE.gif" /></p>
 
 ## Installation
 The application requires **Python 3.7+** to be installed.
