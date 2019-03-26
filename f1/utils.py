@@ -72,10 +72,10 @@ def countdown(target: datetime):
     h, m, s = [float(x) for x in str(delta).split(', ')[1].split(':')]
     # text representation
     stringify = (
-        f"{d} {'days' if d is not 1 else 'day'}, "
-        f"{h} {'hours' if h is not 1 else 'hour'}, "
-        f"{m} {'minutes' if m is not 1 else 'minute'}, "
-        f"{s} {'seconds' if s is not 1 else 'second'} "
+        f"{int(d)} {'days' if d is not 1 else 'day'}, "
+        f"{int(h)} {'hours' if h is not 1 else 'hour'}, "
+        f"{int(m)} {'minutes' if m is not 1 else 'minute'}, "
+        f"{int(s)} {'seconds' if s is not 1 else 'second'} "
     )
     return [stringify, (d, h, m, s)]
 
@@ -142,14 +142,14 @@ def rank_pitstops(times):
     return sorted_times
 
 
-def filter_laps_by_driver(laps, *drivers):
+def filter_laps_by_driver(laps, drivers):
     """Filter lap time data to get only laps driven by the driver in `drivers`.
 
     Parameters
     ----------
     `laps` : dict
         Timings for each driver per lap as returned by `api.get_all_laps` data key
-    `*drivers` : str
+    `*drivers` : list
         A valid driver_id used by Ergast API
 
     Returns
