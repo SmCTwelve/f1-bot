@@ -27,6 +27,22 @@ async def get_soup(url):
     return BeautifulSoup(res, 'lxml')
 
 
+async def get_wiki_thumbnail(url):
+    """Get image thumbnail from Wikipedia link. Returns the thumbnail URL."""
+    if url is None or url == '':
+        return 'https://i.imgur.com/kvZYOue.png'
+    wiki_title = url.rsplit('/', 1)[1]
+    api_query = ('https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2' +
+                 '&prop=pageimages&piprop=thumbnail&pithumbsize=600' + f'&titles={wiki_title}')
+    res = await fetch(api_query)
+    first = res['query']['pages'][0]
+    # Get page thumb or return placeholder
+    if 'thumbnail' in first:
+        return first['thumbnail']['source']
+    else:
+        return 'https://i.imgur.com/kvZYOue.png'
+
+
 async def check_status():
     """Monitor connection to Ergast API by recording connection status and time for response.
 
@@ -518,7 +534,7 @@ async def get_all_laps(rnd, season):
     raise MissingDataError()
 
 
-async def get_all_laps_for_driver(driver_id, laps):
+async def get_all_laps_for_driver(driver, laps):
     """Get the lap times for each lap of the race for one driver to tabulate.
 
     Each dict entry contains lap number, race position and lap time. The API can take time to
@@ -526,8 +542,8 @@ async def get_all_laps_for_driver(driver_id, laps):
 
     Parameters
     ----------
-    `driver_id` : str
-        must be a valid Ergast API id, e.g. 'alonso', 'di_resta'.
+    `driver_id` : dict
+        Driver dict as returned by `api.get_driver_info()`.
     `laps` : dict
         lap and timing data for the race as returned by `api.get_all_laps`.
 
@@ -554,10 +570,10 @@ async def get_all_laps_for_driver(driver_id, laps):
     `MissingDataError`
         if response invalid.
     """
-    dvr = get_driver_info(driver_id)
-    driver_laps = utils.filter_laps_by_driver(laps, [driver_id])
+    # Force list as second arg as filter expects
+    driver_laps = utils.filter_laps_by_driver(laps, [driver['id']])
     res = {
-        'driver': dvr,
+        'driver': driver,
         'season': laps['season'],
         'round': laps['round'],
         'race': laps['race'],
@@ -865,19 +881,19 @@ async def get_driver_poles(driver_id):
     return MissingDataError()
 
 
-async def get_driver_career(driver_id):
+async def get_driver_career(driver):
     """Total wins, poles, points, seasons, teams and DNF's for the driver.
 
     Parameters
     ----------
-    `driver_id` : str
-        Must be valid, e.g. 'alonso', 'vettel', 'di_resta'.
+    `driver` : dict
+        Driver dict as returned by `api.get_driver_info()`.
 
     Returns
     -------
     `res` : dict
         {
-            'driver': str,
+            'driver': dict,
             'data': dict {
                 'Wins': int,
                 'Poles': int,
@@ -896,8 +912,7 @@ async def get_driver_career(driver_id):
             }
         }
     """
-    dvr = get_driver_info(driver_id)
-    id = dvr['id']
+    id = driver['id']
     # prefire standings req first as it takes longest
     standings_future = get_all_standings_for_driver(id)
     # Get results concurrently
@@ -909,7 +924,7 @@ async def get_driver_career(driver_id):
     champs = [s for s in standings['data'] if s['Pos'] == 1]
     teams = set(t['Team'] for t in standings['data'])
     res = {
-        'driver': dvr,
+        'driver': driver,
         'data': {
             'Wins': wins['total'],
             'Poles': poles['total'],
