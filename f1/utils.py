@@ -119,9 +119,9 @@ def find_driver(id, drivers):
     `DriverNotFoundError`
     """
     for d in drivers:
-        if d.get('driverId', '') == str(id):
+        if d.get('driverId', '').lower() == str(id).lower():
             return d
-        elif d.get('code', '') == str(id):
+        elif d.get('code', '').lower() == str(id).lower():
             return d
         elif d.get('permanentNumber', '') == str(id):
             return d
