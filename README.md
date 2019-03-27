@@ -52,7 +52,7 @@ The `/data` directory contains a JSON dump of all drivers archived by Ergast API
 
 **Parameters**
 
-Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `drivers`, `teams` and `grid` commands which only use a `season`.
+Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `wdc`, `wcc` and `grid` commands which only use a `season`.
 
 Commands which take the `driver_id` parameter must be either of the following:
   - Driver code; e.g. HAM, VET
