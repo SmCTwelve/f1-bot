@@ -79,7 +79,7 @@ def plot_all_driver_laps(lap_timings):
     plt.grid(axis='y')
     plt.legend(bbox_to_anchor=(1, 1), loc='upper left')
 
-    save_figure(fig)
+    save_figure(fig, name='plot_laps.png')
 
 
 def plot_race_pos(lap_timings):
@@ -116,7 +116,7 @@ def plot_race_pos(lap_timings):
     plt.gca().invert_yaxis()
     plt.legend(title='Drivers (start pos)', bbox_to_anchor=(1, 1.04), loc='upper left')
 
-    save_figure(fig)
+    save_figure(fig, name='plot_pos.png')
 
 
 def plot_best_laps(timings):
@@ -142,7 +142,7 @@ def plot_best_laps(timings):
     plt.gca().get_xaxis().set_minor_locator(AutoMinorLocator())
     plt.grid(True, axis='x')
 
-    save_figure(fig)
+    save_figure(fig, name='plot_fastest.png')
 
 
 def plot_pitstops(stops):
@@ -224,4 +224,4 @@ def plot_pitstops(stops):
     plt.grid(True, which='major', axis='x')
     plt.legend(stint_labels, bbox_to_anchor=(1, 1), loc='upper left')
 
-    save_figure(fig)
+    save_figure(fig, name='plot_pitstops.png')

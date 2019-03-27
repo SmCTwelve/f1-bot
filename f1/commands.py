@@ -263,7 +263,7 @@ async def career(ctx, driver_id):
     await ctx.send(embed=embed)
 
 
-@f1.command(aliases=['timings'])
+@f1.command()
 async def laps(ctx, driver_id, season='current', rnd='last'):
     """Display all lap times for the driver.
 
@@ -367,10 +367,8 @@ async def timings(ctx, season: int, rnd: int, *drivers):
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
     Both the season and round must be given first. A single driver or multiple drivers seperated by
-    a space may be given as the last parameter.
-
-    Suppling 'all' or not specifying any drivers will return all driver laps. Supplying 'top' or 'bottom' will
-    plot the top 3 or bottom 3 drivers, respectively.
+    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers will
+    return all driver laps.
 
     A valid driver ID must be used, which can be either of:
         - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
@@ -395,7 +393,7 @@ async def timings(ctx, season: int, rnd: int, *drivers):
 
     chart.plot_all_driver_laps(laps_to_plot)
 
-    f = File(f"{OUT_DIR}/plot.png", filename='plot_laps.png')
+    f = File(f"{OUT_DIR}/plot_laps.png", filename='plot_laps.png')
     await ctx.send(f"**Lap timings - {laps_to_plot['race']} ({laps_to_plot['season']})**")
     await ctx.send(file=f)
 
@@ -428,10 +426,8 @@ async def position(ctx, season: int, rnd: int, *drivers):
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
     Both the season and round must be given first. A single driver or multiple drivers seperated by
-    a space may be given as the last parameter.
-
-    Suppling 'all' or not specifying any drivers will return all driver laps. Supplying 'top' or 'bottom' will
-    plot the top 3 or bottom 3 drivers, respectively.
+    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers
+    will return all driver laps.
 
     A valid driver ID must be used, which can be either of:
         - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
@@ -456,7 +452,7 @@ async def position(ctx, season: int, rnd: int, *drivers):
 
     chart.plot_race_pos(laps_to_plot)
 
-    f = File(f"{OUT_DIR}/plot.png", filename='plot_pos.png')
+    f = File(f"{OUT_DIR}/plot_pos.png", filename='plot_pos.png')
     await ctx.send(f"**Race position - {laps_to_plot['race']} ({laps_to_plot['season']})**")
     await ctx.send(file=f)
 
@@ -497,7 +493,7 @@ async def fastest(ctx, season='current', rnd='last'):
     res['data'] = sorted_laps
     chart.plot_best_laps(res)
 
-    f = File(f"{OUT_DIR}/plot.png", filename='plot_fastest.png')
+    f = File(f"{OUT_DIR}/plot_fastest.png", filename='plot_fastest.png')
     await ctx.send(f"**Fastest laps - {res['race']} ({res['season']})**")
     await ctx.send(file=f)
 
@@ -513,6 +509,6 @@ async def stints(ctx, season='current', rnd='last'):
     res = await api.get_pitstops(rnd, season)
     chart.plot_pitstops(res)
 
-    f = File(f"{OUT_DIR}/plot.png", filename='plot_pitstops.png')
+    f = File(f"{OUT_DIR}/plot_pitstops.png", filename='plot_pitstops.png')
     await ctx.send(f"**Race stints - {res['race']} ({res['season']})**")
     await ctx.send(file=f)
