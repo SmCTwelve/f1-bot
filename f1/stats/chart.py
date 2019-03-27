@@ -210,7 +210,7 @@ def plot_pitstops(stops):
                     stint_lengths[i] = total_laps - prev_stops[i]
                     not_to_update.append(d)
         # Plot next bar segment for each driver
-        plt.barh(rows, stint_lengths, height=0.45, left=prev_stops, align='center', figure=fig)
+        plt.barh(rows, stint_lengths, height=0.5, left=prev_stops, align='center', figure=fig)
         # Update previous stop laps and increment stop number
         prev_stops = np.array(stop_laps, int)
         stop_num += 1
