@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import random
 from operator import itemgetter
 from discord import Colour, File
 from discord.activity import Activity, ActivityType
@@ -42,13 +43,24 @@ async def on_command(ctx):
 @bot.event
 async def on_command_error(ctx, err):
     logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
+    rng = random.randint(1, 60)
+    # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
         await ctx.send(f"Response timed out. Check `{bot.command_prefix}f1 status`.")
+    # Catch DriverNotFoundError
     elif isinstance(err, DriverNotFoundError):
         await ctx.send("Could not find a matching driver. Check ID is correct.")
+    # Catch all other errors
     else:
         await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') else ''}")
-        await ctx.send(f"Try `{bot.command_prefix}help f1 <command>` or check the Readme at `https://bit.ly/2tYRNSd`.")
+        await ctx.send(f"Try `{bot.command_prefix}help f1 <command>` or check the Readme at <https://bit.ly/2tYRNSd>.")
+    # Random chance to show img with error output if rng is multiple of 12
+    if rng % 12 == 0:
+        n = random.randint(1, 3)
+        img = {1: 'https://i.imgur.com/xocNTde.jpg',
+               2: 'https://i.imgur.com/morumoC.jpg',
+               3: 'https://i.imgur.com/Cn8Gdh1.gifv'}
+        await ctx.send(img[n])
 
 
 @bot.command()
@@ -64,7 +76,7 @@ async def ping(ctx, *args):
 async def f1(ctx, *args):
     """Commands to get F1 data. Check the list of subcommands and usage at: https://bit.ly/2tYRNSd"""
     await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}.\n' +
-                   f'Type `{bot.command_prefix}help f1` or check the Readme at `https://bit.ly/2tYRNSd`.')
+                   f'Type `{bot.command_prefix}help f1` or check the Readme at <https://bit.ly/2tYRNSd>.')
 
 
 @f1.command(aliases=['source', 'git'])
@@ -144,17 +156,15 @@ async def races(ctx, *args):
 @f1.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
     """Display an Embed with details and countdown to the next calendar race."""
-    # ## TODO - Display thumbnail for circuits ##
-
     result = await api.get_next_race()
+    thumb_url = await api.get_wiki_thumbnail(result['url'])
     embed = Embed(
         title=f"**{result['data']['Name']}**",
         description=f"{result['countdown']}",
         url=result['url'],
         colour=Colour.teal(),
     )
-    # placeholder
-    embed.set_thumbnail(url='https://i.imgur.com/1tpFlpv.jpg')
+    embed.set_thumbnail(url=thumb_url)
     embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
     embed.add_field(name='Round', value=result['data']['Round'], inline=True)
     embed.add_field(name='Country', value=result['data']['Country'], inline=True)
@@ -215,28 +225,29 @@ async def career(ctx, driver_id):
     --------
         !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
     """
-    # TODO - support JSON file to convert driver codes/names to ID's for easier use
-    await ctx.send("*Gathering driver data...*")
-    id = api.get_driver_info(driver_id)
-    result = await api.get_driver_career(id)
+    await ctx.send("*Gathering driver data, this may take a few moments...*")
+    driver = api.get_driver_info(driver_id)
+    result = await api.get_driver_career(driver)
+    thumb_url = await api.get_wiki_thumbnail(driver['url'])
     season_list = result['data']['Seasons']['years']
     embed = Embed(
         title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
         url=result['driver']['url'],
         colour=Colour.teal(),
     )
+    embed.set_thumbnail(url=thumb_url)
     embed.add_field(name='Number', value=result['driver']['number'], inline=True)
     embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
-    embed.add_field(name='Age', value=result['driver']['age'], inline=True)
-    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
-    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
+    embed.add_field(name='Age', value=result['driver']['age'], inline=False)
     embed.add_field(
         name='Championships',
         # Total and list of seasons
-        value=f"{result['data']['Championships']['total']}" +
-        f"{tuple(y for y in result['data']['Championships']['years'])}",
-        inline=True
+        value=f"{result['data']['Championships']['total']} " +
+        f"{tuple(int(y) for y in result['data']['Championships']['years'])}",
+        inline=False
     )
+    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
+    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
     embed.add_field(
         name='Seasons',
         # Total and start to latest season
@@ -246,7 +257,7 @@ async def career(ctx, driver_id):
     embed.add_field(
         name='Teams',
         # Total and list of teams
-        value=f"{tuple(t for t in result['data']['Teams']['names'])}",
+        value=f"{result['data']['Teams']['total']} {tuple(str(t) for t in result['data']['Teams']['names'])}",
         inline=True
     )
     await ctx.send(embed=embed)
@@ -269,10 +280,10 @@ async def laps(ctx, driver_id, season='current', rnd='last'):
         !f1 laps <driver_id> [<season> <round>]
     """
     await check_season(ctx, season)
-    id = api.get_driver_info(driver_id)
+    driver = api.get_driver_info(driver_id)
     laps_future = api.get_all_laps(rnd, season)
     await ctx.send("*Gathering lap data; this may take a few moments...*")
-    result = await api.get_all_laps_for_driver(id, await laps_future)
+    result = await api.get_all_laps_for_driver(driver, await laps_future)
     table = make_table(result['data'])
     await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
     await ctx.send(f"{result['season']} {result['race']}")
