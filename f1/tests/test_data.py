@@ -139,7 +139,7 @@ class MockAPITests(BaseTest):
         self.assertEqual(res_with_code['id'], 'alonso')
         self.assertEqual(res_with_code['code'], 'ALO')
 
-    def test_get_driver_info_with_no_number_or_code(self):
+    def test_get_driver_info_code_or_number_conversion(self):
         res = api.get_driver_info('abate')
         self.assertEqual(res['id'], 'abate')
         self.assertTrue(res['number'] is None)
@@ -197,17 +197,12 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_all_laps_for_driver(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('all_laps')
+        driver = api.get_driver_info('alonso')
         laps = await api.get_all_laps(15, 2008)
-        res = await api.get_all_laps_for_driver('alonso', laps)
+        res = await api.get_all_laps_for_driver(driver, laps)
         self.check_data(res['data'])
         self.assertEqual(res['data'][0]['Lap'], 1, "First lap should be 1.")
         self.assertEqual(res['driver']['surname'], 'Alonso', "Driver doesn't match that provided.")
-
-    @patch(fetch_path)
-    @async_test
-    async def test_get_all_laps_with_invalid_driver(self, mock_fetch):
-        with self.assertRaises(DriverNotFoundError):
-            await api.get_all_laps_for_driver('smc12', [])
 
     @patch(fetch_path)
     @async_test
@@ -235,13 +230,34 @@ class MockAPITests(BaseTest):
 
     @patch(fetch_path)
     @async_test
+    async def test_get_driver_seasons(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_seasons')
+        res = await api.get_driver_seasons('alonso')
+        self.check_data(res['data'])
+        self.assertEqual(len(res['data']), 1)
+        self.assertTrue(res['data'][0]['year'] == 2001)
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_teams(self, mock_fetch):
+        mock_fetch.return_value = get_mock_response('driver_teams')
+        res = await api.get_driver_teams('alonso')
+        self.assertTrue(res['data'], "Results empty.")
+        self.assertEqual(len(res['data']), 1)
+        self.assertTrue(res['data'][0] == 'Ferrari')
+
+    @patch(fetch_path)
+    @async_test
     async def test_get_driver_career(self, mock_fetch):
         mock_fetch.side_effect = [
+            get_mock_response('driver_championships'),
             get_mock_response('driver_wins'),
             get_mock_response('driver_poles'),
-            get_mock_response('all_standings_for_driver'),
+            get_mock_response('driver_seasons'),
+            get_mock_response('driver_teams'),
         ]
-        res = await api.get_driver_career('alonso')
+        driver = api.get_driver_info('alonso')
+        res = await api.get_driver_career(driver)
         self.assertEqual(res['driver']['surname'], 'Alonso')
         # Check length of results
         data = res['data']

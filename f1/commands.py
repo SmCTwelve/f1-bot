@@ -154,14 +154,14 @@ async def races(ctx, *args):
 async def countdown(ctx, *args):
     """Display an Embed with details and countdown to the next calendar race."""
     result = await api.get_next_race()
-    thumb_url = await api.get_wiki_thumbnail(result['url'])
+    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(result['url']))
     embed = Embed(
         title=f"**{result['data']['Name']}**",
         description=f"{result['countdown']}",
         url=result['url'],
         colour=Colour.teal(),
     )
-    embed.set_thumbnail(url=thumb_url)
+    embed.set_thumbnail(url=await thumb_url_task)
     embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
     embed.add_field(name='Round', value=result['data']['Round'], inline=True)
     embed.add_field(name='Country', value=result['data']['Country'], inline=True)
@@ -225,17 +225,25 @@ async def career(ctx, driver_id):
     await ctx.send("*Gathering driver data, this may take a few moments...*")
     driver = api.get_driver_info(driver_id)
     result = await api.get_driver_career(driver)
-    thumb_url = await api.get_wiki_thumbnail(driver['url'])
+    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(driver['url']))
     season_list = result['data']['Seasons']['years']
     embed = Embed(
         title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
         url=result['driver']['url'],
         colour=Colour.teal(),
     )
-    embed.set_thumbnail(url=thumb_url)
+    embed.set_thumbnail(url=await thumb_url_task)
     embed.add_field(name='Number', value=result['driver']['number'], inline=True)
     embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
-    embed.add_field(name='Age', value=result['driver']['age'], inline=False)
+    embed.add_field(name='Age', value=result['driver']['age'], inline=True)
+    embed.add_field(
+        name='Seasons',
+        # Total and start to latest season
+        value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
+        inline=True
+    )
+    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
+    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
     embed.add_field(
         name='Championships',
         # Total and list of seasons
@@ -243,19 +251,11 @@ async def career(ctx, driver_id):
         f"{tuple(int(y) for y in result['data']['Championships']['years'])}",
         inline=False
     )
-    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
-    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
-    embed.add_field(
-        name='Seasons',
-        # Total and start to latest season
-        value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
-        inline=True
-    )
     embed.add_field(
         name='Teams',
         # Total and list of teams
         value=f"{result['data']['Teams']['total']} {tuple(str(t) for t in result['data']['Teams']['names'])}",
-        inline=True
+        inline=False
     )
     await ctx.send(embed=embed)
 
@@ -278,9 +278,9 @@ async def laps(ctx, driver_id, season='current', rnd='last'):
     """
     await check_season(ctx, season)
     driver = api.get_driver_info(driver_id)
-    laps_future = api.get_all_laps(rnd, season)
+    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
     await ctx.send("*Gathering lap data; this may take a few moments...*")
-    result = await api.get_all_laps_for_driver(driver, await laps_future)
+    result = await api.get_all_laps_for_driver(driver, await laps_task)
     table = make_table(result['data'])
     await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
     await ctx.send(f"{result['season']} {result['race']}")
@@ -383,10 +383,10 @@ async def timings(ctx, season: int, rnd: int, *drivers):
         driver_list = [api.get_driver_info(d)['id'] for d in drivers]
     else:
         driver_list = []
-    laps_future = api.get_all_laps(rnd, season)
+    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
     await ctx.send("*Gathering lap data; this may take a few moments...*")
 
-    laps_to_plot = filter_laps_by_driver(await laps_future, driver_list)
+    laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
 
     chart.plot_all_driver_laps(laps_to_plot)
 
@@ -403,18 +403,10 @@ async def timings_handler(ctx, error):
         if error.param.name == 'drivers':
             await ctx.send("No driver_id provided.")
         else:
-            await ctx.send(
-                f"Season and round must be specified: " +
-                f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
-            )
-    elif isinstance(error, DriverNotFoundError):
-        await ctx.send("Could not find a matching driver. Check ID is correct.")
+            await ctx.send(f"Season and round must be specified.")
     # Round or season is missing
-    else:
-        await ctx.send(
-            f"Invalid season or round provided: " +
-            f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
-        )
+    if isinstance(error, commands.BadArgument):
+        await ctx.send(f"Invalid season or round provided.")
 
 
 @plot.command(aliases=['pos', 'overtakes'])
@@ -442,10 +434,10 @@ async def position(ctx, season: int, rnd: int, *drivers):
         driver_list = [api.get_driver_info(d)['id'] for d in drivers]
     else:
         driver_list = []
-    laps_future = api.get_all_laps(rnd, season)
+    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
     await ctx.send("*Gathering lap data; this may take a few moments...*")
 
-    laps_to_plot = filter_laps_by_driver(await laps_future, driver_list)
+    laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
 
     chart.plot_race_pos(laps_to_plot)
 
@@ -462,18 +454,10 @@ async def position_handler(ctx, error):
         if error.param.name == 'drivers':
             await ctx.send("No driver_id provided.")
         else:
-            await ctx.send(
-                f"Season and round must be specified: " +
-                f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
-            )
-    elif isinstance(error, DriverNotFoundError):
-        await ctx.send("Could not find a matching driver. Check ID is correct.")
+            await ctx.send(f"Season and round must be specified.")
     # Round or season is missing
-    else:
-        await ctx.send(
-            f"Invalid season or round provided: " +
-            f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
-        )
+    if isinstance(error, commands.BadArgument):
+        await ctx.send(f"Invalid season or round provided.")
 
 
 @plot.command(aliases=['best'])

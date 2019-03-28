@@ -726,9 +726,8 @@ async def get_pitstops(rnd, season):
     raise MissingDataError()
 
 
-async def get_all_standings_for_driver(driver_id):
-    """Returns dict with only driver standings results for the given driver. Results can be used
-    to calculate driver championship wins and total seasons.
+async def get_driver_championship_wins(driver_id):
+    """Returns dict with driver standings results where the driver placed first.
 
     Parameters
     ----------
@@ -751,7 +750,7 @@ async def get_all_standings_for_driver(driver_id):
     ------
     `MissingDataError`
     """
-    url = f"{BASE_URL}/drivers/{driver_id}/driverStandings?limit=1000"
+    url = f"{BASE_URL}/drivers/{driver_id}/driverStandings/1"
     soup = await get_soup(url)
     if soup:
         standings = soup.standingstable.find_all('standingslist')
@@ -802,7 +801,7 @@ async def get_driver_wins(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f"{BASE_URL}/drivers/{driver_id}/results/1?limit=1000"
+    url = f"{BASE_URL}/drivers/{driver_id}/results/1?limit=200"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -856,7 +855,7 @@ async def get_driver_poles(driver_id):
     `MissingDataError`
         if API response invalid.
     """
-    url = f"{BASE_URL}/drivers/{driver_id}/qualifying/1?limit=1000"
+    url = f"{BASE_URL}/drivers/{driver_id}/qualifying/1?limit=200"
     soup = await get_soup(url)
     if soup:
         races = soup.racetable.find_all('race')
@@ -879,6 +878,40 @@ async def get_driver_poles(driver_id):
             )
         return res
     return MissingDataError()
+
+
+async def get_driver_seasons(driver_id):
+    """Get all seasons the driver has participated in as a dict.
+
+    Raises `MissingDataError`.
+    """
+    url = f"{BASE_URL}/drivers/{driver_id}/seasons"
+    soup = await get_soup(url)
+    if soup:
+        seasons = soup.seasontable.find_all('season')
+        res = {
+            'total': int(soup.mrdata['total']),
+            'data': [{'year': int(s.string), 'url': s['url']} for s in seasons]
+        }
+        return res
+    raise MissingDataError()
+
+
+async def get_driver_teams(driver_id):
+    """Get all teams the driver has driven with as a dict containing list of constructor names.
+
+    Raises `MissingDataError`.
+    """
+    url = f"{BASE_URL}/drivers/{driver_id}/constructors"
+    soup = await get_soup(url)
+    if soup:
+        constructors = soup.constructortable.find_all('constructor')
+        res = {
+            'total': int(soup.mrdata['total']),
+            'data': [c.find('name').string for c in constructors]
+        }
+        return res
+    raise MissingDataError
 
 
 async def get_driver_career(driver):
@@ -914,31 +947,31 @@ async def get_driver_career(driver):
     """
     id = driver['id']
     # prefire standings req first as it takes longest
-    standings_future = get_all_standings_for_driver(id)
+    standings_task = asyncio.create_task(get_driver_championship_wins(id))
     # Get results concurrently
-    [wins, poles, standings] = await asyncio.gather(
+    [wins, poles, seasons, teams, champs] = await asyncio.gather(
         get_driver_wins(id),
         get_driver_poles(id),
-        standings_future,
+        get_driver_seasons(id),
+        get_driver_teams(id),
+        standings_task,
     )
-    champs = [s for s in standings['data'] if s['Pos'] == 1]
-    teams = set(t['Team'] for t in standings['data'])
     res = {
         'driver': driver,
         'data': {
             'Wins': wins['total'],
             'Poles': poles['total'],
             'Championships': {
-                'total': int(len(champs)),
-                'years': [x['Season'] for x in champs],
+                'total': champs['total'],
+                'years': [x['Season'] for x in champs['data']],
             },
             'Seasons': {
-                'total': int(len(standings['data'])),
-                'years': [x['Season'] for x in standings['data']],
+                'total': seasons['total'],
+                'years': [x['year'] for x in seasons['data']],
             },
             'Teams': {
-                'total': int(len(teams)),
-                'names': teams,
+                'total': teams['total'],
+                'names': teams['data'],
             },
         }
     }

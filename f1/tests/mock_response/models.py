@@ -331,8 +331,10 @@ pitstops = result_wrapper('''
     </PitStopsList>''')
 
 
-# Seasons is just total of standings results
-driver_seasons = driver_standings
+driver_seasons = ('''
+    <SeasonTable driverId="alonso">
+        <Season url="https://en.wikipedia.org/wiki/2001_Formula_One_season">2001</Season>
+    </SeasonTable>''')
 
 # All drivers and teams is taken from driver standings results
 grid = driver_standings
