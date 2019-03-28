@@ -16,7 +16,8 @@ from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, r
 
 logger = logging.getLogger(__name__)
 
-bot = commands.Bot(command_prefix=CONFIG['BOT']['PREFIX'])
+# Prefix includes the symbol and the 'f1' name with hard-coded space
+bot = commands.Bot(command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ", case_insensitive=True)
 
 
 async def check_season(ctx, season):
@@ -29,7 +30,7 @@ async def check_season(ctx, season):
 @bot.event
 async def on_ready():
     logger.info('Bot ready...')
-    job = Activity(name=f'{bot.command_prefix}f1', type=ActivityType.watching)
+    job = Activity(name=bot.command_prefix, type=ActivityType.watching)
     await bot.change_presence(activity=job)
 
 
@@ -44,16 +45,24 @@ async def on_command(ctx):
 async def on_command_error(ctx, err):
     logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
     rng = random.randint(1, 60)
+
     # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
-        await ctx.send(f"Response timed out. Check `{bot.command_prefix}f1 status`.")
+        await ctx.send(f"Response timed out. Check `{bot.command_prefix}status`.")
+
     # Catch DriverNotFoundError
     elif isinstance(err, DriverNotFoundError):
         await ctx.send("Could not find a matching driver. Check ID is correct.")
+
     # Catch all other errors
     else:
-        await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') else ''}")
-        await ctx.send(f"Try `{bot.command_prefix}help f1 <command>` or check the Readme at <https://bit.ly/2tYRNSd>.")
+        # Catch CommandNotFound
+        if isinstance(err, commands.CommandNotFound):
+            await ctx.send(f"Command not recognised.")
+        else:
+            await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') else ''}")
+        await ctx.send(f"Try `{bot.command_prefix}help [command]` or check the Readme at <https://bit.ly/2tYRNSd>.")
+
     # Random chance to show img with error output if rng is multiple of 12
     if rng % 12 == 0:
         n = random.randint(1, 3)
@@ -63,29 +72,17 @@ async def on_command_error(ctx, err):
         await ctx.send(img[n])
 
 
-@bot.command()
-async def ping(ctx, *args):
-    """Display the current latency."""
-    await ctx.send(bot.latency)
-
 # Main command group
 # ==================
 
 
-@bot.group(invoke_without_command=True, case_insensitive=True)
-async def f1(ctx, *args):
-    """Commands to get F1 data. Check the list of subcommands and usage at: https://bit.ly/2tYRNSd"""
-    await ctx.send(f'Command not recognised: {ctx.prefix}{ctx.command}.\n' +
-                   f'Type `{bot.command_prefix}help f1` or check the Readme at <https://bit.ly/2tYRNSd>.')
-
-
-@f1.command(aliases=['source', 'git'])
+@bot.command(aliases=['source', 'git'])
 async def github(ctx, *args):
     """Display a link to the GitHub repository."""
     await ctx.send("https://github.com/SmCTwelve/f1-bot")
 
 
-@f1.command(aliases=['drivers', 'championship'])
+@bot.command(aliases=['drivers', 'championship'])
 async def wdc(ctx, season='current'):
     """Display the Driver Championship standings as of the last race or `season`.
 
@@ -104,7 +101,7 @@ async def wdc(ctx, season='current'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['teams', 'constructors'])
+@bot.command(aliases=['teams', 'constructors'])
 async def wcc(ctx, season='current'):
     """Display Constructor Championship standings as of the last race or `season`.
 
@@ -123,7 +120,7 @@ async def wcc(ctx, season='current'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command()
+@bot.command()
 async def grid(ctx, season='current'):
     """Display all the drivers and teams participating in the current season or `season`.
 
@@ -143,7 +140,7 @@ async def grid(ctx, season='current'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['calendar', 'schedule'])
+@bot.command(aliases=['calendar', 'schedule'])
 async def races(ctx, *args):
     """Display the full race schedule for the current season."""
     result = await api.get_race_schedule()
@@ -153,7 +150,7 @@ async def races(ctx, *args):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['timer', 'next'])
+@bot.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
     """Display an Embed with details and countdown to the next calendar race."""
     result = await api.get_next_race()
@@ -173,7 +170,7 @@ async def countdown(ctx, *args):
     await ctx.send(embed=embed)
 
 
-@f1.command(aliases=['finish'])
+@bot.command(aliases=['finish'])
 async def results(ctx, season='current', rnd='last'):
     """Results for race `round`. Default most recent.
 
@@ -192,7 +189,7 @@ async def results(ctx, season='current', rnd='last'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['quali'])
+@bot.command(aliases=['quali'])
 async def qualifying(ctx, season='current', rnd='last'):
     """Qualifying results for `round`. Defaults to latest.
 
@@ -210,7 +207,7 @@ async def qualifying(ctx, season='current', rnd='last'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['driver'])
+@bot.command(aliases=['driver'])
 async def career(ctx, driver_id):
     """Career stats for the `driver_id`.
 
@@ -263,7 +260,7 @@ async def career(ctx, driver_id):
     await ctx.send(embed=embed)
 
 
-@f1.command()
+@bot.command()
 async def laps(ctx, driver_id, season='current', rnd='last'):
     """Display all lap times for the driver.
 
@@ -290,7 +287,7 @@ async def laps(ctx, driver_id, season='current', rnd='last'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['bestlap'])
+@bot.command(aliases=['bestlap'])
 async def best(ctx, filter=None, season='current', rnd='last'):
     """Display the best lap times and delta for each driver in `round`.
 
@@ -319,7 +316,7 @@ async def best(ctx, filter=None, season='current', rnd='last'):
     await ctx.send(f"```\n{table}\n```")
 
 
-@f1.command(aliases=['pits', 'pitstops'])
+@bot.command(aliases=['pits', 'pitstops'])
 async def stops(ctx, filter=None, season='current', rnd='last'):
     """Display pitstops for each driver in the race, optionally sorted with filter.
 
@@ -355,10 +352,10 @@ async def stops(ctx, filter=None, season='current', rnd='last'):
 # ==================
 
 
-@f1.group(invoke_without_command=True, case_insensitive=True)
+@bot.group(invoke_without_command=True, case_insensitive=True)
 async def plot(ctx, *args):
     """Command group for all plotting functions."""
-    await ctx.send(f"Command not recognised. Type `{bot.command_prefix}help f1 plot` for plotting subcommands.")
+    await ctx.send(f"Command not recognised. Type `{bot.command_prefix}help plot` for plotting subcommands.")
 
 
 @plot.command(aliases=['laps'])
@@ -408,7 +405,7 @@ async def timings_handler(ctx, error):
         else:
             await ctx.send(
                 f"Season and round must be specified: " +
-                f"`{bot.command_prefix}f1 timings <season> <round> [all | driver1 driver2]`"
+                f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
             )
     elif isinstance(error, DriverNotFoundError):
         await ctx.send("Could not find a matching driver. Check ID is correct.")
@@ -416,7 +413,7 @@ async def timings_handler(ctx, error):
     else:
         await ctx.send(
             f"Invalid season or round provided: " +
-            f"`{bot.command_prefix}f1 timings <season> <round> [all | driver1 driver2]`"
+            f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
         )
 
 
@@ -467,7 +464,7 @@ async def position_handler(ctx, error):
         else:
             await ctx.send(
                 f"Season and round must be specified: " +
-                f"`{bot.command_prefix}f1 timings <season> <round> [all | driver1 driver2]`"
+                f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
             )
     elif isinstance(error, DriverNotFoundError):
         await ctx.send("Could not find a matching driver. Check ID is correct.")
@@ -475,7 +472,7 @@ async def position_handler(ctx, error):
     else:
         await ctx.send(
             f"Invalid season or round provided: " +
-            f"`{bot.command_prefix}f1 timings <season> <round> [all | driver1 driver2]`"
+            f"`{bot.command_prefix}plot timings <season> <round> [all | driver1 driver2...]`"
         )
 
 

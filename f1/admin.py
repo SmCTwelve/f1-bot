@@ -5,7 +5,7 @@ from discord import Colour
 from discord.embeds import Embed
 
 from f1.api import check_status
-from f1.commands import bot, f1
+from f1.commands import bot
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def get_uptime():
     return (int(days), int(hours), int(mins), int(secs))
 
 
-@f1.command()
+@bot.command()
 async def status(ctx, *args):
     """Get the bot status including uptime, API connection, latency and owner."""
     uptime = get_uptime()
