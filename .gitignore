@@ -4,6 +4,7 @@
 .env
 
 /img
+/out/plot*.png
 
 __pycache__/
 db.sqlite3
