@@ -16,7 +16,7 @@ $ git clone https://github.com/SmCTwelve/f1-bot.git
 $ cd f1-bot/
 $ pip install -r requirements.txt
 ```
-Or download the latest stable [release](https://github.com/SmCTwelve/f1-bot/releases), extract the files and run `pip install -r requirements.txt` in the directory. 
+Or download the latest stable [release](https://github.com/SmCTwelve/f1-bot/releases), extract the files and run `pip install -r requirements.txt` in the directory.
 
 If using Pipenv you can install from the Pipfile and automatically create a virtual environment:
 ```bash
@@ -63,7 +63,7 @@ Commands which take the `driver_id` parameter must be either of the following:
 
 Invoke a command in Discord by typing the prefix `!` (can be changed in config) and base `f1` command followed by one of the following subcommands:
 
-- `!help f1 | !help f1 <command>` -  Display help text for the available commands
+- `!f1 help | !f1 help <command>` -  Display help text for the available commands
 - `!f1 status` - Information about the bot and connection status
 - `!f1 github` - A link to this repository
 - `!f1 wdc | drivers [season]` - Display World Driver Championship standings
@@ -93,10 +93,10 @@ The following `!f1 plot` subcommands will create a data visualisation uploaded a
 
 - `!f1 plot fastest [<season> <round>]` - Plot fastest lap times per driver as a bar chart
 - `!f1 plot stints [<season> <round>]` - Plot each driver's race stints and pit stops as a stacked bar chart
-- `!f1 plot timings <season> <round> [drivers]` - Plot each driver lap time per lap of the race as a line graph. Both `season` and `round` are required. 
-  - `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
-- `!f1 plot position <season> <round> [drivers]` - Plot the race position for the drivers per lap of the race. Both `season` and `round` are required. 
-  - `[drivers]` may be multiple drivers to compare separated by spaces; not specifying any drivers or using `all` will plot for all drivers. Specifying only a few drivers will result in a more legible graph
+- `!f1 plot timings <season> <round> [drivers]` - Plot each driver lap time as a line graph. Both `season` and `round` are required.
+  - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
+- `!f1 plot position <season> <round> [drivers]` - Plot race position per lap of the race. Both `season` and `round` are required.
+  - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot for all drivers. Limiting drivers will result in a more legible graph.
 
-**Note**: Both `plot timings` and `plot positions` may take some time to process as all lap data must be gathered from the API. Use these commands sparingly, consider using `plot fastest` instead.
+**Note:** Both `plot timings` and `plot positions` may take some time to process as all lap data must be gathered from the API. Use these commands sparingly, consider using `plot fastest` instead.
 
