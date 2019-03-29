@@ -71,13 +71,13 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 - `!f1 grid [season]` -  Return details of all drivers and teams participating in the season
 - `!f1 schedule` -  Display the race calendar for the current season
 - `!f1 next` -  Show a countdown to the next race and details
-- `!f1 stops [filter] [<season> <round>]` - Display pit stops for each driver in the race. Optional `[filter]` keyword:
+- `!f1 stops [filter] [<season> <round>]` - Display pit stops for each driver in the race. The `[filter]` parameter is required when searching for a specific season and round due to the parsing behaviour. You can use the `all` value if you don't actually want to filter the results. Options for `[filter]` keyword:
   - `all` - Do not apply filter
   - `top` - Top 5 fastest pit stops
   - `bottom` -  Bottom 5 slowest pit stops
   - `fastest` - Fastest ranked pit stop
   - `slowest` - Slowest ranked pit stop
-- `!f1 best [filter] [<season> <round>]` - Display best lap time per driver. Optional `[filter]` keyword:
+- `!f1 best [filter] [<season> <round>]` - Display best lap time per driver. The `[filter]` parameter is required when searching for a specific season and round due to the parsing behaviour. You can use the `all` value if you don't actually want to filter the results. Options for `[filter]` keyword:
   - `all` - Do not apply filter
   - `top` - Top 5 fastest laps of the race
   - `bottom` -  Bottom 5 slowest laps of the race
