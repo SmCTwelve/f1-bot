@@ -227,6 +227,7 @@ async def career(ctx, driver_id):
     result = await api.get_driver_career(driver)
     thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(driver['url']))
     season_list = result['data']['Seasons']['years']
+    champs_list = result['data']['Championships']['years']
     embed = Embed(
         title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
         url=result['driver']['url'],
@@ -248,13 +249,13 @@ async def career(ctx, driver_id):
         name='Championships',
         # Total and list of seasons
         value=f"{result['data']['Championships']['total']} " +
-        f"{tuple(int(y) for y in result['data']['Championships']['years'])}",
+        f"{tuple(int(y) for y in champs_list) if champs_list else ''}",
         inline=False
     )
     embed.add_field(
         name='Teams',
         # Total and list of teams
-        value=f"{result['data']['Teams']['total']} {tuple(str(t) for t in result['data']['Teams']['names'])}",
+        value=f"{result['data']['Teams']['total']} {tuple(t for t in result['data']['Teams']['names'])}",
         inline=False
     )
     await ctx.send(embed=embed)
@@ -515,6 +516,11 @@ async def stints(ctx, season='current', rnd='last'):
     Usage:
         !f1 plot stints [<season> <round>]
     """
+    # Pit data only available from 2012 so catch seasons before
+    if not season == 'current':
+        if int(season) < 2012:
+            await ctx.send("Pitstop data not available before 2012.")
+            raise commands.BadArgument(message="Tried to get pitstops before 2012.")
     await check_season(ctx, season)
     res = await api.get_pitstops(rnd, season)
     chart.plot_pitstops(res)
