@@ -72,11 +72,13 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 - `!f1 schedule` -  Display the race calendar for the current season
 - `!f1 next` -  Show a countdown to the next race and details
 - `!f1 stops [filter] [<season> <round>]` - Display pit stops for each driver in the race. Optional `[filter]` keyword:
+  - `all` - Do not apply filter
   - `top` - Top 5 fastest pit stops
   - `bottom` -  Bottom 5 slowest pit stops
   - `fastest` - Fastest ranked pit stop
   - `slowest` - Slowest ranked pit stop
 - `!f1 best [filter] [<season> <round>]` - Display best lap time per driver. Optional `[filter]` keyword:
+  - `all` - Do not apply filter
   - `top` - Top 5 fastest laps of the race
   - `bottom` -  Bottom 5 slowest laps of the race
   - `fastest` - Fastest ranked lap

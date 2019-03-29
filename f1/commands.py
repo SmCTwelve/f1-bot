@@ -296,11 +296,11 @@ async def best(ctx, filter=None, season='current', rnd='last'):
     Usage:
     ---------------
         !f1 best                             Return all best laps for the latest race.
-        !f1 best [<season> <round>]          Return all best laps for [round] in [season].
         !f1 best [filter] [<season> <round>] Return best laps sorted by [filter].
 
         Optional filter:
         ----------------
+        `all`     -  Do not apply a filter.
         `fastest` -  Only show the fastest lap of the race.
         `slowest` -  Only show the slowest lap of the race.
         `top`     -  Top 5 fastest drivers.
@@ -325,11 +325,11 @@ async def stops(ctx, filter=None, season='current', rnd='last'):
     Usage:
     ---------------
         !f1 stops                             Return all pitstops for the latest race.
-        !f1 stops [<season> <round>]          Return all pitstops for [round] in [season].
         !f1 stops [filter] [<season> <round>] Return pitstops sorted by [filter].
 
         Optional filter:
         ----------------
+        `all`     -  Do not apply filter.
         `fastest` -  Only show the fastest pitstop the race.
         `slowest` -  Only show the slowest pitstop the race.
         `top`     -  Top 5 fastest pitstops.
