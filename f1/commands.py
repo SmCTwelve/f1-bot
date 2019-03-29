@@ -282,9 +282,20 @@ async def laps(ctx, driver_id, season='current', rnd='last'):
     await ctx.send("*Gathering lap data; this may take a few moments...*")
     result = await api.get_all_laps_for_driver(driver, await laps_task)
     table = make_table(result['data'])
-    await ctx.send(f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**")
-    await ctx.send(f"{result['season']} {result['race']}")
+    await ctx.send(
+        f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**\n" +
+        f"{result['season']} {result['race']}"
+    )
     await ctx.send(f"```\n{table}\n```")
+
+
+@laps.error
+async def laps_error(ctx, error):
+    # Check error is missing arguments
+    if isinstance(error, commands.MissingRequiredArgument):
+        # Drivers are missing
+        if error.param.name == 'driver_id':
+            await ctx.send("No driver_id provided.")
 
 
 @bot.command(aliases=['bestlap'])
@@ -306,13 +317,18 @@ async def best(ctx, filter=None, season='current', rnd='last'):
         `top`     -  Top 5 fastest drivers.
         `bottom`  -  Bottom 5 slowest drivers.
     """
+    if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
+        await ctx.send("Invalid filter given.")
+        raise commands.BadArgument(message="Invalid filter given.")
     await check_season(ctx, season)
     results = await api.get_best_laps(rnd, season)
     sorted_times = rank_best_lap_times(results)
     filtered = filter_times(sorted_times, filter)
     table = make_table(filtered)
-    await ctx.send(f"**Fastest laps ranked {filter}**")
-    await ctx.send(f"{results['season']} {results['race']}")
+    await ctx.send(
+        f"**Fastest laps ranked {filter}**\n" +
+        f"{results['season']} {results['race']}"
+    )
     await ctx.send(f"```\n{table}\n```")
 
 
@@ -335,7 +351,17 @@ async def stops(ctx, filter=None, season='current', rnd='last'):
         `top`     -  Top 5 fastest pitstops.
         `bottom`  -  Bottom 5 slowest pitstops.
     """
+    if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
+        await ctx.send("Invalid filter given.")
+        raise commands.BadArgument(message="Invalid filter given.")
+
+    # Pit data only available from 2012 so catch seasons before
+    if not season == 'current':
+        if int(season) < 2012:
+            await ctx.send("Pitstop data not available before 2012.")
+            raise commands.BadArgument(message="Tried to get pitstops before 2012.")
     await check_season(ctx, season)
+
     res = await api.get_pitstops(rnd, season)
     if filter is not None:
         sorted_times = rank_pitstops(res)
@@ -343,7 +369,10 @@ async def stops(ctx, filter=None, season='current', rnd='last'):
         table = make_table(filtered)
     else:
         table = make_table(res['data'])
-    await ctx.send(f"**Pit stops ranked {filter}**")
+    await ctx.send(
+        f"**Pit stops ranked {filter}**\n" +
+        f"{res['season']} {res['race']}"
+    )
     await ctx.send(f"{res['season']} {res['race']}")
     await ctx.send(f"```\n{table}\n```")
 
