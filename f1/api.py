@@ -437,25 +437,15 @@ async def get_race_results(rnd, season, winner_only=False):
         }
         for result in race_results:
             driver = result.driver
-            # Finish time and fastest lap both use <time> tag, soup.find() will return first match
-            # If the finish time is missing then first match will be the fastest lap time
-            # Check parent of tag to ensure it's the correct element
-            if result.time is not None:
-                if result.time.parent.name == 'fastestlap':
-                    finish_time = None
-                else:
-                    finish_time = result.time
             # Now get the fastest lap time element
             fastest_lap = result.fastestlap
             res['data'].append(
                 {
                     'Pos': int(result['position']),
-                    'Driver': f'{driver.givenname.string} {driver.familyname.string}',
+                    'Driver': f'{driver.familyname.string}',
                     'Team': result.constructor.find('name').string,
-                    'Laps': int(result.laps.string),
                     'Start': int(result.grid.string),
-                    # If DNF finish time will be missing so replace with None
-                    'Time': None if finish_time is None else finish_time.string,
+                    'Laps': int(result.laps.string),
                     'Status': result.status.string,
                     'Points': int(result['points']),
                 }
