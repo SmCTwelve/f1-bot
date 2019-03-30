@@ -3,11 +3,6 @@ import sys
 import logging
 import configparser
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
-)
-
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +36,22 @@ def load_config():
             CONFIG.read_file(f)
             logger.info('Config loaded!')
             create_output_dir()
+
+            # logging
+            cfg_level = CONFIG['LOGGING']['LEVEL']
+            if cfg_level == 'DEBUG':
+                level = logging.DEBUG
+            elif cfg_level == 'WARNING':
+                level = logging.WARNING
+            elif cfg_level == 'ERROR':
+                level = logging.ERROR
+            else:
+                level = logging.INFO
+
+            logging.basicConfig(
+                level=level,
+                format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
+            )
     except IOError:
         logger.critical(f'Could not load config.ini file at {CONFIG_FILE}, check it exists.')
         sys.exit(0)
