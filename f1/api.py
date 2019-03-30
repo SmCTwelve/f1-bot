@@ -343,8 +343,6 @@ async def get_next_race():
     `MissingDataError`
         if API response unavailable.
     """
-    #  TODO - Get image of circuit
-
     url = f'{BASE_URL}/current/next'
     soup = await get_soup(url)
     if soup:

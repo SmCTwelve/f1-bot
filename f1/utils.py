@@ -66,10 +66,10 @@ def countdown(target: datetime):
     Returns a list containing the string output and tuple of (days, hrs, mins, sec).
     """
     delta = target - datetime.now()
-    d = (delta.days) if delta.days > -1 else 0
-    # str() on delta nicely outputs 'D days, H:M:S'
-    # split 'H:M:S' to get individual values as floats
-    h, m, s = [float(x) for x in str(delta).split(', ')[1].split(':')]
+    d = delta.days if delta.days > 0 else 0
+    # timedelta only stores seconds so calculate mins and hours by dividing remainder
+    h, rem = divmod(delta.seconds, 3600)
+    m, s = divmod(rem, 60)
     # text representation
     stringify = (
         f"{int(d)} {'days' if d is not 1 else 'day'}, "
