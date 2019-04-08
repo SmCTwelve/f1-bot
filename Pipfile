@@ -9,11 +9,11 @@ autopep8 = "*"
 rope = "*"
 
 [packages]
-discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "rewrite"}
 lxml = "*"
 bs4 = "*"
 tabulate = "*"
 matplotlib = "*"
+discord-py = "*"
 
 [requires]
 python_version = "3.7"
