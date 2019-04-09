@@ -448,11 +448,12 @@ async def plot(ctx, *args):
 @plot.command(aliases=['laps'])
 async def timings(ctx, season='current', rnd='last', *drivers):
     """Plot all lap data for the specified driver(s) or all drivers.
+
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
-    Both the season and round must be given first. A single driver or multiple drivers seperated by
-    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers will
-    return all driver laps.
+    Both the season and round must be given before any drivers. A single driver or multiple drivers seperated by
+    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers
+    will return all driver laps.
 
     A valid driver ID must be used, which can be either of:
         - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
@@ -491,8 +492,6 @@ async def timings_handler(ctx, error):
         # Drivers are missing
         if error.param.name == 'drivers':
             await target.send("No driver_id provided.")
-        else:
-            await target.send(f"Season and round must be specified.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
         await target.send(f"Invalid season or round provided.")
@@ -501,9 +500,10 @@ async def timings_handler(ctx, error):
 @plot.command(aliases=['pos', 'overtakes'])
 async def position(ctx, season='current', rnd='last', *drivers):
     """Plot race position per lap for the specified driver(s) or all drivers.
+
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
-    Both the season and round must be given first. A single driver or multiple drivers seperated by
+    Both the season and round must be given before any drivers. A single driver or multiple drivers seperated by
     a space may be given as the last parameter. Suppling 'all' or not specifying any drivers
     will return all driver laps.
 
@@ -514,8 +514,8 @@ async def position(ctx, season='current', rnd='last', *drivers):
 
     Usage:
     ------
-        !f1 plot position <season> <round> [all]
-        !f1 plot position <season> <round> [driver1 driver2...]
+        !f1 plot position [season] [round]
+        !f1 plot position <season> <round> [driver1 driver2... | all]
     """
     target = await get_target(ctx, 'file')
     await check_season(ctx, season)
@@ -544,8 +544,6 @@ async def position_handler(ctx, error):
         # Drivers are missing
         if error.param.name == 'drivers':
             await target.send("No driver_id provided.")
-        else:
-            await target.send(f"Season and round must be specified.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
         await target.send(f"Invalid season or round provided.")
