@@ -31,7 +31,9 @@ async def get_wiki_thumbnail(url):
     """Get image thumbnail from Wikipedia link. Returns the thumbnail URL."""
     if url is None or url == '':
         return 'https://i.imgur.com/kvZYOue.png'
+    # Get URL name after the first '/'
     wiki_title = url.rsplit('/', 1)[1]
+    # Get page thumbnail from wikipedia API if it exists
     api_query = ('https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2' +
                  '&prop=pageimages&piprop=thumbnail&pithumbsize=600' + f'&titles={wiki_title}')
     res = await fetch(api_query)

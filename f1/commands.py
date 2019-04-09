@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import random
+import re
 from operator import itemgetter
 from discord import Colour, File
 from discord.activity import Activity, ActivityType
@@ -16,8 +17,55 @@ from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, r
 
 logger = logging.getLogger(__name__)
 
-# Prefix includes the symbol and the 'f1' name with hard-coded space
-bot = commands.Bot(command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ", case_insensitive=True)
+# Disables sending DM temporarily for the command, overrides any config setting
+# Is reset on error or after command completion
+DISABLE_DM = False
+
+# Prefix includes the config symbol and the 'f1' name with hard-coded space
+bot = commands.Bot(
+    command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ",
+    help_command=commands.DefaultHelpCommand(dm_help=True),
+    case_insensitive=True
+)
+
+
+def reset_dm():
+    """Resets the global `DISABLE_DM` flag if a command temporarily disabled it."""
+    global DISABLE_DM
+    if DISABLE_DM:
+        DISABLE_DM = False
+        logger.info('DISABLE_DM reset to False.')
+
+
+async def get_target(ctx, msg_type):
+    """Check if the target of a command response should be direct message or channel.
+
+    Returns an object of `ctx.author` or the original `ctx`.
+
+    Parameters
+    ----------
+    `ctx` : Context
+        The invocation context of the command.
+    `msg_type`: str
+        Type of message response: 'table', 'file', 'image' or 'embed'. Regular text will
+        be sent to the channel unless part of the command response of the previous types.
+    """
+    if DISABLE_DM:
+        DM = False
+    else:
+        if msg_type == 'table' and CONFIG['MESSAGE'].getboolean('TABLE_DM'):
+            DM = True
+        elif (msg_type == 'file' or msg_type == 'image') and CONFIG['MESSAGE'].getboolean('FILE_DM'):
+            DM = True
+        elif msg_type == 'embed' and CONFIG['MESSAGE'].getboolean('EMBED_DM'):
+            DM = True
+        else:
+            DM = False
+    if DM:
+        await ctx.message.add_reaction(u'🏁')
+        return ctx.author
+    else:
+        return ctx
 
 
 async def check_season(ctx, season):
@@ -35,6 +83,24 @@ async def on_ready():
 
 
 @bot.event
+async def on_message(message):
+    global DISABLE_DM
+    pattern = re.compile(r'(\s*)(no-dm|public)(\s*)')
+    # Prefix given with no command
+    if re.match(r'^' + bot.command_prefix + r'?\s*$', message.content):
+        await message.channel.send("No subcommand provided. Check the Readme at <https://bit.ly/2tYRNSd>.")
+    # Check for presence of 'no-dm' or 'public' flags
+    elif re.search(pattern, message.content.lower()):
+        logger.warning('Command has temporarily set DISABLE_DM to True.')
+        # Temporarily set disable DM flag
+        DISABLE_DM = True
+        # strip flag from message content and assign it back to the message for command parsing
+        message.content = pattern.sub(' ', message.content)
+
+    await bot.process_commands(message)
+
+
+@bot.event
 async def on_command(ctx):
     channel = ctx.message.channel
     user = ctx.message.author
@@ -42,9 +108,15 @@ async def on_command(ctx):
 
 
 @bot.event
+async def on_command_completion(ctx):
+    reset_dm()
+
+
+@bot.event
 async def on_command_error(ctx, err):
     logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
     rng = random.randint(1, 60)
+    reset_dm()
 
     # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
@@ -88,17 +160,17 @@ async def wdc(ctx, season='current'):
 
     Usage:
     ------
-        !f1 wdc             Current WDC standings as of last race.
-        !f1 wdc <season>    WDC standings from <season>.
+        !f1 wdc [season]    WDC standings from [season].
     """
     await check_season(ctx, season)
     result = await api.get_driver_standings(season)
-    table = make_table(result['data'])
-    await ctx.send(
+    table = make_table(result['data'], fmt='simple')
+    target = await get_target(ctx, 'table')
+    await target.send(
         f"**World Driver Championship**\n" +
         f"Season: {result['season']} Round: {result['round']}\n"
     )
-    await ctx.send(f"```\n{table}\n```")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['teams', 'constructors'])
@@ -113,11 +185,12 @@ async def wcc(ctx, season='current'):
     await check_season(ctx, season)
     result = await api.get_team_standings(season)
     table = make_table(result['data'])
-    await ctx.send(
+    target = await get_target(ctx, 'table')
+    await target.send(
         f"**World Constructor Championship**\n" +
         f"Season: {result['season']} Round: {result['round']}\n"
     )
-    await ctx.send(f"```\n{table}\n```")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command()
@@ -133,11 +206,12 @@ async def grid(ctx, season='current'):
     result = await api.get_all_drivers_and_teams(season)
     # Use simple table to not exceed content limit
     table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
-    await ctx.send(
+    target = await get_target(ctx, 'table')
+    await target.send(
         f"**Formula 1 {result['season']} Grid**\n" +
         f"Round: {result['round']}\n"
     )
-    await ctx.send(f"```\n{table}\n```")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['calendar', 'schedule'])
@@ -146,19 +220,21 @@ async def races(ctx, *args):
     result = await api.get_race_schedule()
     # Use simple table to not exceed content limit
     table = make_table(result['data'], fmt='simple')
-    await ctx.send(f"**{result['season']} Formula 1 Race Calendar**\n")
-    await ctx.send(f"```\n{table}\n```")
+    target = await get_target(ctx, 'table')
+    await target.send(f"**{result['season']} Formula 1 Race Calendar**\n")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['timer', 'next'])
 async def countdown(ctx, *args):
     """Display an Embed with details and countdown to the next calendar race."""
     result = await api.get_next_race()
-    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(result['url']))
+    page_url = result['url'].replace(f"{result['season']}_", '')
+    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(page_url))
     embed = Embed(
         title=f"**{result['data']['Name']}**",
         description=f"{result['countdown']}",
-        url=result['url'],
+        url=page_url,
         colour=Colour.teal(),
     )
     embed.set_thumbnail(url=await thumb_url_task)
@@ -167,7 +243,8 @@ async def countdown(ctx, *args):
     embed.add_field(name='Country', value=result['data']['Country'], inline=True)
     embed.add_field(name='Date', value=result['data']['Date'], inline=True)
     embed.add_field(name='Time', value=result['data']['Time'], inline=True)
-    await ctx.send(embed=embed)
+    target = await get_target(ctx, 'embed')
+    await target.send(embed=embed)
 
 
 @bot.command(aliases=['finish'])
@@ -185,8 +262,9 @@ async def results(ctx, season='current', rnd='last'):
     await check_season(ctx, season)
     result = await api.get_race_results(rnd, season)
     table = make_table(result['data'], fmt='simple')
-    await ctx.send(f"**Race Results - {result['race']} ({result['season']})**")
-    await ctx.send(f"```\n{table}\n```")
+    target = await get_target(ctx, 'table')
+    await target.send(f"**Race Results - {result['race']} ({result['season']})**")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['quali'])
@@ -203,8 +281,9 @@ async def qualifying(ctx, season='current', rnd='last'):
     await check_season(ctx, season)
     result = await api.get_qualifying_results(rnd, season)
     table = make_table(result['data'])
-    await ctx.send(f"**Qualifying Results - {result['race']} ({result['season']})**")
-    await ctx.send(f"```\n{table}\n```")
+    target = await get_target(ctx, 'table')
+    await target.send(f"**Qualifying Results - {result['race']} ({result['season']})**")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['driver'])
@@ -222,7 +301,8 @@ async def career(ctx, driver_id):
     --------
         !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
     """
-    await ctx.send("*Gathering driver data, this may take a few moments...*")
+    target = await get_target(ctx, 'embed')
+    await target.send("*Gathering driver data, this may take a few moments...*")
     driver = api.get_driver_info(driver_id)
     result = await api.get_driver_career(driver)
     thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(driver['url']))
@@ -258,45 +338,7 @@ async def career(ctx, driver_id):
         value=f"{result['data']['Teams']['total']} {tuple(t for t in result['data']['Teams']['names'])}",
         inline=False
     )
-    await ctx.send(embed=embed)
-
-
-@bot.command()
-async def laps(ctx, driver_id, season='current', rnd='last'):
-    """Display all lap times for the driver.
-
-    Season and round may be omitted to get latest race. A valid driver ID must be given as the first parameter
-    in either one of the following formats:
-        - name-based ID as used by Ergast API e.g. 'alonso', 'vettel', 'max_verstappen';
-        - driver code e.g. 'VET', 'HAM';
-        - driver number e.g. 44, 6
-
-    **Note**: This command can take a long time to respond. Consider using `best` command instead.
-
-    Usage:
-    ------
-        !f1 laps <driver_id> [<season> <round>]
-    """
-    await check_season(ctx, season)
-    driver = api.get_driver_info(driver_id)
-    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
-    await ctx.send("*Gathering lap data; this may take a few moments...*")
-    result = await api.get_all_laps_for_driver(driver, await laps_task)
-    table = make_table(result['data'])
-    await ctx.send(
-        f"**Lap times for {result['driver']['firstname']} {result['driver']['surname']}**\n" +
-        f"{result['season']} {result['race']}"
-    )
-    await ctx.send(f"```\n{table}\n```")
-
-
-@laps.error
-async def laps_error(ctx, error):
-    # Check error is missing arguments
-    if isinstance(error, commands.MissingRequiredArgument):
-        # Drivers are missing
-        if error.param.name == 'driver_id':
-            await ctx.send("No driver_id provided.")
+    await target.send(embed=embed)
 
 
 @bot.command(aliases=['bestlap'])
@@ -318,44 +360,43 @@ async def best(ctx, filter=None, season='current', rnd='last'):
         `top`     -  Top 5 fastest drivers.
         `bottom`  -  Bottom 5 slowest drivers.
     """
+    target = await get_target(ctx, 'table')
     if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
-        await ctx.send("Invalid filter given.")
+        await target.send("Invalid filter given.")
         raise commands.BadArgument(message="Invalid filter given.")
     await check_season(ctx, season)
     results = await api.get_best_laps(rnd, season)
     sorted_times = rank_best_lap_times(results)
     filtered = filter_times(sorted_times, filter)
     table = make_table(filtered)
-    await ctx.send(
+    await target.send(
         f"**Fastest laps ranked {filter}**\n" +
         f"{results['season']} {results['race']}"
     )
-    await ctx.send(f"```\n{table}\n```")
+    await target.send(f"```\n{table}\n```")
 
 
 @bot.command(aliases=['pits', 'pitstops'])
-async def stops(ctx, filter=None, season='current', rnd='last'):
+async def stops(ctx, filter, season='current', rnd='last'):
     """Display pitstops for each driver in the race, optionally sorted with filter.
 
-    If no `round` specified returns results for the most recent race.
+    If no `round` specified returns results for the most recent race. Data not available
+    before 2012.
 
     Usage:
     ---------------
-        !f1 stops                             Return all pitstops for the latest race.
-        !f1 stops [filter] [<season> <round>] Return pitstops sorted by [filter].
+        !f1 stops <filter> [season] [round]     Return pitstops sorted by [filter].
+        !f1 stops <driver_id> [season] [round]  Return pitstops for the driver.
 
-        Optional filter:
+        Filter:
         ----------------
-        `all`     -  Do not apply filter.
+        `<driver_id>`  -  Get the stops for the driver.
         `fastest` -  Only show the fastest pitstop the race.
         `slowest` -  Only show the slowest pitstop the race.
         `top`     -  Top 5 fastest pitstops.
         `bottom`  -  Bottom 5 slowest pitstops.
     """
-    if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
-        await ctx.send("Invalid filter given.")
-        raise commands.BadArgument(message="Invalid filter given.")
-
+    target = await get_target(ctx, 'table')
     # Pit data only available from 2012 so catch seasons before
     if not season == 'current':
         if int(season) < 2012:
@@ -363,20 +404,36 @@ async def stops(ctx, filter=None, season='current', rnd='last'):
             raise commands.BadArgument(message="Tried to get pitstops before 2012.")
     await check_season(ctx, season)
 
+    # Get stops
     res = await api.get_pitstops(rnd, season)
-    if filter is not None:
+
+    # The filter is for stop duration
+    if filter in ['top', 'bottom', 'fastest', 'slowest']:
         sorted_times = rank_pitstops(res)
         filtered = filter_times(sorted_times, filter)
-        table = make_table(filtered)
+    # The filter is for all stops by a driver
     else:
-        table = make_table(res['data'])
-    await ctx.send(
+        try:
+            driver = api.get_driver_info(filter)
+            filtered = [s for s in res['data'] if s['Driver'] == driver['code']]
+        except DriverNotFoundError:
+            await ctx.send("Invalid filter or driver provided.")
+            raise commands.BadArgument("Invalid filter or driver.")
+
+    table = make_table(filtered)
+
+    await target.send(
         f"**Pit stops ranked {filter}**\n" +
         f"{res['season']} {res['race']}"
     )
-    await ctx.send(f"{res['season']} {res['race']}")
-    await ctx.send(f"```\n{table}\n```")
+    await target.send(f"```\n{table}\n```")
 
+
+@stops.error
+async def stops_handler(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        if error.param.name == 'filter':
+            await ctx.send("Filter or driver is required.")
 
 # Plotting commands
 # ==================
@@ -389,7 +446,7 @@ async def plot(ctx, *args):
 
 
 @plot.command(aliases=['laps'])
-async def timings(ctx, season: int, rnd: int, *drivers):
+async def timings(ctx, season='current', rnd='last', *drivers):
     """Plot all lap data for the specified driver(s) or all drivers.
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
@@ -407,6 +464,7 @@ async def timings(ctx, season: int, rnd: int, *drivers):
         !f1 plot timings <season> <round> [all]
         !f1 plot timings <season> <round> [driver1 driver2...]
     """
+    target = await get_target(ctx, 'file')
     await check_season(ctx, season)
     # No drivers specified, skip filter and plot all
     if not (len(drivers) == 0 or drivers[0] == 'all'):
@@ -414,33 +472,34 @@ async def timings(ctx, season: int, rnd: int, *drivers):
     else:
         driver_list = []
     laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
-    await ctx.send("*Gathering lap data; this may take a few moments...*")
+    await target.send("*Gathering lap data; this may take a few moments...*")
 
     laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
 
     chart.plot_all_driver_laps(laps_to_plot)
 
     f = File(f"{OUT_DIR}/plot_laps.png", filename='plot_laps.png')
-    await ctx.send(f"**Lap timings - {laps_to_plot['race']} ({laps_to_plot['season']})**")
-    await ctx.send(file=f)
+    await target.send(f"**Lap timings - {laps_to_plot['race']} ({laps_to_plot['season']})**")
+    await target.send(file=f)
 
 
 @timings.error
 async def timings_handler(ctx, error):
+    target = await get_target(ctx, 'file')
     # Check error is missing arguments
     if isinstance(error, commands.MissingRequiredArgument):
         # Drivers are missing
         if error.param.name == 'drivers':
-            await ctx.send("No driver_id provided.")
+            await target.send("No driver_id provided.")
         else:
-            await ctx.send(f"Season and round must be specified.")
+            await target.send(f"Season and round must be specified.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
-        await ctx.send(f"Invalid season or round provided.")
+        await target.send(f"Invalid season or round provided.")
 
 
 @plot.command(aliases=['pos', 'overtakes'])
-async def position(ctx, season: int, rnd: int, *drivers):
+async def position(ctx, season='current', rnd='last', *drivers):
     """Plot race position per lap for the specified driver(s) or all drivers.
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
 
@@ -458,6 +517,7 @@ async def position(ctx, season: int, rnd: int, *drivers):
         !f1 plot position <season> <round> [all]
         !f1 plot position <season> <round> [driver1 driver2...]
     """
+    target = await get_target(ctx, 'file')
     await check_season(ctx, season)
     # No drivers specified, skip filter and plot all
     if not (len(drivers) == 0 or drivers[0] == 'all'):
@@ -465,29 +525,30 @@ async def position(ctx, season: int, rnd: int, *drivers):
     else:
         driver_list = []
     laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
-    await ctx.send("*Gathering lap data; this may take a few moments...*")
+    await target.send("*Gathering lap data; this may take a few moments...*")
 
     laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
 
     chart.plot_race_pos(laps_to_plot)
 
     f = File(f"{OUT_DIR}/plot_pos.png", filename='plot_pos.png')
-    await ctx.send(f"**Race position - {laps_to_plot['race']} ({laps_to_plot['season']})**")
-    await ctx.send(file=f)
+    await target.send(f"**Race position - {laps_to_plot['race']} ({laps_to_plot['season']})**")
+    await target.send(file=f)
 
 
 @plot.error
 async def position_handler(ctx, error):
+    target = await get_target(ctx, 'file')
     # Check error is missing arguments
     if isinstance(error, commands.MissingRequiredArgument):
         # Drivers are missing
         if error.param.name == 'drivers':
-            await ctx.send("No driver_id provided.")
+            await target.send("No driver_id provided.")
         else:
-            await ctx.send(f"Season and round must be specified.")
+            await target.send(f"Season and round must be specified.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
-        await ctx.send(f"Invalid season or round provided.")
+        await target.send(f"Invalid season or round provided.")
 
 
 @plot.command(aliases=['best'])
@@ -498,6 +559,7 @@ async def fastest(ctx, season='current', rnd='last'):
     ------
         !f1 plot fastest [<season> <round>]
     """
+    target = await get_target(ctx, 'file')
     await check_season(ctx, season)
     res = await api.get_best_laps(rnd, season)
     sorted_laps = rank_best_lap_times(res)
@@ -505,8 +567,8 @@ async def fastest(ctx, season='current', rnd='last'):
     chart.plot_best_laps(res)
 
     f = File(f"{OUT_DIR}/plot_fastest.png", filename='plot_fastest.png')
-    await ctx.send(f"**Fastest laps - {res['race']} ({res['season']})**")
-    await ctx.send(file=f)
+    await target.send(f"**Fastest laps - {res['race']} ({res['season']})**")
+    await target.send(file=f)
 
 
 @plot.command(aliases=['stops', 'pits', 'pitstops'])
@@ -516,6 +578,7 @@ async def stints(ctx, season='current', rnd='last'):
     Usage:
         !f1 plot stints [<season> <round>]
     """
+    target = await get_target(ctx, 'file')
     # Pit data only available from 2012 so catch seasons before
     if not season == 'current':
         if int(season) < 2012:
@@ -526,5 +589,5 @@ async def stints(ctx, season='current', rnd='last'):
     chart.plot_pitstops(res)
 
     f = File(f"{OUT_DIR}/plot_pitstops.png", filename='plot_pitstops.png')
-    await ctx.send(f"**Race stints - {res['race']} ({res['season']})**")
-    await ctx.send(file=f)
+    await target.send(f"**Race stints - {res['race']} ({res['season']})**")
+    await target.send(file=f)
