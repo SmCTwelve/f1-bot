@@ -52,7 +52,7 @@ async def status(ctx, *args):
         url="https://github.com/SmCTwelve/f1-bot",
         colour=Colour.teal()
     )
-    embed.set_thumbnail(url=app_info.icon_url)
+    embed.set_thumbnail(url=app_info.icon_url or "https://i.imgur.com/kvZYOue.png")
     embed.add_field(name='Owner', value=app_info.owner.name, inline=True)
     embed.add_field(name='Source', value="[GitHub](https://github.com/SmCTwelve/f1-bot)", inline=True)
     embed.add_field(name='Ping', value=f'{latency} ms', inline=True)
