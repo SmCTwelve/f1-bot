@@ -67,49 +67,27 @@ Depending on the configuration, some commands will respond with a DM to avoid cl
 
 Invoke a command in Discord by typing the prefix `!` (can be changed in config) and base `f1` command followed by one of the following subcommands:
 
-- `!f1 help | !f1 help <command>` 
+- `!f1 help | !f1 help <command>` - Display help text for the available commands
+
+- `!f1 status` - Information about the bot and connection status
+
+- `!f1 github` - A link to this repository.
+
+- `!f1 wdc | drivers [season]` - Display World Driver Championship standings.
   
-  Display help text for the available commands
+- `!f1 wcc | constructors [season]` - Display Constructors Championship standings.
 
-- `!f1 status` 
+- `!f1 grid [season]` - Return details of all drivers and teams participating in the season.
+
+- `!f1 schedule` - Display the race calendar for the current season.
+
+- `!f1 next` - Show a countdown to the next race and details.
+
+- `!f1 results [<season> <round>]` - Race results for `[round]` in `[season]`.
   
-  Information about the bot and connection status
-
-- `!f1 github` 
-
-  A link to this repository.
-
-- `!f1 wdc | drivers [season]` 
-
-  Display World Driver Championship standings.
+- `!f1 quali [<season> <round>]` - Qualifying results for `[round]` in `[season]`.
   
-- `!f1 wcc | constructors [season]`
-
-  Display Constructors Championship standings.
-
-- `!f1 grid [season]` 
-
-  Return details of all drivers and teams participating in the season.
-
-- `!f1 schedule`
-
-  Display the race calendar for the current season.
-
-- `!f1 next` 
-
-  Show a countdown to the next race and details.
-
-- `!f1 results [<season> <round>]` 
-
-  Race results for `[round]` in `[season]`.
-  
-- `!f1 quali [<season> <round>]` 
-
-  Qualifying results for `[round]` in `[season]`.
-  
-- `!f1 career <driver_id>`
-
-  Career stats for the driver.
+- `!f1 career <driver_id>` - Career stats for the driver.
 
 - `!f1 stops <filter> [<season> <round>]` 
 
@@ -140,7 +118,7 @@ The following `!f1 plot` subcommands will generate a chart uploaded as an image 
 
 - `!f1 plot fastest [<season> <round>]` 
 
-Plot fastest lap times per driver as a bar chart.
+  Plot fastest lap times per driver as a bar chart.
 
 - `!f1 plot stints [<season> <round>]`
 
