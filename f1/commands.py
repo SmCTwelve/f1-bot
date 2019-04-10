@@ -114,7 +114,7 @@ async def on_command_completion(ctx):
 
 @bot.event
 async def on_command_error(ctx, err):
-    logger.error(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
+    logger.exception(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
     rng = random.randint(1, 60)
     reset_dm()
 
@@ -132,7 +132,7 @@ async def on_command_error(ctx, err):
         if isinstance(err, commands.CommandNotFound):
             await ctx.send(f"Command not recognised.")
         else:
-            await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') else ''}")
+            await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') or hasattr(err, 'msg') else ''}")
         await ctx.send(f"Try `{bot.command_prefix}help [command]` or check the Readme at <https://bit.ly/2tYRNSd>.")
 
     # Random chance to show img with error output if rng is multiple of 12
@@ -446,7 +446,7 @@ async def plot(ctx, *args):
 
 
 @plot.command(aliases=['laps'])
-async def timings(ctx, season='current', rnd='last', *drivers):
+async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     """Plot all lap data for the specified driver(s) or all drivers.
 
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
@@ -462,8 +462,8 @@ async def timings(ctx, season='current', rnd='last', *drivers):
 
     Usage:
     ------
-        !f1 plot timings <season> <round> [all]
-        !f1 plot timings <season> <round> [driver1 driver2...]
+        !f1 plot position [season] [round]
+        !f1 plot position <season> <round> [driver1 driver2... | all]
     """
     target = await get_target(ctx, 'file')
     await check_season(ctx, season)
@@ -498,7 +498,7 @@ async def timings_handler(ctx, error):
 
 
 @plot.command(aliases=['pos', 'overtakes'])
-async def position(ctx, season='current', rnd='last', *drivers):
+async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     """Plot race position per lap for the specified driver(s) or all drivers.
 
     **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
@@ -536,7 +536,7 @@ async def position(ctx, season='current', rnd='last', *drivers):
     await target.send(file=f)
 
 
-@plot.error
+@position.error
 async def position_handler(ctx, error):
     target = await get_target(ctx, 'file')
     # Check error is missing arguments
