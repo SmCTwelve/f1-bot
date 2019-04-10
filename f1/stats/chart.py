@@ -114,7 +114,8 @@ def plot_race_pos(lap_timings):
     plt.yticks(np.arange(1, len(drivers)))
     plt.ylabel('Position')
     plt.gca().invert_yaxis()
-    plt.legend(title='Drivers (start pos)', bbox_to_anchor=(1, 1.04), loc='upper left')
+    plt.gca().tick_params(axis='y', right=True, left=True, labelleft=True, labelright=True)
+    plt.legend(title='Drivers', bbox_to_anchor=(-0.05, 1.04), loc='upper right')
 
     save_figure(fig, name='plot_pos.png')
 
