@@ -162,7 +162,7 @@ async def get_driver_standings(season):
             results['data'].append(
                 {
                     'Pos': int(standing['position']),
-                    'Driver': standing.driver['code'],
+                    'Driver': f"{standing.driver.givenname.string[0]} {standing.driver.familyname.string}",
                     'Points': int(standing['points']),
                     'Wins': int(standing['wins']),
                 }
@@ -442,7 +442,7 @@ async def get_race_results(rnd, season, winner_only=False):
             res['data'].append(
                 {
                     'Pos': int(result['position']),
-                    'Driver': f'{driver.familyname.string}',
+                    'Driver': f'{driver.givenname.string[0]} {driver.familyname.string}',
                     'Team': result.constructor.find('name').string,
                     'Start': int(result.grid.string),
                     'Laps': int(result.laps.string),
