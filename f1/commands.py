@@ -121,7 +121,7 @@ async def on_command_completion(ctx):
 async def on_command_error(ctx, err):
     logger.exception(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
     await ctx.message.add_reaction(u'❌')
-    target = get_target('error')
+    target = get_target(ctx, 'error')
     rng = random.randint(1, 60)
     reset_dm()
 
