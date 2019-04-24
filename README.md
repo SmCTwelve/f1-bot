@@ -116,15 +116,14 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 
 The following `!f1 plot` subcommands will generate a chart uploaded as an image to the discord channel:
 
+- `!f1 plot stints [<season> <round>]`
+
+  Plot each driver's race stints and pit stops as a stacked bar chart.
 - `!f1 plot fastest [<season> <round>] [drivers]`
 
   Plot fastest lap times per driver as a bar chart. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
   - E.g. `!f1 plot timings 2019 1 BOT HAM VET`
-
-- `!f1 plot stints [<season> <round>]`
-
-  Plot each driver's race stints and pit stops as a stacked bar chart.
 
 - `!f1 plot timings [<season> <round>] [drivers]`
 
