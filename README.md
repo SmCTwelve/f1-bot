@@ -46,7 +46,7 @@ Run the application by executing `python -m bot.py` from the main directory. Thi
 
 A Procfile is included for easy hosting on Heroku as a worker dyno. For other hosting configurations ensure `bot.py` is used as the entry point.
 
-Edit `config.ini` to change the prefix symbol, log messages and to enable/disable sending bot response as DM. 
+Edit `config.ini` to change the prefix symbol, log messages and to enable/disable sending bot response as DM.
 
 The `/data` directory contains a JSON dump of all drivers archived by Ergast API. This data is used by the application to search driver info. Periodically this may need updated, such as the beginning of a new F1 season with new drivers. To do so simply run `python -m update.py` from the main directory.
 
@@ -61,7 +61,7 @@ Commands which take the `driver_id` parameter must be either of the following:
   - Driver number; e.g. 44, 55
   - Name ID used by Ergast API. Typically, this is the driver's surnane, e.g. 'alonso', 'vettel'. However, in cases where the surname applies to multiple drivers, the ID will typically be `firstname_surname`, e.g. 'michael_schumacher', 'max_verstappen'.
 
-Depending on the configuration, some commands will respond with a DM to avoid cluttering the text channel, this can be temporarily overridden for a command by including `no-dm` or `public` in the parameters, e.g. `!f1 wdc no-dm`. By default only table responses have DM enabled. 
+Depending on the configuration, some commands will respond with a DM to avoid cluttering the text channel, this can be temporarily overridden for a command by including `no-dm` or `public` in the parameters, e.g. `!f1 wdc no-dm`. By default only table responses have DM enabled.
 
 **Usage**
 
@@ -74,7 +74,7 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 - `!f1 github` - A link to this repository.
 
 - `!f1 wdc | drivers [season]` - Display World Driver Championship standings.
-  
+
 - `!f1 wcc | constructors [season]` - Display Constructors Championship standings.
 
 - `!f1 grid [season]` - Return details of all drivers and teams participating in the season.
@@ -84,55 +84,57 @@ Invoke a command in Discord by typing the prefix `!` (can be changed in config) 
 - `!f1 next` - Show a countdown to the next race and details.
 
 - `!f1 results [<season> <round>]` - Race results for `[round]` in `[season]`.
-  
+
 - `!f1 quali [<season> <round>]` - Qualifying results for `[round]` in `[season]`.
-  
+
 - `!f1 career <driver_id>` - Career stats for the driver.
 
-- `!f1 stops <filter> [<season> <round>]` 
+- `!f1 stops <filter> [<season> <round>]`
 
-  Display pit stops. Data not available for seasons before 2012. 
-  
+  Display pit stops. Data not available for seasons before 2012.
+
   The `<filter>` parameter is **required** and must be one of the following:
   - `driver_id` - Get all stops for the specified driver
   - `top` - Top 5 fastest pit stops
   - `bottom` -  Bottom 5 slowest pit stops
   - `fastest` - Fastest ranked pit stop
   - `slowest` - Slowest ranked pit stop
-  
-- `!f1 best [filter] [<season> <round>]` 
 
-  Display best lap time per driver. When searching a specific `season` and `round`, the `[filter]` must be given first. You can use the `all` value if you don't actually want to filter the results. No parameters will return all best laps for the most recent race. 
-  
+- `!f1 best [filter] [<season> <round>]`
+
+  Display best lap time per driver. When searching a specific `season` and `round`, the `[filter]` must be given first. You can use the `all` value if you don't actually want to filter the results. No parameters will return all best laps for the most recent race.
+
   Options for `[filter]` keyword:
   - `all` - Do not apply filter
   - `top` - Top 5 fastest laps of the race
   - `bottom` -  Bottom 5 slowest laps of the race
   - `fastest` - Fastest ranked lap
   - `slowest` - Slowest ranked lap
-  
+
 
 **Generating Plots**
 
 The following `!f1 plot` subcommands will generate a chart uploaded as an image to the discord channel:
 
-- `!f1 plot fastest [<season> <round>]` 
+- `!f1 plot fastest [<season> <round>] [drivers]`
 
-  Plot fastest lap times per driver as a bar chart.
+  Plot fastest lap times per driver as a bar chart. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
+  - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
+  - E.g. `!f1 plot timings 2019 1 BOT HAM VET`
 
 - `!f1 plot stints [<season> <round>]`
 
   Plot each driver's race stints and pit stops as a stacked bar chart.
-  
+
 - `!f1 plot timings [<season> <round>] [drivers]`
 
-  Plot each driver lap time as a line graph. Both `season` and `round` must be given **before** any `drivers`.
+  Plot each driver lap time as a line graph. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
   - E.g. `!f1 plot timings 2019 1 BOT HAM VET`
-  
-- `!f1 plot position [<season> <round>] [drivers]` 
 
-  Plot race position per lap of the race. Both `season` and `round` must be given **before** any `drivers`.
+- `!f1 plot position [<season> <round>] [drivers]`
+
+  Plot race position per lap of the race. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot for all drivers. Limiting drivers will result in a more legible graph.
   - E.g. `!f1 plot pos 2019 1 BOT HAM VET`
 
