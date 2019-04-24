@@ -519,9 +519,10 @@ async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     """
     target = await get_target(ctx, 'file')
     await check_season(ctx, season)
-    # No drivers specified, skip filter and plot all
+    # Filter by driver
     if not (len(drivers) == 0 or drivers[0] == 'all'):
         driver_list = [api.get_driver_info(d)['id'] for d in drivers]
+    # No drivers specified, skip filter and plot all
     else:
         driver_list = []
     laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
@@ -550,23 +551,36 @@ async def position_handler(ctx, error):
 
 
 @plot.command(aliases=['best'])
-async def fastest(ctx, season='current', rnd='last'):
+async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     """Plot fastest lap times for all drivers in the race as a bar chart.
 
     Usage:
     ------
         !f1 plot fastest [<season> <round>]
+        !f1 plot fastest <season> <round> [driver1 driver2... | all]
     """
     target = await get_target(ctx, 'file')
     await check_season(ctx, season)
     res = await api.get_best_laps(rnd, season)
     sorted_laps = rank_best_lap_times(res)
+    # Filter by driver if specified
+    if not (len(drivers) == 0 or drivers[0] == 'all'):
+        driver_list = [api.get_driver_info(d)['code'] for d in drivers]
+        sorted_laps = [lap for lap in sorted_laps if lap['Driver'] in driver_list]
     res['data'] = sorted_laps
     chart.plot_best_laps(res)
 
     f = File(f"{OUT_DIR}/plot_fastest.png", filename='plot_fastest.png')
     await target.send(f"**Fastest laps - {res['race']} ({res['season']})**")
     await target.send(file=f)
+
+
+@fastest.error
+async def fastest_handler(ctx, error):
+    target = await get_target(ctx, 'file')
+    # Round or season is missing
+    if isinstance(error, commands.BadArgument):
+        await target.send(f"Invalid season or round provided.")
 
 
 @plot.command(aliases=['stops', 'pits', 'pitstops'])
