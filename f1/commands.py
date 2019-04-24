@@ -337,14 +337,19 @@ async def career(ctx, driver_id):
     embed.add_field(
         name='Championships',
         # Total and list of seasons
-        value=f"{result['data']['Championships']['total']} " +
-        f"{tuple(int(y) for y in champs_list) if champs_list else ''}",
+        value=(
+            f"{result['data']['Championships']['total']} " + "\n"
+            + " ".join(int(y) for y in champs_list if champs_list)
+        ),
         inline=False
     )
     embed.add_field(
         name='Teams',
         # Total and list of teams
-        value=f"{result['data']['Teams']['total']} {tuple(t for t in result['data']['Teams']['names'])}",
+        value=(
+            f"{result['data']['Teams']['total']} " + "\n"
+            + " ".join(t for t in result['data']['Teams']['names'])
+        ),
         inline=False
     )
     await target.send(embed=embed)
