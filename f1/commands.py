@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 # Is reset on error or after command completion
 DISABLE_DM = False
 
+# Store the message target
+target = None
+
 # Prefix includes the config symbol and the 'f1' name with hard-coded space
 bot = commands.Bot(
     command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ",
@@ -47,7 +50,7 @@ async def get_target(ctx, msg_type):
     `ctx` : Context
         The invocation context of the command.
     `msg_type`: str
-        Type of message response: 'table', 'file', 'image' or 'embed'. Regular text will
+        Type of message response: 'table', 'file', 'image', 'error' or 'embed'. Regular text will
         be sent to the channel unless part of the command response of the previous types.
     """
     if DISABLE_DM:
@@ -59,10 +62,11 @@ async def get_target(ctx, msg_type):
             DM = True
         elif msg_type == 'embed' and CONFIG['MESSAGE'].getboolean('EMBED_DM'):
             DM = True
+        elif msg_type == 'error' and CONFIG['MESSAGE'].getboolean('ERROR'):
+            DM = True
         else:
             DM = False
     if DM:
-        await ctx.message.add_reaction(u'🏁')
         return ctx.author
     else:
         return ctx
@@ -109,31 +113,36 @@ async def on_command(ctx):
 
 @bot.event
 async def on_command_completion(ctx):
+    await ctx.message.add_reaction(u'🏁')
     reset_dm()
 
 
 @bot.event
 async def on_command_error(ctx, err):
     logger.exception(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
+    await ctx.message.add_reaction(u'❌')
+    target = get_target('error')
     rng = random.randint(1, 60)
     reset_dm()
 
     # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
-        await ctx.send(f"Response timed out. Check `{bot.command_prefix}status`.")
+        await target.send(f"Response timed out. Check `{bot.command_prefix}status`.")
 
     # Catch DriverNotFoundError
     elif isinstance(err, DriverNotFoundError):
-        await ctx.send("Could not find a matching driver. Check ID is correct.")
+        await target.send("Could not find a matching driver. Check ID is correct.")
 
     # Catch all other errors
     else:
         # Catch CommandNotFound
         if isinstance(err, commands.CommandNotFound):
-            await ctx.send(f"Command not recognised.")
+            await target.send(f"Command not recognised.")
         else:
-            await ctx.send(f"Command failed: {err.message if hasattr(err, 'message') or hasattr(err, 'msg') else ''}")
-        await ctx.send(f"Try `{bot.command_prefix}help [command]` or check the Readme at <https://bit.ly/2tYRNSd>.")
+            await target.send(
+                f"Command failed: {err.message if hasattr(err, 'message') or hasattr(err, 'msg') else ''}"
+            )
+        await target.send(f"Try `{bot.command_prefix}help [command]` or check the Readme at <https://bit.ly/2tYRNSd>.")
 
     # Random chance to show img with error output if rng is multiple of 12
     if rng % 12 == 0:
