@@ -59,13 +59,13 @@ Commands which take `season` and `round` parameters will default to the latest r
 Commands which take the `driver_id` parameter must be either of the following:
   - Driver code; e.g. HAM, VET
   - Driver number; e.g. 44, 55
-  - Name ID used by Ergast API. Typically, this is the driver's surnane, e.g. 'alonso', 'vettel'. However, in cases where the surname applies to multiple drivers, the ID will typically be `firstname_surname`, e.g. 'michael_schumacher', 'max_verstappen'.
+  - Ergast API ID; Typically, this is the driver's surnane, e.g. 'alonso', 'vettel'. However, in cases where the surname applies to multiple drivers, the ID will be `firstname_surname`, e.g. 'michael_schumacher', 'max_verstappen'.
 
-Depending on the configuration, some commands will respond with a DM to avoid cluttering the text channel, this can be temporarily overridden for a command by including `no-dm` or `public` in the parameters, e.g. `!f1 wdc no-dm`. By default only table responses have DM enabled.
+Depending on the configuration, some commands will respond with a DM to avoid cluttering the text channel, this can be temporarily overridden for a command by including `no-dm` or `public` in the parameters, e.g. `!f1 wdc no-dm`.
 
 **Usage**
 
-Invoke a command in Discord by typing the prefix `!` (can be changed in config) and base `f1` command followed by one of the following subcommands:
+Invoke a command in Discord by typing the prefix `!f1` (symbol can be changed in config) and one of the following subcommands:
 
 - `!f1 help | !f1 help <command>` - Display help text for the available commands
 
@@ -121,13 +121,13 @@ The following `!f1 plot` subcommands will generate a chart uploaded as an image 
   Plot each driver's race stints and pit stops as a stacked bar chart.
 - `!f1 plot fastest [<season> <round>] [drivers]`
 
-  Plot fastest lap times per driver as a bar chart. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
+  Plot fastest race lap as a bar chart. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
-  - E.g. `!f1 plot timings 2019 1 BOT HAM VET`
+  - E.g. `!f1 plot fastest 2019 1 BOT HAM VET`
 
 - `!f1 plot timings [<season> <round>] [drivers]`
 
-  Plot each driver lap time as a line graph. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
+  Plot each lap time per lap of the race as a line graph. Both `season` and `round` must be given **before** any `drivers`. Using the command without parameters will return all latest results.
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot all drivers. Limiting drivers will result in a more legible graph.
   - E.g. `!f1 plot timings 2019 1 BOT HAM VET`
 
@@ -137,5 +137,5 @@ The following `!f1 plot` subcommands will generate a chart uploaded as an image 
   - `[drivers]` may be multiple drivers to compare separated by a space; not specifying any drivers or using `all` will plot for all drivers. Limiting drivers will result in a more legible graph.
   - E.g. `!f1 plot pos 2019 1 BOT HAM VET`
 
-**Note:** Both `plot timings` and `plot positions` may take some time to process as all lap data must be gathered from the API. Use these commands sparingly, consider using `plot fastest` instead.
+**NOTICE:** Both `plot timings` and `plot positions` may take some time to process as all lap data must be gathered from the external API. Please avoid excessive use of these commands and wait for the results to finish being processed.
 
