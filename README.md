@@ -54,7 +54,10 @@ The `/data` directory contains a JSON dump of all drivers archived by Ergast API
 
 **Parameters**
 
-Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given in the order `season` `round`, with the exception of `wdc`, `wcc` and `grid` commands which only use a `season`.
+`[ ]` = Optional;
+`< >` = Required
+
+Commands which take `season` and `round` parameters will default to the latest race of the current season if omitted. Otherwise, both parameters should be given as a pair in the order `season` `round`, except the `wdc`, `wcc` and `grid` commands which only use an optional `season` parameter.
 
 Commands which take the `driver_id` parameter must be either of the following:
   - Driver code; e.g. HAM, VET
@@ -67,15 +70,15 @@ Depending on the configuration, some commands will respond with a DM to avoid cl
 
 Invoke a command in Discord by typing the prefix `!f1` (symbol can be changed in config) and one of the following subcommands:
 
-- `!f1 help | !f1 help <command>` - Display help text for the available commands
+- `!f1 help [command]` - Display help text for the available commands
 
 - `!f1 status` - Information about the bot and connection status
 
 - `!f1 github` - A link to this repository.
 
-- `!f1 wdc | drivers [season]` - Display World Driver Championship standings.
+- `!f1 wdc [season]` - Display World Driver Championship standings.
 
-- `!f1 wcc | constructors [season]` - Display Constructors Championship standings.
+- `!f1 wcc [season]` - Display Constructors Championship standings.
 
 - `!f1 grid [season]` - Return details of all drivers and teams participating in the season.
 
