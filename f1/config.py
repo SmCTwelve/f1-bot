@@ -5,7 +5,6 @@ import configparser
 
 logger = logging.getLogger(__name__)
 
-
 # Dict parsed from config file
 CONFIG = configparser.ConfigParser()
 
@@ -49,12 +48,18 @@ def load_config():
                 level = logging.INFO
 
             logging.basicConfig(
-                level=level,
-                format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s'
+                level=logging.DEBUG,
+                format='[%(asctime)s][%(name)s] %(levelname)s: %(message)s',
+                filename='discord.log',
+                filemode='w'
             )
+
+            console = logging.StreamHandler()
+            console.setLevel(level)
+            formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+            console.setFormatter(formatter)
+            logging.getLogger('').addHandler(console)
+
     except IOError:
         logger.critical(f'Could not load config.ini file at {CONFIG_FILE}, check it exists.')
         sys.exit(0)
-
-
-load_config()

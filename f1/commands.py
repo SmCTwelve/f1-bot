@@ -15,7 +15,7 @@ from f1.errors import DriverNotFoundError
 from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("discord")
 
 # Disables sending DM temporarily for the command, overrides any config setting
 # Is reset on error or after command completion
