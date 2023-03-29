@@ -1,7 +1,7 @@
 import logging
+import dotenv
 import os
 
-import f1.config
 from f1 import commands  # noqa
 from f1 import admin  # noqa
 
@@ -9,5 +9,6 @@ from f1 import admin  # noqa
 logger = logging.getLogger(__name__)
 logger.warn('Starting bot...')
 
+dotenv.load_dotenv()
 
-commands.bot.run(os.getenv('BOT_TOKEN', f1.config.CONFIG['BOT']['TOKEN']))
+commands.bot.run(os.getenv('BOT_TOKEN'))
