@@ -17,12 +17,12 @@ def contains(first, second):
 
 def is_future(year):
     """Return True if `year` is greater than current year."""
-    if year is 'current':
+    if year == 'current':
         return False
     return datetime.now().year < int(year)
 
 
-def too_long(message):
+def too_long(message: str):
     """Returns True if the message exceeds discord's 2000 character limit."""
     return len(message) >= 2000
 
@@ -60,6 +60,12 @@ def time_parser(time_str):
     return datetime.strptime(time_str, '%H:%M:%SZ').strftime('%H:%M UTC')
 
 
+def pluralize(number: int, singular: str, plural: str = None):
+    if not plural:
+        plural = singular + 's'
+    return f"{number} {singular if number == 1 else plural}"
+
+
 def countdown(target: datetime):
     """
     Calculate time to `target` datetime object from current time when invoked.
@@ -72,15 +78,15 @@ def countdown(target: datetime):
     m, s = divmod(rem, 60)
     # text representation
     stringify = (
-        f"{int(d)} {'days' if d is not 1 else 'day'}, "
-        f"{int(h)} {'hours' if h is not 1 else 'hour'}, "
-        f"{int(m)} {'minutes' if m is not 1 else 'minute'}, "
-        f"{int(s)} {'seconds' if s is not 1 else 'second'} "
+        f"{pluralize(int(d), 'day')}, "
+        f"{pluralize(int(h), 'hour')}, "
+        f"{pluralize(int(m), 'minute')}, "
+        f"{pluralize(int(s), 'second')} "
     )
     return [stringify, (d, h, m, s)]
 
 
-def lap_time_to_seconds(time_str):
+def lap_time_to_seconds(time_str: str):
     """Returns the lap time string as a float representing total seconds.
 
     E.g. '1:30.202' -> 90.202
@@ -99,7 +105,7 @@ def load_drivers():
         return DRIVERS
 
 
-def find_driver(id, drivers):
+def find_driver(id: str, drivers: list[dict]):
     """Find the driver entry and return as a dict.
 
     Parameters

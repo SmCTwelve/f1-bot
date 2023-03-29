@@ -968,7 +968,7 @@ async def get_driver_career(driver):
     return res
 
 
-async def get_best_laps(rnd, season):
+async def get_best_laps(rnd, season) -> dict:
     """Get the best lap for each driver.
 
     Parameters
