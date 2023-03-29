@@ -35,16 +35,14 @@ async def status(ctx, *args):
     latency = int(bot.latency * 1000)
 
     if api_status == 0:
-        api_txt = "```glsl\nDown\n```"
-    elif api_status == 1:
-        api_txt = "```yaml\nGood\n```"
+        api_txt = "```diff\n- Down\n```"
     else:
-        api_txt = "```fix\nSlow\n```"
+        api_txt = "```diff\n+ Good\n```"
 
     if bot.is_closed():
-        ws_conn = "```glsl\nClosed\n```"
+        ws_conn = "```diff\n- Closed\n```"
     else:
-        ws_conn = "```yaml\nOpen\n```"
+        ws_conn = "```diff\n+ Open\n```"
 
     embed = Embed(
         title=f"Status - {app_info.name}",
