@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 import logging
 import configparser
@@ -25,9 +26,9 @@ LOG_FILE = os.path.join(LOG_DIR, 'f1-bot.log')
 
 def create_output_and_data_dir():
     try:
-        os.mkdir(OUT_DIR)
-        os.mkdir(DATA_DIR)
-        os.makedirs(LOG_FILE)
+        Path.mkdir(OUT_DIR, parents=True, exist_ok=True)
+        Path.mkdir(DATA_DIR, parents=True, exist_ok=True)
+        Path.mkdir(LOG_DIR, parents=True, exist_ok=True)
     except FileExistsError:
         logging.info("Output directory already exists, skipping.")
     finally:
@@ -52,14 +53,17 @@ def load_config():
             else:
                 level = logging.INFO
 
+            # Base logger config
             logger = logging.getLogger("f1-bot")
             logger.setLevel(level)
             formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s')
 
+            # stdout log handler
             console = logging.StreamHandler()
             console.setFormatter(formatter)
             logger.addHandler(console)
 
+            # log to file
             file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8', mode='w')
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
