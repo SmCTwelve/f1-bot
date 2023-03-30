@@ -8,20 +8,20 @@ import configparser
 CONFIG = configparser.ConfigParser()
 
 # Root directory of the bot
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(os.path.realpath(os.path.dirname(__file__)))
 
 # Path to config file
-CONFIG_FILE = os.path.join(BASE_DIR, 'config.ini')
+CONFIG_FILE = BASE_DIR.joinpath('config.ini')
 
 # Output directory for temp files, like plot images
-OUT_DIR = os.path.join(BASE_DIR, 'out')
+OUT_DIR = BASE_DIR.joinpath('out')
 
 # Where to store static data files
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+DATA_DIR = BASE_DIR.joinpath('data')
 
 # Logs output
-LOG_DIR = os.path.join(DATA_DIR, 'logs')
-LOG_FILE = os.path.join(LOG_DIR, 'f1-bot.log')
+LOG_DIR = BASE_DIR.joinpath('logs')
+LOG_FILE = LOG_DIR.joinpath('f1-bot.log')
 
 
 def create_output_and_data_dir():
@@ -31,8 +31,6 @@ def create_output_and_data_dir():
         Path.mkdir(LOG_DIR, parents=True, exist_ok=True)
     except FileExistsError:
         logging.info("Output directory already exists, skipping.")
-    finally:
-        logging.info("Finished setting up directories /out, /data and /logs")
 
 
 def load_config():
