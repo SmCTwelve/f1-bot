@@ -24,7 +24,7 @@ async def get_soup(url):
     if res is None:
         logger.warning('Unable to get soup, response was None.')
         return None
-    return BeautifulSoup(res, 'lxml')
+    return BeautifulSoup(res, features='xml')
 
 
 async def get_wiki_thumbnail(url):
