@@ -30,7 +30,7 @@ def generate_res(body):
     return f'<?xml version="1.0" encoding="utf-8"?><MRData total="1">{body}</MRData>'
 
 
-async def get_mock_response(res_type):
+def get_mock_response(res_type):
     """Generates a mock XML response string as received from API.
 
     Returns a mock XML string of the expected response which matches the `res_type`

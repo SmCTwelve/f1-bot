@@ -121,7 +121,7 @@ class UtilityTests(BaseTest):
         result = utils.countdown(past_date)
         countdown_str = result[0]
         d, h, m, s = result[1]
-        self.assertTrue(d is 0, "No of days for past date should be zero.")
+        self.assertTrue(d == 0, "No of days for past date should be zero.")
         self.assertTrue(re.findall(r'(\d+ days?|\d+ hours?|\d+ minutes?|\d+ seconds?)+',
                                    countdown_str), "Invalid string output.")
 
