@@ -98,7 +98,7 @@ def lap_time_to_seconds(time_str: str):
 
 def load_drivers():
     """Load drivers JSON from file and return as dict."""
-    with open(f'{DATA_DIR}/drivers.json', 'r', encoding='utf-8') as f:
+    with open(DATA_DIR.joinpath('drivers.json'), 'r', encoding='utf-8') as f:
         data = json.load(f)
         DRIVERS = data['MRData']['DriverTable']['Drivers']
         logger.info('Drivers loaded.')
