@@ -8,7 +8,7 @@ import configparser
 CONFIG = configparser.ConfigParser()
 
 # Root directory of the bot
-BASE_DIR = Path(os.path.realpath(os.path.dirname(__file__)))
+BASE_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
 
 # Path to config file
 CONFIG_FILE = BASE_DIR.joinpath('config.ini')
