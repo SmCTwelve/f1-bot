@@ -15,14 +15,7 @@ from f1.errors import DriverNotFoundError
 from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
 
 
-logger = logging.getLogger("discord")
-
-# Disables sending DM temporarily for the command, overrides any config setting
-# Is reset on error or after command completion
-DISABLE_DM = False
-
-# Store the message target
-target = None
+logger = logging.getLogger("f1-bot")
 
 # Prefix includes the config symbol and the 'f1' name with hard-coded space
 bot = commands.Bot(
@@ -32,50 +25,17 @@ bot = commands.Bot(
 )
 
 
-def reset_dm():
-    """Resets the global `DISABLE_DM` flag if a command temporarily disabled it."""
-    global DISABLE_DM
-    if DISABLE_DM:
-        DISABLE_DM = False
-        logger.info('DISABLE_DM reset to False.')
-
-
-async def get_target(ctx, msg_type):
-    """Check if the target of a command response should be direct message or channel.
-
-    Returns an object of `ctx.author` or the original `ctx`.
-
-    Parameters
-    ----------
-    `ctx` : Context
-        The invocation context of the command.
-    `msg_type`: str
-        Type of message response: 'table', 'file', 'image', 'error' or 'embed'. Regular text will
-        be sent to the channel unless part of the command response of the previous types.
-    """
-    if DISABLE_DM:
-        DM = False
-    else:
-        if msg_type == 'table' and CONFIG['MESSAGE'].getboolean('TABLE_DM'):
-            DM = True
-        elif (msg_type == 'file' or msg_type == 'image') and CONFIG['MESSAGE'].getboolean('FILE_DM'):
-            DM = True
-        elif msg_type == 'embed' and CONFIG['MESSAGE'].getboolean('EMBED_DM'):
-            DM = True
-        elif msg_type == 'error' and CONFIG['MESSAGE'].getboolean('ERROR'):
-            DM = True
-        else:
-            DM = False
-    if DM:
-        return ctx.author
-    else:
-        return ctx
+# TODO
+# Remove DM flags, either enable it globally or dont
+# Add new Emphemeral (only you can see) option preferred over DM and enabled by default
+# Use "public" param to override ephemeral/dm for that specific message - check for it in on_command() hook ??
+# Refactor commands where TARGET is used as message receiver
 
 
 async def check_season(ctx, season):
     """Raise error if the given season is in the future."""
     if is_future(season):
-        await ctx.send(f"Can't predict future :thinking:")
+        await ctx.send("Can't predict future :thinking:")
         raise commands.BadArgument('Given season is in the future.')
 
 
@@ -88,19 +48,8 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    global DISABLE_DM
-    pattern = re.compile(r'(\s*)(no-dm|public)(\s*)')
-    # Prefix given with no command
     if re.match(r'^' + bot.command_prefix + r'?\s*$', message.content):
-        await message.channel.send("No subcommand provided. Check the Readme at <https://bit.ly/2tYRNSd>.")
-    # Check for presence of 'no-dm' or 'public' flags
-    elif re.search(pattern, message.content.lower()):
-        logger.warning('Command has temporarily set DISABLE_DM to True.')
-        # Temporarily set disable DM flag
-        DISABLE_DM = True
-        # strip flag from message content and assign it back to the message for command parsing
-        message.content = pattern.sub(' ', message.content)
-
+        await message.channel.send(f"No subcommand provided. Try {bot.command_prefix}f1 help [command].")
     await bot.process_commands(message)
 
 
@@ -114,16 +63,14 @@ async def on_command(ctx):
 @bot.event
 async def on_command_completion(ctx):
     await ctx.message.add_reaction(u'🏁')
-    reset_dm()
 
 
 @bot.event
 async def on_command_error(ctx, err):
-    logger.exception(f'Command failed: {ctx.prefix}{ctx.command}\n {err}')
+    logger.exception(f"Command failed: {ctx.prefix}{ctx.command}\n {err}")
     await ctx.message.add_reaction(u'❌')
-    target = await get_target(ctx, 'error')
+    target = ctx.author if (CONFIG['MESSAGE']['ERROR_DM']) else ctx
     rng = random.randint(1, 60)
-    reset_dm()
 
     # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
@@ -137,7 +84,7 @@ async def on_command_error(ctx, err):
     else:
         # Catch CommandNotFound
         if isinstance(err, commands.CommandNotFound):
-            await target.send(f"Command not recognised.")
+            await target.send("Command not recognised.")
         else:
             await target.send(
                 f"Command failed: {err.message if hasattr(err, 'message') or hasattr(err, 'msg') else ''}"
