@@ -1,7 +1,7 @@
 from discord import ApplicationContext
 from discord.ext.commands import Context
 
-from f1.config import CONFIG
+from f1.config import Config
 
 
 class MessageTarget:
@@ -15,6 +15,7 @@ class MessageTarget:
         if not (isinstance(ctx, (Context, ApplicationContext))):
             raise ValueError("No context available for message target.")
         self.ctx = ctx
+        self.settings = Config().settings
 
     def send(self, *args, **kwargs):
         return self._get_send()(*args, **kwargs)
@@ -22,7 +23,7 @@ class MessageTarget:
     def _get_send(self):
         """Return a reference to the send method to use for the context."""
         # Target DM channel
-        if CONFIG["MESSAGE"]["DM"]:
+        if self.settings["MESSAGE"]["DM"]:
             return self.ctx.author.send
         # Use Application response for slash commands
         if isinstance(self.ctx, ApplicationContext):
