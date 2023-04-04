@@ -3,13 +3,14 @@ import asyncio
 import random
 import re
 from operator import itemgetter
-from discord import Colour, File
+from discord import Colour, File, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
 from f1 import api
 from f1.stats import chart
+from f1.target import MessageTarget
 from f1.config import CONFIG, OUT_DIR
 from f1.errors import DriverNotFoundError
 from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
@@ -47,29 +48,29 @@ async def on_ready():
 
 
 @bot.event
-async def on_message(message):
+async def on_message(message: Message):
     if re.match(r'^' + bot.command_prefix + r'?\s*$', message.content):
-        await message.channel.send(f"No subcommand provided. Try {bot.command_prefix}f1 help [command].")
+        await message.reply(f"No subcommand provided. Try {bot.command_prefix}help [command].")
     await bot.process_commands(message)
 
 
 @bot.event
-async def on_command(ctx):
+async def on_command(ctx: commands.Context):
     channel = ctx.message.channel
     user = ctx.message.author
     logger.info(f'Command: {ctx.prefix}{ctx.command} in {channel} by {user}')
 
 
 @bot.event
-async def on_command_completion(ctx):
+async def on_command_completion(ctx: commands.Context):
     await ctx.message.add_reaction(u'🏁')
 
 
 @bot.event
-async def on_command_error(ctx, err):
+async def on_command_error(ctx: commands.Context, err):
     logger.exception(f"Command failed: {ctx.prefix}{ctx.command}\n {err}")
     await ctx.message.add_reaction(u'❌')
-    target = ctx.author if (CONFIG['MESSAGE']['ERROR_DM']) else ctx
+    target = MessageTarget(ctx)
     rng = random.randint(1, 60)
 
     # Catch TimeoutError
@@ -107,7 +108,7 @@ async def on_command_error(ctx, err):
 @bot.command(aliases=['source', 'git'])
 async def github(ctx, *args):
     """Display a link to the GitHub repository."""
-    await ctx.send("https://github.com/SmCTwelve/f1-bot")
+    await MessageTarget(ctx).send("https://github.com/SmCTwelve/f1-bot")
 
 
 @bot.command(aliases=['drivers', 'championship'])
@@ -121,9 +122,9 @@ async def wdc(ctx, season='current'):
     await check_season(ctx, season)
     result = await api.get_driver_standings(season)
     table = make_table(result['data'], fmt='simple')
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(
-        f"**World Driver Championship**\n" +
+        "**World Driver Championship**\n" +
         f"Season: {result['season']} Round: {result['round']}\n"
     )
     await target.send(f"```\n{table}\n```")
@@ -141,9 +142,9 @@ async def wcc(ctx, season='current'):
     await check_season(ctx, season)
     result = await api.get_team_standings(season)
     table = make_table(result['data'])
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(
-        f"**World Constructor Championship**\n" +
+        "**World Constructor Championship**\n" +
         f"Season: {result['season']} Round: {result['round']}\n"
     )
     await target.send(f"```\n{table}\n```")
@@ -162,7 +163,7 @@ async def grid(ctx, season='current'):
     result = await api.get_all_drivers_and_teams(season)
     # Use simple table to not exceed content limit
     table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(
         f"**Formula 1 {result['season']} Grid**\n" +
         f"Round: {result['round']}\n"
@@ -176,7 +177,7 @@ async def races(ctx, *args):
     result = await api.get_race_schedule()
     # Use simple table to not exceed content limit
     table = make_table(result['data'], fmt='simple')
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(f"**{result['season']} Formula 1 Race Calendar**\n")
     await target.send(f"```\n{table}\n```")
 
@@ -199,7 +200,7 @@ async def countdown(ctx, *args):
     embed.add_field(name='Country', value=result['data']['Country'], inline=True)
     embed.add_field(name='Date', value=result['data']['Date'], inline=True)
     embed.add_field(name='Time', value=result['data']['Time'], inline=True)
-    target = await get_target(ctx, 'embed')
+    target = MessageTarget(ctx)
     await target.send(embed=embed)
 
 
@@ -218,7 +219,7 @@ async def results(ctx, season='current', rnd='last'):
     await check_season(ctx, season)
     result = await api.get_race_results(rnd, season)
     table = make_table(result['data'], fmt='simple')
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(f"**Race Results - {result['race']} ({result['season']})**")
     await target.send(f"```\n{table}\n```")
 
@@ -237,7 +238,7 @@ async def qualifying(ctx, season='current', rnd='last'):
     await check_season(ctx, season)
     result = await api.get_qualifying_results(rnd, season)
     table = make_table(result['data'])
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     await target.send(f"**Qualifying Results - {result['race']} ({result['season']})**")
     await target.send(f"```\n{table}\n```")
 
@@ -257,7 +258,7 @@ async def career(ctx, driver_id):
     --------
         !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
     """
-    target = await get_target(ctx, 'embed')
+    target = MessageTarget(ctx)
     await target.send("*Gathering driver data, this may take a few moments...*")
     driver = api.get_driver_info(driver_id)
     result = await api.get_driver_career(driver)
@@ -321,7 +322,7 @@ async def best(ctx, filter=None, season='current', rnd='last'):
         `top`     -  Top 5 fastest drivers.
         `bottom`  -  Bottom 5 slowest drivers.
     """
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
         await target.send("Invalid filter given.")
         raise commands.BadArgument(message="Invalid filter given.")
@@ -357,7 +358,7 @@ async def stops(ctx, filter, season='current', rnd='last'):
         `top`     -  Top 5 fastest pitstops.
         `bottom`  -  Bottom 5 slowest pitstops.
     """
-    target = await get_target(ctx, 'table')
+    target = MessageTarget(ctx)
     # Pit data only available from 2012 so catch seasons before
     if not season == 'current':
         if int(season) < 2012:
@@ -426,7 +427,7 @@ async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
         !f1 plot position [season] [round]
         !f1 plot position <season> <round> [driver1 driver2... | all]
     """
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     await check_season(ctx, season)
     # No drivers specified, skip filter and plot all
     if not (len(drivers) == 0 or drivers[0] == 'all'):
@@ -447,7 +448,7 @@ async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
 
 @timings.error
 async def timings_handler(ctx, error):
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     # Check error is missing arguments
     if isinstance(error, commands.MissingRequiredArgument):
         # Drivers are missing
@@ -455,7 +456,7 @@ async def timings_handler(ctx, error):
             await target.send("No driver_id provided.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
-        await target.send(f"Invalid season or round provided.")
+        await target.send("Invalid season or round provided.")
 
 
 @plot.command(aliases=['pos', 'overtakes'])
@@ -478,7 +479,7 @@ async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
         !f1 plot position [season] [round]
         !f1 plot position <season> <round> [driver1 driver2... | all]
     """
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     await check_season(ctx, season)
     # Filter by driver
     if not (len(drivers) == 0 or drivers[0] == 'all'):
@@ -500,7 +501,7 @@ async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
 
 @position.error
 async def position_handler(ctx, error):
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     # Check error is missing arguments
     if isinstance(error, commands.MissingRequiredArgument):
         # Drivers are missing
@@ -508,7 +509,7 @@ async def position_handler(ctx, error):
             await target.send("No driver_id provided.")
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
-        await target.send(f"Invalid season or round provided.")
+        await target.send("Invalid season or round provided.")
 
 
 @plot.command(aliases=['best'])
@@ -520,7 +521,7 @@ async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
         !f1 plot fastest [<season> <round>]
         !f1 plot fastest <season> <round> [driver1 driver2... | all]
     """
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     await check_season(ctx, season)
     res = await api.get_best_laps(rnd, season)
     sorted_laps = rank_best_lap_times(res)
@@ -538,10 +539,10 @@ async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
 
 @fastest.error
 async def fastest_handler(ctx, error):
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     # Round or season is missing
     if isinstance(error, commands.BadArgument):
-        await target.send(f"Invalid season or round provided.")
+        await target.send("Invalid season or round provided.")
 
 
 @plot.command(aliases=['stops', 'pits', 'pitstops'])
@@ -551,7 +552,7 @@ async def stints(ctx, season='current', rnd='last'):
     Usage:
         !f1 plot stints [<season> <round>]
     """
-    target = await get_target(ctx, 'file')
+    target = MessageTarget(ctx)
     # Pit data only available from 2012 so catch seasons before
     if not season == 'current':
         if int(season) < 2012:
