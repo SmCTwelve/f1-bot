@@ -3,8 +3,7 @@ import asyncio
 import random
 import re
 from operator import itemgetter
-from discord import Colour, File, Message
-import discord
+from discord import ApplicationContext, Colour, File, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
@@ -12,32 +11,25 @@ from discord.ext import commands
 from f1 import api
 from f1.stats import chart
 from f1.target import MessageTarget
-from f1.config import CONFIG, OUT_DIR
+from f1.config import Config, OUT_DIR
 from f1.errors import DriverNotFoundError
 from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
 
 
 logger = logging.getLogger("f1-bot")
 
-# Prefix includes the config symbol and the 'f1' name with hard-coded space
-intents = discord.Intents.default()
-bot = commands.Bot(
-    command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ",
-    help_command=commands.DefaultHelpCommand(dm_help=True),
-    case_insensitive=True,
-    intents=intents
-)
-
+bot = Config().bot
 
 # TODO
 # Add new Emphemeral (only you can see) option preferred over DM and enabled by default
 # Use "public" param to override ephemeral/dm for that specific message - check for it in on_command() hook ??
 
 
-async def check_season(ctx, season):
+async def check_season(ctx: commands.Context | ApplicationContext, season):
     """Raise error if the given season is in the future."""
     if is_future(season):
-        await ctx.send("Can't predict future :thinking:")
+        tgt = MessageTarget(ctx)
+        await tgt.send("Can't predict future :thinking:")
         raise commands.BadArgument('Given season is in the future.')
 
 
