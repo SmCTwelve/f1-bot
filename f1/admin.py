@@ -7,7 +7,7 @@ from discord.embeds import Embed
 from f1.api import check_status
 from f1.commands import bot
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("f1-bot")
 
 # set global time bot started
 # store the time as persist in Redis to prevent reset from Dyno refresh

@@ -7,7 +7,7 @@ from datetime import date, datetime
 from f1.config import DATA_DIR
 from f1.errors import MessageTooLongError, DriverNotFoundError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("f1-bot")
 
 
 def contains(first, second):

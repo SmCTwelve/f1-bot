@@ -15,7 +15,7 @@ BASE_URL = 'http://ergast.com/api/f1'
 
 DRIVERS = utils.load_drivers()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("f1-bot")
 
 
 async def get_soup(url):
