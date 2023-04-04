@@ -4,6 +4,7 @@ import random
 import re
 from operator import itemgetter
 from discord import Colour, File, Message
+import discord
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
@@ -19,18 +20,18 @@ from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, r
 logger = logging.getLogger("f1-bot")
 
 # Prefix includes the config symbol and the 'f1' name with hard-coded space
+intents = discord.Intents.default()
 bot = commands.Bot(
     command_prefix=f"{CONFIG['BOT']['PREFIX']}f1 ",
     help_command=commands.DefaultHelpCommand(dm_help=True),
-    case_insensitive=True
+    case_insensitive=True,
+    intents=intents
 )
 
 
 # TODO
-# Remove DM flags, either enable it globally or dont
 # Add new Emphemeral (only you can see) option preferred over DM and enabled by default
 # Use "public" param to override ephemeral/dm for that specific message - check for it in on_command() hook ??
-# Refactor commands where TARGET is used as message receiver
 
 
 async def check_season(ctx, season):
