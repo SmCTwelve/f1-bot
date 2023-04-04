@@ -36,7 +36,8 @@ class Config:
         return cls._instance
 
     def __init__(self):
-        pass
+        self.settings: ConfigParser
+        self.bot: commands.Bot
 
     def _create_output_and_data_dir(self):
         try:
