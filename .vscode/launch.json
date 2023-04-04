@@ -19,7 +19,7 @@
       "name": "Python: Run Bot",
       "type": "python",
       "request": "launch",
-      "program": "${cwd}/bot.py",
+      "program": "${cwd}/main.py",
       "justMyCode": true
     }
   ]
