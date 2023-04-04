@@ -16,11 +16,11 @@
       "justMyCode": false
     },
     {
-      "name": "Python: File",
+      "name": "Python: Run Bot",
       "type": "python",
       "request": "launch",
-      "program": "${file}",
-      "justMyCode": false
+      "program": "${cwd}/bot.py",
+      "justMyCode": true
     }
   ]
 }
