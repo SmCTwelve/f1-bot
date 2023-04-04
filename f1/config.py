@@ -2,7 +2,9 @@ import os
 from pathlib import Path
 import sys
 import logging
+import warnings
 from configparser import ConfigParser
+from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
 from discord.ext import commands
 
@@ -49,6 +51,7 @@ class Config:
 
     def _setup_bot(self):
         intents = Intents.default()
+        intents.message_content = True
         bot = commands.Bot(
             command_prefix=f"{self.settings['BOT']['PREFIX']}f1 ",
             help_command=commands.DefaultHelpCommand(dm_help=True),
@@ -78,8 +81,9 @@ class Config:
 
                 # Base logger config
                 logger = logging.getLogger("f1-bot")
+                logger.propagate = False
                 logger.setLevel(level)
-                formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s')
+                formatter = logging.Formatter('%(asctime)s | %(levelname)s:%(name)s: %(message)s')
 
                 # stdout log handler
                 console = logging.StreamHandler()
@@ -91,8 +95,8 @@ class Config:
                 file_handler.setFormatter(formatter)
                 logger.addHandler(file_handler)
 
-                discord_log = logging.getLogger("discord")
-                discord_log.addHandler(console)
+                # suppress BS4 warning
+                warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
 
                 return parsed
 
