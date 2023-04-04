@@ -23,7 +23,7 @@ class MessageTarget:
     def _get_send(self):
         """Return a reference to the send method to use for the context."""
         # Target DM channel
-        if self.settings["MESSAGE"]["DM"]:
+        if self.settings["MESSAGE"]["DM"] is True:
             return self.ctx.author.send
         # Use Application response for slash commands
         if isinstance(self.ctx, ApplicationContext):
