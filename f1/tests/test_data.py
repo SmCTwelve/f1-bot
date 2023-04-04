@@ -2,9 +2,11 @@ import re
 import unittest
 from unittest.mock import patch
 from datetime import datetime
+from discord.ext.commands import Bot
 
 from f1 import api
 from f1 import utils
+from f1.config import Config
 from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
 from f1.tests.async_test import async_test
 from f1.tests.mock_response.response import models
@@ -24,6 +26,22 @@ class BaseTest(unittest.TestCase):
     def check_total_and_num_results(self, total, data):
         self.assertTrue(isinstance(total, int), "Total is not valid.")
         self.assertEqual(total, len(data), "Total and number of results don't match.")
+
+    def test_config_singleton(self):
+        c1 = Config()
+        c2 = Config()
+        self.assertIs(c1, c2)
+
+    def test_config_data(self):
+        cfg = Config()
+        data = cfg.settings['BOT']['PREFIX']
+        self.assertIsNotNone(data)
+        self.assertIsInstance(data, str)
+
+    def test_config_bot_instance(self):
+        cfg = Config()
+        bot = cfg.bot
+        self.assertIsInstance(bot, Bot)
 
 
 class UtilityTests(BaseTest):
