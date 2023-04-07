@@ -3,11 +3,22 @@ import logging
 from operator import itemgetter
 from tabulate import tabulate
 from datetime import date, datetime
+from discord import ApplicationContext
+from discord.ext import commands
 
+from f1.target import MessageTarget
 from f1.config import DATA_DIR
 from f1.errors import MessageTooLongError, DriverNotFoundError
 
 logger = logging.getLogger("f1-bot")
+
+
+async def check_season(ctx: commands.Context | ApplicationContext, season):
+    """Raise error if the given season is in the future."""
+    if is_future(season):
+        tgt = MessageTarget(ctx)
+        await tgt.send("Can't predict future :thinking:")
+        raise commands.BadArgument('Given season is in the future.')
 
 
 def contains(first, second):
@@ -178,7 +189,7 @@ def filter_laps_by_driver(laps, drivers):
         return result
 
 
-def filter_times(sorted_times, filter):
+def filter_times(sorted_times, filter: str | None):
     """Filters the list of times by the filter keyword. If no filter is given the
     times are returned unfiltered.
 
@@ -215,3 +226,26 @@ def filter_times(sorted_times, filter):
     # no filter given, return full sorted results
     else:
         return sorted_times
+
+
+def remove_driver_duplicates_from_timing(lst: list[dict], key: str):
+    """Checks list of sorted timing data e.g. pitstops and removes duplicates to
+    keep only the fastest entry.
+
+    Parameters
+    ----------
+    `lst` : list[dict]
+        Collection of *sorted* timing entries per driver, e.g. from `utils.rank_pitstops`.
+    `key` : str
+        Dict key to sort by.
+
+    Returns
+    ----------
+    list[dict]
+        A new list of entries with duplicates removed where only the lower `key` values are kept.
+    """
+    seen = {}
+    for d in lst:
+        if d['Driver'] not in seen or d[key] < seen[d['Driver']][key]:
+            seen[d['Driver']] = d
+    return list(seen.values())

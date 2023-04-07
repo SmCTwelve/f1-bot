@@ -143,6 +143,20 @@ class UtilityTests(BaseTest):
         self.assertTrue(re.findall(r'(\d+ days?|\d+ hours?|\d+ minutes?|\d+ seconds?)+',
                                    countdown_str), "Invalid string output.")
 
+    def test_remove_driver_duplicates_from_timing(self):
+        timing_data = [
+            {'Driver': "ALO", 'time': "1:15.200"},
+            {'Driver': "ALO", 'time': "1:15.300"},
+            {'Driver': "VER", 'time': "1:15.310"},
+            {'Driver': "HAM", 'time': "1:16.200"},
+            {'Driver': "VER", 'time': "1:15.311"},
+        ]
+        expected = [{'Driver': "ALO", 'time': "1:15.200"},
+                    {'Driver': "VER", 'time': "1:15.310"},
+                    {'Driver': "HAM", 'time': "1:16.200"}]
+        res = utils.remove_driver_duplicates_from_timing(timing_data, "time")
+        self.assertEqual(res, expected, "Duplicates should be removed, keeping lowest key value.")
+
 
 class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
