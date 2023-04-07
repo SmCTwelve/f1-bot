@@ -2,11 +2,14 @@ import os
 from pathlib import Path
 import sys
 import logging
+from typing import List
 import warnings
 from configparser import ConfigParser
 from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
 from discord.ext import commands
+
+logger = logging.getLogger('f1-bot')
 
 # Root directory of the bot
 BASE_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
@@ -34,11 +37,13 @@ class Config:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.settings = cls._instance._load_config()
+            cls._instance.guilds = cls._instance._get_guilds()
             cls._instance.bot = cls._instance._setup_bot()
         return cls._instance
 
     def __init__(self):
         self.settings: ConfigParser
+        self.guilds: List[int] | None
         self.bot: commands.Bot
 
     def _create_output_and_data_dir(self):
@@ -54,11 +59,20 @@ class Config:
         intents.message_content = True
         bot = commands.Bot(
             command_prefix=f"{self.settings['BOT']['PREFIX']}f1 ",
+            guilds=self.guilds,
             help_command=commands.DefaultHelpCommand(dm_help=True),
             case_insensitive=True,
             intents=intents
         )
         return bot
+
+    def _get_guilds(self):
+        list_str = self.settings.get('GUILDS', 'LIST')
+        if ',' in list_str:
+            guilds_list = [int(i.strip()) for i in list_str.split(',')]
+        else:
+            guilds_list = [int(list_str.strip())]
+        return guilds_list
 
     def _load_config(self):
         try:
@@ -80,10 +94,9 @@ class Config:
                     level = logging.INFO
 
                 # Base logger config
-                logger = logging.getLogger("f1-bot")
                 logger.propagate = False
                 logger.setLevel(level)
-                formatter = logging.Formatter('%(asctime)s | %(levelname)s:%(name)s: %(message)s')
+                formatter = logging.Formatter('%(asctime)s | %(levelname)s %(name)s: %(message)s')
 
                 # stdout log handler
                 console = logging.StreamHandler()
@@ -94,6 +107,10 @@ class Config:
                 file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8', mode='w')
                 file_handler.setFormatter(formatter)
                 logger.addHandler(file_handler)
+
+                discord_logger = logging.getLogger('discord')
+                discord_logger.setLevel(logging.WARNING)
+                discord_logger.addHandler(file_handler)
 
                 # suppress BS4 warning
                 warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
