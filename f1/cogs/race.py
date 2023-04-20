@@ -1,5 +1,5 @@
 import logging
-from discord import Option
+from discord import Embed, Option
 from discord.ext import commands
 
 from f1 import utils
@@ -17,7 +17,7 @@ LaptimeFilter = Option(str, choices=["Fastest", "Slowest", "Top 5", "Bottom 5", 
 
 
 class Race(commands.Cog, guild_ids=Config().guilds):
-    """All race related commands including qualifying, race and pitstop data."""
+    """All race related commands including qualifying, race results and pitstop data."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -34,9 +34,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         result = await api.get_qualifying_results(round, season)
         table = utils.make_table(result['data'])
         target = MessageTarget(ctx)
+
         await target.send(
-            f"**Qualifying Results - {result['race']} ({result['season']})**" +
-            f"```\n{table}\n```"
+            content=f"```\n{table}\n```",
+            embed=Embed(title=f"**Qualifying Results - {result['race']} ({result['season']})**", url=result['url'])
         )
 
     @commands.slash_command(description="Final race results. Default latest.")
@@ -51,9 +52,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         result = await api.get_race_results(round, season)
         table = utils.make_table(result['data'], fmt='simple')
         target = MessageTarget(ctx)
+
         await target.send(
-            f"**Race Results - {result['race']} ({result['season']})**" +
-            f"```\n{table}\n```"
+            content=f"```\n{table}\n```",
+            embed=Embed(title=f"**Race Results - {result['race']} ({result['season']})**", url=result['url']),
         )
 
     @commands.slash_command(description="Race pitstops ranked by duration.", name="pitstops-ranked")
@@ -87,13 +89,15 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             filtered = utils.filter_times(sorted_res, "slowest")
             table = utils.make_table(filtered)
         else:
-            table = utils.make_table(sorted_res)
+            # Keep only the best pitstop per driver from all entries
+            filtered = utils.remove_driver_duplicates_from_timing(sorted_res, "Duration")
+            table = utils.make_table(filtered)
 
-        await target.send(
-            f"**Pit stops ranked {filter}**\n" +
-            f"{res['season']} {res['race']}" +
-            f"```\n{table}\n```"
+        emd = Embed(
+            title=f"**Pitstops ({filter})** | {res['season']} {res['race']}",
+            description=f"```\n{table}\n```"
         )
+        await target.send(embed=emd)
 
     @commands.slash_command(description="Driver pitstops.", name="pitstops-driver")
     async def pitstops_driver(self, ctx, driver_id: Option(str, required=True),
@@ -129,11 +133,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
         table = utils.make_table(filtered)
 
-        await target.send(
-            f"**Pitstops for {driver_id}**\n" +
-            f"{res['season']} {res['race']}" +
-            f"```\n{table}\n```"
-        )
+        await target.send(embed=Embed(
+            title=f"**Pitstops for {driver_id} | {res['season']} {res['race']}**",
+            description=f"```\n{table}\n```"
+        ))
 
     @commands.slash_command(description="Best ranked lap times per driver in the race.")
     async def laptimes(self, ctx, season: SeasonOption, round: RoundOption, filter: LaptimeFilter):
@@ -163,11 +166,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         filtered_laps = utils.filter_times(sorted_times, ranking)
         table = utils.make_table(filtered_laps)
 
-        await target.send(
-            f"**Fastest laps ranked {filter}**\n" +
-            f"{res['season']} {res['race']}" +
-            f"```\n{table}\n```"
-        )
+        await target.send(embed=Embed(
+            title=f"**Laptimes ({filter}) | {res['season']} {res['race']}**",
+            description=f"```\n{table}\n```"
+        ))
 
 
 def setup(bot):
