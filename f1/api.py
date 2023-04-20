@@ -27,7 +27,7 @@ async def get_soup(url):
     return BeautifulSoup(res, features='lxml')
 
 
-async def get_wiki_thumbnail(url):
+async def get_wiki_thumbnail(url: str):
     """Get image thumbnail from Wikipedia link. Returns the thumbnail URL."""
     if url is None or url == '':
         return 'https://i.imgur.com/kvZYOue.png'
@@ -264,8 +264,8 @@ async def get_all_drivers_and_teams(season):
             team = standing.constructor
             results['data'].append(
                 {
-                    'Code': driver['code'],
                     'No': int(driver.permanentnumber.string),
+                    'Code': driver['code'],
                     'Name': f'{driver.givenname.string} {driver.familyname.string}',
                     'Age': utils.age(driver.dateofbirth.string[:4]),
                     'Nationality': driver.nationality.string,
@@ -708,8 +708,8 @@ async def get_pitstops(rnd, season):
                     'Driver': f"{driver['code']}",
                     'Stop_no': int(stop['stop']),
                     'Lap': int(stop['lap']),
-                    'Time': stop['time'],
                     'Duration': stop['duration'],
+                    'Total': stop['time'],
                 }
             )
         return res
