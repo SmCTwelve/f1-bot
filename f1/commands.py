@@ -2,8 +2,7 @@ import logging
 import asyncio
 import random
 import re
-from operator import itemgetter
-from discord import ApplicationContext, Colour, File, Message
+from discord import Colour, File, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
@@ -13,24 +12,22 @@ from f1.stats import chart
 from f1.target import MessageTarget
 from f1.config import Config, OUT_DIR
 from f1.errors import DriverNotFoundError
-from f1.utils import is_future, make_table, filter_times, rank_best_lap_times, rank_pitstops, filter_laps_by_driver
+from f1.utils import check_season, rank_best_lap_times, filter_laps_by_driver
 
 
 logger = logging.getLogger("f1-bot")
 
 bot = Config().bot
 
+bot.load_extensions(
+    'f1.cogs.race',
+    'f1.cogs.season',
+    # 'f1.cogs.admin',
+)
+
 # TODO
 # Add new Emphemeral (only you can see) option preferred over DM and enabled by default
 # Use "public" param to override ephemeral/dm for that specific message - check for it in on_command() hook ??
-
-
-async def check_season(ctx: commands.Context | ApplicationContext, season):
-    """Raise error if the given season is in the future."""
-    if is_future(season):
-        tgt = MessageTarget(ctx)
-        await tgt.send("Can't predict future :thinking:")
-        raise commands.BadArgument('Given season is in the future.')
 
 
 @bot.event
@@ -104,138 +101,6 @@ async def github(ctx, *args):
     await MessageTarget(ctx).send("https://github.com/SmCTwelve/f1-bot")
 
 
-@bot.command(aliases=['drivers', 'championship'])
-async def wdc(ctx, season='current'):
-    """Display the Driver Championship standings as of the last race or `season`.
-
-    Usage:
-    ------
-        !f1 wdc [season]    WDC standings from [season].
-    """
-    await check_season(ctx, season)
-    result = await api.get_driver_standings(season)
-    table = make_table(result['data'], fmt='simple')
-    target = MessageTarget(ctx)
-    await target.send(
-        "**World Driver Championship**\n" +
-        f"Season: {result['season']} Round: {result['round']}\n"
-    )
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command(aliases=['teams', 'constructors'])
-async def wcc(ctx, season='current'):
-    """Display Constructor Championship standings as of the last race or `season`.
-
-    Usage:
-    ------
-        !f1 wcc            Current WCC standings as of the last race.
-        !f1 wcc [season]   WCC standings from [season].
-    """
-    await check_season(ctx, season)
-    result = await api.get_team_standings(season)
-    table = make_table(result['data'])
-    target = MessageTarget(ctx)
-    await target.send(
-        "**World Constructor Championship**\n" +
-        f"Season: {result['season']} Round: {result['round']}\n"
-    )
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command()
-async def grid(ctx, season='current'):
-    """Display all the drivers and teams participating in the current season or `season`.
-
-    Usage:
-    ------
-        !f1 grid            All drivers and teams in the current season as of the last race.
-        !f1 grid [season]   All drivers and teams at the end of [season].
-    """
-    await check_season(ctx, season)
-    result = await api.get_all_drivers_and_teams(season)
-    # Use simple table to not exceed content limit
-    table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
-    target = MessageTarget(ctx)
-    await target.send(
-        f"**Formula 1 {result['season']} Grid**\n" +
-        f"Round: {result['round']}\n"
-    )
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command(aliases=['calendar', 'schedule'])
-async def races(ctx, *args):
-    """Display the full race schedule for the current season."""
-    result = await api.get_race_schedule()
-    # Use simple table to not exceed content limit
-    table = make_table(result['data'], fmt='simple')
-    target = MessageTarget(ctx)
-    await target.send(f"**{result['season']} Formula 1 Race Calendar**\n")
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command(aliases=['timer', 'next'])
-async def countdown(ctx, *args):
-    """Display an Embed with details and countdown to the next calendar race."""
-    result = await api.get_next_race()
-    page_url = result['url'].replace(f"{result['season']}_", '')
-    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(page_url))
-    embed = Embed(
-        title=f"**{result['data']['Name']}**",
-        description=f"{result['countdown']}",
-        url=page_url,
-        colour=Colour.teal(),
-    )
-    embed.set_thumbnail(url=await thumb_url_task)
-    embed.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
-    embed.add_field(name='Round', value=result['data']['Round'], inline=True)
-    embed.add_field(name='Country', value=result['data']['Country'], inline=True)
-    embed.add_field(name='Date', value=result['data']['Date'], inline=True)
-    embed.add_field(name='Time', value=result['data']['Time'], inline=True)
-    target = MessageTarget(ctx)
-    await target.send(embed=embed)
-
-
-@bot.command(aliases=['finish'])
-async def results(ctx, season='current', rnd='last'):
-    """Results for race `round`. Default most recent.
-
-    Displays an embed with details about the race event and wikipedia link. Followed by table
-    of results. Data includes finishing position, fastest lap, finish status, pit stops per driver.
-
-    Usage:
-    ------
-        !f1 results                     Results for last race.
-        !f1 results [<season> <round>]  Results for [round] in [season].
-    """
-    await check_season(ctx, season)
-    result = await api.get_race_results(rnd, season)
-    table = make_table(result['data'], fmt='simple')
-    target = MessageTarget(ctx)
-    await target.send(f"**Race Results - {result['race']} ({result['season']})**")
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command(aliases=['quali'])
-async def qualifying(ctx, season='current', rnd='last'):
-    """Qualifying results for `round`. Defaults to latest.
-
-    Includes best Q1, Q2 and Q3 times per driver.
-
-    Usage:
-    ------
-        !f1 quali                    Latest results.
-        !f1 quali [<season> <round>] Results for [round] in [season].
-    """
-    await check_season(ctx, season)
-    result = await api.get_qualifying_results(rnd, season)
-    table = make_table(result['data'])
-    target = MessageTarget(ctx)
-    await target.send(f"**Qualifying Results - {result['race']} ({result['season']})**")
-    await target.send(f"```\n{table}\n```")
-
-
 @bot.command(aliases=['driver'])
 async def career(ctx, driver_id):
     """Career stats for the `driver_id`.
@@ -295,100 +160,6 @@ async def career(ctx, driver_id):
     )
     await target.send(embed=embed)
 
-
-@bot.command(aliases=['bestlap'])
-async def best(ctx, filter=None, season='current', rnd='last'):
-    """Display the best lap times and delta for each driver in `round`.
-
-    If no `round` specified returns results for the most recent race.
-
-    Usage:
-    ---------------
-        !f1 best                             Return all best laps for the latest race.
-        !f1 best [filter] [<season> <round>] Return best laps sorted by [filter].
-
-        Optional filter:
-        ----------------
-        `all`     -  Do not apply a filter.
-        `fastest` -  Only show the fastest lap of the race.
-        `slowest` -  Only show the slowest lap of the race.
-        `top`     -  Top 5 fastest drivers.
-        `bottom`  -  Bottom 5 slowest drivers.
-    """
-    target = MessageTarget(ctx)
-    if filter not in ['all', 'top', 'fastest', 'slowest', 'bottom', None]:
-        await target.send("Invalid filter given.")
-        raise commands.BadArgument(message="Invalid filter given.")
-    await check_season(ctx, season)
-    results = await api.get_best_laps(rnd, season)
-    sorted_times = rank_best_lap_times(results)
-    filtered = filter_times(sorted_times, filter)
-    table = make_table(filtered)
-    await target.send(
-        f"**Fastest laps ranked {filter}**\n" +
-        f"{results['season']} {results['race']}"
-    )
-    await target.send(f"```\n{table}\n```")
-
-
-@bot.command(aliases=['pits', 'pitstops'])
-async def stops(ctx, filter, season='current', rnd='last'):
-    """Display pitstops for each driver in the race, optionally sorted with filter.
-
-    If no `round` specified returns results for the most recent race. Data not available
-    before 2012.
-
-    Usage:
-    ---------------
-        !f1 stops <filter> [season] [round]     Return pitstops sorted by [filter].
-        !f1 stops <driver_id> [season] [round]  Return pitstops for the driver.
-
-        Filter:
-        ----------------
-        `<driver_id>`  -  Get the stops for the driver.
-        `fastest` -  Only show the fastest pitstop the race.
-        `slowest` -  Only show the slowest pitstop the race.
-        `top`     -  Top 5 fastest pitstops.
-        `bottom`  -  Bottom 5 slowest pitstops.
-    """
-    target = MessageTarget(ctx)
-    # Pit data only available from 2012 so catch seasons before
-    if not season == 'current':
-        if int(season) < 2012:
-            await ctx.send("Pitstop data not available before 2012.")
-            raise commands.BadArgument(message="Tried to get pitstops before 2012.")
-    await check_season(ctx, season)
-
-    # Get stops
-    res = await api.get_pitstops(rnd, season)
-
-    # The filter is for stop duration
-    if filter in ['top', 'bottom', 'fastest', 'slowest']:
-        sorted_times = rank_pitstops(res)
-        filtered = filter_times(sorted_times, filter)
-    # The filter is for all stops by a driver
-    else:
-        try:
-            driver = api.get_driver_info(filter)
-            filtered = [s for s in res['data'] if s['Driver'] == driver['code']]
-        except DriverNotFoundError:
-            await ctx.send("Invalid filter or driver provided.")
-            raise commands.BadArgument("Invalid filter or driver.")
-
-    table = make_table(filtered)
-
-    await target.send(
-        f"**Pit stops ranked {filter}**\n" +
-        f"{res['season']} {res['race']}"
-    )
-    await target.send(f"```\n{table}\n```")
-
-
-@stops.error
-async def stops_handler(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        if error.param.name == 'filter':
-            await ctx.send("Filter or driver is required.")
 
 # Plotting commands
 # ==================
