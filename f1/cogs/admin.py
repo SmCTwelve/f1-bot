@@ -74,3 +74,7 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         await self.bot.close()
         logger.warning("Shutting down application.")
         sys.exit()
+
+
+def setup(bot: discord.Bot):
+    bot.add_cog(Admin(bot))
