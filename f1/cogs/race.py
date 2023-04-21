@@ -21,7 +21,7 @@ LaptimeFilter = Option(str, choices=["Fastest", "Slowest", "Top 5", "Bottom 5", 
 class Race(commands.Cog, guild_ids=Config().guilds):
     """All race related commands including qualifying, race results and pitstop data."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Bot):
         self.bot = bot
 
     race = discord.SlashCommandGroup(
@@ -200,5 +200,5 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         await target.send(embed=emd)
 
 
-def setup(bot):
+def setup(bot: discord.Bot):
     bot.add_cog(Race(bot))

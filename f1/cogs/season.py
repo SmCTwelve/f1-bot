@@ -2,6 +2,7 @@ import logging
 from operator import itemgetter
 
 from discord import Embed, Option
+import discord
 from discord.ext import commands
 
 from f1 import api
@@ -17,7 +18,7 @@ SeasonOption = Option(str, default="current", description="Season year. If not s
 class Season(commands.Cog, guild_ids=Config().guilds):
     """Commands related to F1 season, e.g. championship standings and schedule."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Bot):
         self.bot = bot
 
     @commands.slash_command(description="Driver championship standings.")
@@ -93,5 +94,5 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         )
 
 
-def setup(bot):
+def setup(bot: discord.Bot):
     bot.add_cog(Season(bot))
