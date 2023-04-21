@@ -1,8 +1,7 @@
-import asyncio
 import logging
 from operator import itemgetter
 
-from discord import Colour, Embed, Option
+from discord import Embed, Option
 from discord.ext import commands
 
 from f1 import api
@@ -92,27 +91,6 @@ class Season(commands.Cog, guild_ids=Config().guilds):
                 url="https://f1calendar.com/"
             )
         )
-
-    @commands.slash_command(description="Details and countdown to the next race weekend.")
-    async def next(self, ctx):
-        result = await api.get_next_race()
-        page_url = str(result['url']).replace(f"{result['season']}_", '')
-        flag_img_task = asyncio.create_task(api.get_wiki_thumbnail(f"/{result['data']['Country']}"))
-        emd = Embed(
-            title=f"**{result['data']['Name']}**",
-            description=f"{result['countdown']}",
-            url=page_url,
-            colour=Colour.brand_red(),
-        )
-        emd.set_thumbnail(url=await flag_img_task)
-        emd.set_author(name="View full schedule", url="https://f1calendar.com/")
-        emd.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
-        emd.add_field(name='Round', value=result['data']['Round'], inline=True)
-        emd.add_field(name='Country', value=result['data']['Country'], inline=True)
-        emd.add_field(name='Date', value=result['data']['Date'], inline=True)
-        emd.add_field(name='Time', value=result['data']['Time'], inline=True)
-        target = MessageTarget(ctx)
-        await target.send(embed=emd)
 
 
 def setup(bot):
