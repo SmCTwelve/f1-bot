@@ -15,18 +15,21 @@ class MessageTarget:
         if not (isinstance(ctx, (Context, ApplicationContext))):
             raise ValueError("No context available for message target.")
         self.ctx = ctx
-        self.settings = Config().settings
+        self.msg_settings = Config().settings["MESSAGE"]
+        self.kwargs = None
 
     def send(self, *args, **kwargs):
-        return self._get_send()(*args, **kwargs)
+        self.kwargs = kwargs
+        return self._get_send()(*args, **self.kwargs)  # pass to func returned by _get_send(), not itself
 
     def _get_send(self):
         """Return a reference to the send method to use for the context."""
         # Target DM channel
-        if self.settings["MESSAGE"]["DM"] is True:
+        if self.msg_settings["DM"] is True:
             return self.ctx.author.send
         # Use Application response for slash commands
         if isinstance(self.ctx, ApplicationContext):
+            self.kwargs["ephemeral"] = self.msg_settings["EPHEMERAL"]
             return self.ctx.respond
         # Use normal reply for message commands
         return self.ctx.reply
