@@ -1,5 +1,7 @@
+import asyncio
 import logging
-from discord import Embed, Option
+from discord import Colour, Embed, Option
+import discord
 from discord.ext import commands
 
 from f1 import utils
@@ -22,7 +24,12 @@ class Race(commands.Cog, guild_ids=Config().guilds):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(description="Qualifying results. Default latest.")
+    race = discord.SlashCommandGroup(
+        name="race",
+        description="Race related commands"
+    )
+
+    @race.command(description="Qualifying results. Default latest.")
     async def qualifying(self, ctx, season: SeasonOption, round: RoundOption):
         """Qualifying results for the given race.
 
@@ -40,7 +47,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             embed=Embed(title=f"**Qualifying Results - {result['race']} ({result['season']})**", url=result['url'])
         )
 
-    @commands.slash_command(description="Final race results. Default latest.")
+    @race.command(description="Final race results. Default latest.")
     async def results(self, ctx, season: SeasonOption, round: RoundOption):
         """Get the complete race results. Both choices optional.
 
@@ -58,7 +65,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             embed=Embed(title=f"**Race Results - {result['race']} ({result['season']})**", url=result['url']),
         )
 
-    @commands.slash_command(description="Race pitstops ranked by duration.", name="pitstops-ranked")
+    @race.command(description="Race pitstops ranked by duration.", name="pitstops-ranked")
     async def pitstops_ranked(self, ctx, season: SeasonOption, round: RoundOption, filter: RankedPitstopFilter):
         """Display pitstops for the race ranked by `filter`.
 
@@ -99,7 +106,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         )
         await target.send(embed=emd)
 
-    @commands.slash_command(description="Driver pitstops.", name="pitstops-driver")
+    @race.command(description="Driver pitstops.", name="pitstops-driver")
     async def pitstops_driver(self, ctx, driver_id: Option(str, required=True),
                               season: SeasonOption, round: RoundOption):
         """Pitstops for a specific driver in the race.
@@ -138,7 +145,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             description=f"```\n{table}\n```"
         ))
 
-    @commands.slash_command(description="Best ranked lap times per driver in the race.")
+    @race.command(description="Best ranked lap times per driver in the race.")
     async def laptimes(self, ctx, season: SeasonOption, round: RoundOption, filter: LaptimeFilter):
         """Best ranked lap times per driver in the race. All parameters optional.
 
@@ -170,6 +177,27 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             title=f"**Laptimes ({filter}) | {res['season']} {res['race']}**",
             description=f"```\n{table}\n```"
         ))
+
+    @race.command(description="Details and countdown to the next race weekend.")
+    async def next(self, ctx):
+        result = await api.get_next_race()
+        page_url = str(result['url']).replace(f"{result['season']}_", '')
+        flag_img_task = asyncio.create_task(api.get_wiki_thumbnail(f"/{result['data']['Country']}"))
+        emd = Embed(
+            title=f"**{result['data']['Name']}**",
+            description=f"{result['countdown']}",
+            url=page_url,
+            colour=Colour.brand_red(),
+        )
+        emd.set_thumbnail(url=await flag_img_task)
+        emd.set_author(name="View full schedule", url="https://f1calendar.com/")
+        emd.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
+        emd.add_field(name='Round', value=result['data']['Round'], inline=True)
+        emd.add_field(name='Country', value=result['data']['Country'], inline=True)
+        emd.add_field(name='Date', value=result['data']['Date'], inline=True)
+        emd.add_field(name='Time', value=result['data']['Time'], inline=True)
+        target = MessageTarget(ctx)
+        await target.send(embed=emd)
 
 
 def setup(bot):
