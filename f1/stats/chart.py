@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import f1.config as cfg
 from f1.utils import lap_time_to_seconds, filter_laps_by_driver
-from f1.api import get_driver_info
+from f1.api.ergast import get_driver_info
 
 logger = logging.getLogger(__name__)
 

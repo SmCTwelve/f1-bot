@@ -5,7 +5,7 @@ import discord
 from discord import Colour, Embed
 from discord.ext import commands
 
-from f1.api import check_status
+from f1.api.ergast import check_status
 from f1.target import MessageTarget
 from f1.config import Config
 

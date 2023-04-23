@@ -4,7 +4,7 @@ from unittest.mock import patch
 from datetime import datetime
 from discord.ext.commands import Bot
 
-from f1 import api
+from f1.api import ergast
 from f1 import utils
 from f1.config import Config
 from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
@@ -13,7 +13,7 @@ from f1.tests.mock_response.response import models
 from f1.tests.mock_response.response import get_mock_response
 
 # Path for patch should be module where it is used, not where defined
-fetch_path = 'f1.api.fetch'
+fetch_path = 'f1.api.ergast.fetch'
 
 
 class BaseTest(unittest.TestCase):
@@ -162,9 +162,9 @@ class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
 
     def test_get_driver_info(self):
-        res_with_id = api.get_driver_info('alonso')
-        res_with_no = api.get_driver_info('14')
-        res_with_code = api.get_driver_info('ALO')
+        res_with_id = ergast.get_driver_info('alonso')
+        res_with_no = ergast.get_driver_info('14')
+        res_with_code = ergast.get_driver_info('ALO')
         self.assertEqual(res_with_id['id'], 'alonso')
         self.assertEqual(res_with_no['id'], 'alonso')
         self.assertEqual(res_with_no['number'], '14')
@@ -172,14 +172,14 @@ class MockAPITests(BaseTest):
         self.assertEqual(res_with_code['code'], 'ALO')
 
     def test_get_driver_info_code_or_number_conversion(self):
-        res = api.get_driver_info('abate')
+        res = ergast.get_driver_info('abate')
         self.assertEqual(res['id'], 'abate')
         self.assertTrue(res['number'] is None)
         self.assertTrue(res['code'] is None)
 
     def test_get_driver_info_with_invalid_driver(self):
         with self.assertRaises(DriverNotFoundError):
-            api.get_driver_info('smc12')
+            ergast.get_driver_info('smc12')
 
     @patch(fetch_path)
     @async_test
@@ -187,27 +187,27 @@ class MockAPITests(BaseTest):
         # return None to simulate invalid API response
         mock_fetch.return_value = get_mock_response(None)
         with self.assertRaises(MissingDataError):
-            await api.get_driver_standings('current')
+            await ergast.get_driver_standings('current')
 
     @patch(fetch_path)
     @async_test
     async def test_get_driver_standings(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('driver_standings')
-        res = await api.get_driver_standings('current')
+        res = await ergast.get_driver_standings('current')
         self.check_data(res['data'])
 
     @patch(fetch_path)
     @async_test
     async def test_get_team_standings(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('constructor_standings')
-        res = await api.get_team_standings('current')
+        res = await ergast.get_team_standings('current')
         self.check_data(res['data'])
 
     @patch(fetch_path)
     @async_test
     async def test_get_race_results(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('race_results')
-        res = await api.get_race_results('last', 'current')
+        res = await ergast.get_race_results('last', 'current')
         self.check_data(res['data'])
         self.check_data(res['timings'])
 
@@ -215,23 +215,23 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_qualifying_results(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('qualifying_results')
-        res = await api.get_qualifying_results('last', 'current')
+        res = await ergast.get_qualifying_results('last', 'current')
         self.check_data(res['data'])
 
     @patch(fetch_path)
     @async_test
     async def test_get_all_laps(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('all_laps')
-        res = await api.get_all_laps(1, 2019)
+        res = await ergast.get_all_laps(1, 2019)
         self.assertNotIn(None, res['data'][1])
 
     @patch(fetch_path)
     @async_test
     async def test_get_all_laps_for_driver(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('all_laps')
-        driver = api.get_driver_info('alonso')
-        laps = await api.get_all_laps(15, 2008)
-        res = await api.get_all_laps_for_driver(driver, laps)
+        driver = ergast.get_driver_info('alonso')
+        laps = await ergast.get_all_laps(15, 2008)
+        res = await ergast.get_all_laps_for_driver(driver, laps)
         self.check_data(res['data'])
         self.assertEqual(res['data'][0]['Lap'], 1, "First lap should be 1.")
         self.assertEqual(res['driver']['surname'], 'Alonso', "Driver doesn't match that provided.")
@@ -240,7 +240,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_pitstops(self, mock_fetch):
         mock_fetch.side_effect = [get_mock_response('pitstops'), get_mock_response('race_results')]
-        res = await api.get_pitstops('last', 'current')
+        res = await ergast.get_pitstops('last', 'current')
         self.check_data(res['data'])
 
     # test career
@@ -248,7 +248,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_driver_wins(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('driver_wins')
-        res = await api.get_driver_wins('alonso')
+        res = await ergast.get_driver_wins('alonso')
         self.check_data(res['data'])
         self.check_total_and_num_results(res['total'], res['data'])
 
@@ -256,7 +256,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_driver_poles(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('driver_poles')
-        res = await api.get_driver_poles('alonso')
+        res = await ergast.get_driver_poles('alonso')
         self.check_data(res['data'])
         self.check_total_and_num_results(res['total'], res['data'])
 
@@ -264,7 +264,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_driver_seasons(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('driver_seasons')
-        res = await api.get_driver_seasons('alonso')
+        res = await ergast.get_driver_seasons('alonso')
         self.check_data(res['data'])
         self.assertEqual(len(res['data']), 1)
         self.assertTrue(res['data'][0]['year'] == 2001)
@@ -273,7 +273,7 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_driver_teams(self, mock_fetch):
         mock_fetch.return_value = get_mock_response('driver_teams')
-        res = await api.get_driver_teams('alonso')
+        res = await ergast.get_driver_teams('alonso')
         self.assertTrue(res['data'], "Results empty.")
         self.assertEqual(len(res['data']), 1)
         self.assertTrue(res['data'][0] == 'Ferrari')
@@ -288,8 +288,8 @@ class MockAPITests(BaseTest):
             get_mock_response('driver_seasons'),
             get_mock_response('driver_teams'),
         ]
-        driver = api.get_driver_info('alonso')
-        res = await api.get_driver_career(driver)
+        driver = ergast.get_driver_info('alonso')
+        res = await ergast.get_driver_career(driver)
         self.assertEqual(res['driver']['surname'], 'Alonso')
         # Check length of results
         data = res['data']
@@ -307,11 +307,11 @@ class LiveAPITests(BaseTest):
     async def test_response_structure(self):
         # test response for alonso info against mocked data
         # Get BeautifulSoup obj from API response to test tags
-        actual_result = await api.get_soup(f'{api.BASE_URL}/drivers/alonso')
+        actual_result = await ergast.get_soup(f'{ergast.BASE_URL}/drivers/alonso')
         with patch(fetch_path) as mock_get:
             mock_get.return_value = get_mock_response('driver_info')
             # url never used as fetch is mocked
-            expected_result = await api.get_soup('mock_url')
+            expected_result = await ergast.get_soup('mock_url')
         # Check root tag of real response body for changes
         self.assertTrue(actual_result.body.find('mrdata'),
                         "Parent response tag not as expected, API may have changed.")
@@ -321,14 +321,14 @@ class LiveAPITests(BaseTest):
 
     @async_test
     async def test_get_past_race_results(self):
-        past_res = await api.get_race_results('12', '2017')
+        past_res = await ergast.get_race_results('12', '2017')
         self.check_data(past_res['data'])
         self.assertEqual(past_res['season'], '2017', "Requested season and result don't match.")
         self.assertEqual(past_res['round'], '12', "Requested round and result don't match.")
 
     @async_test
     async def test_get_next_race_countdown(self):
-        res = await api.get_next_race()
+        res = await ergast.get_next_race()
         time = res['data']['Time']
         date = res['data']['Date']
         self.assertTrue(res['data'], "Results empty.")

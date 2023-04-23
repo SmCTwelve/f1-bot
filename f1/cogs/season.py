@@ -5,7 +5,7 @@ from discord import Embed, Option
 import discord
 from discord.ext import commands
 
-from f1 import api
+from f1.api import ergast
 from f1.target import MessageTarget
 from f1.config import Config
 from f1.utils import make_table, check_season
@@ -30,7 +30,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
             /wdc [season]    WDC standings from [season].
         """
         await check_season(ctx, season)
-        result = await api.get_driver_standings(season)
+        result = await ergast.get_driver_standings(season)
         table = make_table(result['data'], fmt='simple')
         target = MessageTarget(ctx)
         await target.send(
@@ -50,7 +50,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
             /wcc [season]   WCC standings from [season].
         """
         await check_season(ctx, season)
-        result = await api.get_team_standings(season)
+        result = await ergast.get_team_standings(season)
         table = make_table(result['data'])
         target = MessageTarget(ctx)
         await target.send(
@@ -71,7 +71,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
             /grid [season]   All drivers and teams at the end of [season].
         """
         await check_season(ctx, season)
-        result = await api.get_all_drivers_and_teams(season)
+        result = await ergast.get_all_drivers_and_teams(season)
         table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
         target = MessageTarget(ctx)
         await target.send(

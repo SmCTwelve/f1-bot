@@ -7,7 +7,7 @@ from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
-from f1 import api
+from f1.api import ergast
 from f1.stats import chart
 from f1.target import MessageTarget
 from f1.config import Config, OUT_DIR
@@ -133,9 +133,9 @@ async def career(ctx, driver_id):
     """
     target = MessageTarget(ctx)
     await target.send("*Gathering driver data, this may take a few moments...*")
-    driver = api.get_driver_info(driver_id)
-    result = await api.get_driver_career(driver)
-    thumb_url_task = asyncio.create_task(api.get_wiki_thumbnail(driver['url']))
+    driver = ergast.get_driver_info(driver_id)
+    result = await ergast.get_driver_career(driver)
+    thumb_url_task = asyncio.create_task(ergast.get_wiki_thumbnail(driver['url']))
     season_list = result['data']['Seasons']['years']
     champs_list = result['data']['Championships']['years']
     embed = Embed(
@@ -210,10 +210,10 @@ async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     await check_season(ctx, season)
     # No drivers specified, skip filter and plot all
     if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [api.get_driver_info(d)['id'] for d in drivers]
+        driver_list = [ergast.get_driver_info(d)['id'] for d in drivers]
     else:
         driver_list = []
-    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
+    laps_task = asyncio.create_task(ergast.get_all_laps(rnd, season))
     await target.send("*Gathering lap data; this may take a few moments...*")
 
     laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
@@ -262,11 +262,11 @@ async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     await check_season(ctx, season)
     # Filter by driver
     if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [api.get_driver_info(d)['id'] for d in drivers]
+        driver_list = [ergast.get_driver_info(d)['id'] for d in drivers]
     # No drivers specified, skip filter and plot all
     else:
         driver_list = []
-    laps_task = asyncio.create_task(api.get_all_laps(rnd, season))
+    laps_task = asyncio.create_task(ergast.get_all_laps(rnd, season))
     await target.send("*Gathering lap data; this may take a few moments...*")
 
     laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
@@ -302,11 +302,11 @@ async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     """
     target = MessageTarget(ctx)
     await check_season(ctx, season)
-    res = await api.get_best_laps(rnd, season)
+    res = await ergast.get_best_laps(rnd, season)
     sorted_laps = rank_best_lap_times(res)
     # Filter by driver if specified
     if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [api.get_driver_info(d)['code'] for d in drivers]
+        driver_list = [ergast.get_driver_info(d)['code'] for d in drivers]
         sorted_laps = [lap for lap in sorted_laps if lap['Driver'] in driver_list]
     res['data'] = sorted_laps
     chart.plot_best_laps(res)
@@ -338,7 +338,7 @@ async def stints(ctx, season='current', rnd='last'):
             await ctx.send("Pitstop data not available before 2012.")
             raise commands.BadArgument(message="Tried to get pitstops before 2012.")
     await check_season(ctx, season)
-    res = await api.get_pitstops(rnd, season)
+    res = await ergast.get_pitstops(rnd, season)
     chart.plot_pitstops(res)
 
     f = File(f"{OUT_DIR}/plot_pitstops.png", filename='plot_pitstops.png')

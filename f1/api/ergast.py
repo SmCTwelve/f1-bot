@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 from f1 import utils
-from f1.fetch import fetch
+from f1.api.fetch import fetch
 from f1.errors import MissingDataError
 
 

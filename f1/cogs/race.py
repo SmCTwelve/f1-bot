@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from f1 import utils
-from f1 import api
+from f1.api import ergast
 from f1.errors import DriverNotFoundError
 from f1.target import MessageTarget
 from f1.config import Config
@@ -38,7 +38,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             /qualifying [season] [round]
         """
         await utils.check_season(ctx, season)
-        result = await api.get_qualifying_results(round, season)
+        result = await ergast.get_qualifying_results(round, season)
         table = utils.make_table(result['data'])
         target = MessageTarget(ctx)
 
@@ -56,7 +56,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             /results [season] [round]
         """
         await utils.check_season(ctx, season)
-        result = await api.get_race_results(round, season)
+        result = await ergast.get_race_results(round, season)
         table = utils.make_table(result['data'], fmt='simple')
         target = MessageTarget(ctx)
 
@@ -85,7 +85,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         await utils.check_season(ctx, season)
 
         # Get stops and stort them
-        res = await api.get_pitstops(round, season)
+        res = await ergast.get_pitstops(round, season)
         sorted_res = utils.rank_pitstops(res)
 
         # Filter based on choice
@@ -130,9 +130,9 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         await utils.check_season(ctx, season)
 
         # Get driver stops
-        res = await api.get_pitstops(round, season)
+        res = await ergast.get_pitstops(round, season)
         try:
-            driver = api.get_driver_info(driver_id)
+            driver = ergast.get_driver_info(driver_id)
             filtered = [s for s in res['data'] if s['Driver'] == driver['code']]
         except DriverNotFoundError:
             await target.send("Invalid driver identifier provided.", ephemeral=True)
@@ -158,7 +158,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         """
         target = MessageTarget(ctx)
         await utils.check_season(ctx, season)
-        res = await api.get_best_laps(round, season)
+        res = await ergast.get_best_laps(round, season)
         sorted_times = utils.rank_best_lap_times(res)
 
         if filter == "Ranked":
@@ -180,9 +180,9 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
     @race.command(description="Details and countdown to the next race weekend.")
     async def next(self, ctx):
-        result = await api.get_next_race()
+        result = await ergast.get_next_race()
         page_url = str(result['url']).replace(f"{result['season']}_", '')
-        flag_img_task = asyncio.create_task(api.get_wiki_thumbnail(f"/{result['data']['Country']}"))
+        flag_img_task = asyncio.create_task(ergast.get_wiki_thumbnail(f"/{result['data']['Country']}"))
         emd = Embed(
             title=f"**{result['data']['Name']}**",
             description=f"{result['countdown']}",
