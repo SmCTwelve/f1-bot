@@ -20,8 +20,8 @@ CONFIG_FILE = BASE_DIR.joinpath('config.ini')
 # Output directory for temp files, like plot images
 OUT_DIR = BASE_DIR.joinpath('out')
 
-# Where to store static data files
-DATA_DIR = BASE_DIR.joinpath('data')
+# Where to store static cache files
+CACHE_DIR = BASE_DIR.joinpath('cache')
 
 # Logs output
 LOG_DIR = BASE_DIR.joinpath('logs')
@@ -49,7 +49,7 @@ class Config:
     def _create_output_and_data_dir(self):
         try:
             Path.mkdir(OUT_DIR, parents=True, exist_ok=True)
-            Path.mkdir(DATA_DIR, parents=True, exist_ok=True)
+            Path.mkdir(CACHE_DIR, parents=True, exist_ok=True)
             Path.mkdir(LOG_DIR, parents=True, exist_ok=True)
         except FileExistsError:
             logging.info("Output directory already exists, skipping.")

@@ -4,8 +4,8 @@ import json
 import logging
 import asyncio
 
-from f1.api import get_all_drivers
-from f1.config import DATA_DIR
+from f1.api.ergast import get_all_drivers
+from f1.config import CACHE_DIR
 from f1.errors import MissingDataError
 
 logging.basicConfig(
@@ -26,12 +26,12 @@ async def update_drivers():
         sys.exit(0)
 
     # check if file exists
-    if os.path.isfile(f'{DATA_DIR}/drivers.json'):
+    if os.path.isfile(f'{CACHE_DIR}/drivers.json'):
         logger.info('Backing up old driver data...')
-        os.replace(f'{DATA_DIR}/drivers.json', f'{DATA_DIR}/drivers_old.json')
+        os.replace(f'{CACHE_DIR}/drivers.json', f'{CACHE_DIR}/drivers_old.json')
 
     # save new data
-    with open(f'{DATA_DIR}/drivers.json', 'w') as f:
+    with open(f'{CACHE_DIR}/drivers.json', 'w') as f:
         json.dump(data, f)
         logger.info('Drivers updated successfully!')
 

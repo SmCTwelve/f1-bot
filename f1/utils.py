@@ -7,7 +7,7 @@ from discord import ApplicationContext
 from discord.ext import commands
 
 from f1.target import MessageTarget
-from f1.config import DATA_DIR
+from f1.config import CACHE_DIR
 from f1.errors import MessageTooLongError, DriverNotFoundError
 
 logger = logging.getLogger("f1-bot")
@@ -109,7 +109,7 @@ def lap_time_to_seconds(time_str: str):
 
 def load_drivers():
     """Load drivers JSON from file and return as dict."""
-    with open(DATA_DIR.joinpath('drivers.json'), 'r', encoding='utf-8') as f:
+    with open(CACHE_DIR.joinpath('drivers.json'), 'r', encoding='utf-8') as f:
         data = json.load(f)
         DRIVERS = data['MRData']['DriverTable']['Drivers']
         logger.info('Drivers loaded.')
