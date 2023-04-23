@@ -190,7 +190,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             colour=Colour.brand_red(),
         )
         emd.set_thumbnail(url=await flag_img_task)
-        emd.set_author(name="View full schedule", url="https://f1calendar.com/")
+        emd.set_author(name="View schedule", url="https://f1calendar.com/")
         emd.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
         emd.add_field(name='Round', value=result['data']['Round'], inline=True)
         emd.add_field(name='Country', value=result['data']['Country'], inline=True)
