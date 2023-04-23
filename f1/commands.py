@@ -2,7 +2,7 @@ import logging
 import asyncio
 import random
 import re
-from discord import ApplicationContext, Colour, File, Message
+from discord import ApplicationCommandInvokeError, ApplicationContext, Colour, File, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
@@ -32,7 +32,7 @@ bot.load_extensions(
 
 @bot.event
 async def on_ready():
-    logger.info('Bot ready...')
+    logger.info("Bot ready...")
     job = Activity(name=bot.command_prefix, type=ActivityType.watching)
     await bot.change_presence(activity=job)
 
@@ -45,9 +45,7 @@ async def on_message(message: Message):
 
 
 async def on_command_handler(ctx: commands.Context | ApplicationContext):
-    channel = ctx.message.channel
-    user = ctx.message.author
-    logger.info(f'Command: {ctx.command} in {channel} by {user}')
+    logger.info(f"Command: {ctx.command} in {ctx.channel} by {ctx.user}")
 
 
 async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
@@ -64,12 +62,13 @@ async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
 
     # Catch all other errors
     else:
-        # Catch CommandNotFound
         if isinstance(err, commands.CommandNotFound):
             await target.send("Command not recognised.")
+        elif isinstance(err, ApplicationCommandInvokeError):
+            await target.send("Invalid command argument. Are you trying to predict the future? :thinking:")
         else:
             await target.send(
-                f"Command failed: {err.message if hasattr(err, 'message') or hasattr(err, 'msg') else ''}"
+                f"Command failed: {err.message if (hasattr(err, 'message') or hasattr(err, 'msg')) else ''}"
             )
 
     # Random chance to show img with error output if rng is multiple of 12
