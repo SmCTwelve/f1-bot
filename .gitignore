@@ -5,6 +5,7 @@
 
 /img
 /out/plot*.png
+cache/
 
 __pycache__/
 db.sqlite3
