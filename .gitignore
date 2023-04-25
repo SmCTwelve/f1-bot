@@ -10,6 +10,8 @@ cache/
 __pycache__/
 db.sqlite3
 
+*.ipynb
+
 # Distribution / packaging
 .Python
 build/
