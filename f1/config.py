@@ -1,9 +1,10 @@
 import os
-from pathlib import Path
 import sys
 import logging
-from typing import List
 import warnings
+import fastf1
+from pathlib import Path
+from typing import List
 from configparser import ConfigParser
 from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
@@ -17,8 +18,8 @@ BASE_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
 # Path to config file
 CONFIG_FILE = BASE_DIR.joinpath('config.ini')
 
-# Output directory for temp files, like plot images
-OUT_DIR = BASE_DIR.joinpath('out')
+# Image and text assets
+ASSET_DIR = BASE_DIR.joinpath('assets')
 
 # Where to store static cache files
 CACHE_DIR = BASE_DIR.joinpath('cache')
@@ -33,6 +34,7 @@ class Config:
 
     _instance = None
 
+    # Constructor setup
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -41,22 +43,24 @@ class Config:
             cls._instance.bot = cls._instance._setup_bot()
         return cls._instance
 
+    # Initialise instance with accessible API
     def __init__(self):
         self.settings: ConfigParser
         self.guilds: List[int] | None
         self.bot: commands.Bot
 
     def _create_output_and_data_dir(self):
-        try:
-            Path.mkdir(OUT_DIR, parents=True, exist_ok=True)
-            Path.mkdir(CACHE_DIR, parents=True, exist_ok=True)
-            Path.mkdir(LOG_DIR, parents=True, exist_ok=True)
-        except FileExistsError:
-            logging.info("Output directory already exists, skipping.")
+        # Check directories, will skip if they exist
+        Path.mkdir(ASSET_DIR, parents=True, exist_ok=True)
+        Path.mkdir(CACHE_DIR, parents=True, exist_ok=True)
+        Path.mkdir(LOG_DIR, parents=True, exist_ok=True)
 
     def _setup_bot(self):
+        # Message contents needed for any prefix commands
         intents = Intents.default()
         intents.message_content = True
+
+        # Instantiate a single bot instance
         bot = commands.Bot(
             command_prefix=f"{self.settings['BOT']['PREFIX']}f1 ",
             guilds=self.guilds,
@@ -67,6 +71,7 @@ class Config:
         return bot
 
     def _get_guilds(self):
+        # Used for syncing slash commands instantly and limit bot scope
         list_str = self.settings.get('GUILDS', 'LIST')
         if ',' in list_str:
             guilds_list = [int(i.strip()) for i in list_str.split(',')]
@@ -80,7 +85,12 @@ class Config:
                 parsed = ConfigParser()
                 parsed.read_file(f)
                 logging.info('Config loaded!')
+
+                # Verify directory structure
                 self._create_output_and_data_dir()
+
+                # Enable FastF1 caching
+                fastf1.Cache.enable_cache(CACHE_DIR)
 
                 # logging
                 cfg_level = parsed['LOGGING']['LEVEL']
