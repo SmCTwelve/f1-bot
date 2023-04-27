@@ -1,7 +1,7 @@
 import re
 import unittest
 from unittest.mock import patch
-from datetime import datetime
+from datetime import date, datetime
 from discord.ext.commands import Bot
 
 from f1.api import ergast
@@ -156,6 +156,24 @@ class UtilityTests(BaseTest):
                     {'Driver': "HAM", 'time': "1:16.200"}]
         res = utils.remove_driver_duplicates_from_timing(timing_data, "time")
         self.assertEqual(res, expected, "Duplicates should be removed, keeping lowest key value.")
+
+    def test_convert_season(self):
+        year = "2023"
+        expected = 2023
+        self.assertEqual(utils.convert_season(year), expected)
+
+    def test_convert_season_current(self):
+        year = "current"
+        expected = date.today().year
+        self.assertEqual(utils.convert_season(year), expected)
+
+    def test_sprint_qual_type(self):
+        year_2021 = 2021
+        year_2022 = 2022
+        year_current = "current"
+        self.assertEqual(utils.sprint_qual_type(year_2021), "Sprint")
+        self.assertEqual(utils.sprint_qual_type(year_2022), "Sprint")
+        self.assertEqual(utils.sprint_qual_type(year_current), "Sprint Shootout")
 
 
 class MockAPITests(BaseTest):

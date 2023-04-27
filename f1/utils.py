@@ -14,11 +14,29 @@ logger = logging.getLogger("f1-bot")
 
 
 async def check_season(ctx: commands.Context | ApplicationContext, season):
-    """Raise error if the given season is in the future."""
+    """Raise error if the given season is in the future. Otherwise returns the year as an int."""
     if is_future(season):
         tgt = MessageTarget(ctx)
         await tgt.send("Can't predict future :thinking:")
         raise commands.BadArgument('Given season is in the future.')
+
+
+def convert_season(season):
+    """Return the season as an int, works for 'current' season."""
+    if season == "current":
+        return current_year()
+    return int(season)
+
+
+def sprint_qual_type(season):
+    """Get the name used for the Saturday sprint qualifying session.
+
+    Naming between 2021-2022 is synonymous. 2023+ uses new format.
+    """
+    s_int = convert_season(season)
+    if s_int < 2023:
+        return 'Sprint'
+    return 'Sprint Shootout'
 
 
 def contains(first, second):
@@ -56,11 +74,14 @@ def make_table(data, headers='keys', fmt='fancy_grid'):
     return table
 
 
+def current_year():
+    return date.today().year
+
+
 def age(yob):
-    current_year = date.today().year
-    if current_year < int(yob):
+    if current_year() < int(yob):
         return 0
-    return current_year - int(yob)
+    return current_year() - int(yob)
 
 
 def date_parser(date_str):
