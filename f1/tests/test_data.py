@@ -2,10 +2,12 @@ import re
 import unittest
 from unittest.mock import patch
 from datetime import date, datetime
+
+import pandas as pd
 from discord.ext.commands import Bot
 
-from f1.api import ergast
 from f1 import utils
+from f1.api import ergast
 from f1.config import Config
 from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
 from f1.tests.async_test import async_test
@@ -174,6 +176,17 @@ class UtilityTests(BaseTest):
         self.assertEqual(utils.sprint_qual_type(year_2021), "Sprint")
         self.assertEqual(utils.sprint_qual_type(year_2022), "Sprint")
         self.assertEqual(utils.sprint_qual_type(year_current), "Sprint Shootout")
+
+    def test_format_timedelta(self):
+        td = pd.Timedelta("0 days 01:27:46.548296")
+        expected = "27:46.548"
+        with_hours = "1:27:46.548"
+        self.assertEqual(utils.format_timedelta(td), expected)
+        self.assertEqual(utils.format_timedelta(td, hours=True), with_hours)
+
+    def test_format_timedelta_nan(self):
+        td = pd.Timedelta("")
+        self.assertEqual(utils.format_timedelta(td), "")
 
 
 class MockAPITests(BaseTest):

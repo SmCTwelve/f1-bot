@@ -1,8 +1,10 @@
 import json
 import logging
 from operator import itemgetter
-from tabulate import tabulate
 from datetime import date, datetime
+
+import pandas as pd
+from tabulate import tabulate
 from discord import ApplicationContext
 from discord.ext import commands
 
@@ -56,7 +58,7 @@ def too_long(message: str):
     return len(message) >= 2000
 
 
-def make_table(data, headers='keys', fmt='fancy_grid'):
+def make_table(data, headers='keys', fmt='fancy_grid', **kwargs):
     """Tabulate data into an ASCII table. Return value is a str.
 
     The `fmt` param defaults to 'fancy_grid' which includes borders for cells. If the table exceeds
@@ -64,10 +66,10 @@ def make_table(data, headers='keys', fmt='fancy_grid'):
 
     If still too large raise `MessageTooLongError`.
     """
-    table = tabulate(data, headers=headers, tablefmt=fmt)
+    table = tabulate(data, headers=headers, tablefmt=fmt, **kwargs)
     # remove cell borders if too long
     if too_long(table):
-        table = tabulate(data, headers=headers, tablefmt='simple')
+        table = tabulate(data, headers=headers, tablefmt='simple', **kwargs)
         # cannot send table if too large even without borders
         if too_long(table):
             raise MessageTooLongError('Table too large to send.', table)
@@ -116,6 +118,13 @@ def countdown(target: datetime):
         f"{pluralize(int(s), 'second')} "
     )
     return [stringify, (d, h, m, s)]
+
+
+def format_timedelta(delta: pd.Timedelta, hours=False):
+    """Get a time string in `[%H]:%M:%S.%f` with a precision of 3 places. If not a valid time the string is empty."""
+    if pd.isna(delta):
+        return ''
+    return (datetime.min + delta).strftime(f"{'%H:' if hours else ''}%M:%S.%f").lstrip('0')[:-3]
 
 
 def lap_time_to_seconds(time_str: str):
