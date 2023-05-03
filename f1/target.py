@@ -30,6 +30,6 @@ class MessageTarget:
         # Use Application response for slash commands
         if isinstance(self.ctx, ApplicationContext):
             self.kwargs["ephemeral"] = self.msg_settings["EPHEMERAL"]
-            return self.ctx.respond
+            return self.ctx.followup.send
         # Use normal reply for message commands
         return self.ctx.reply
