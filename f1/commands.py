@@ -10,7 +10,7 @@ from discord.ext import commands
 from f1.api import ergast
 from f1.stats import chart
 from f1.target import MessageTarget
-from f1.config import Config, OUT_DIR
+from f1.config import Config, CACHE_DIR
 from f1.errors import DriverNotFoundError
 from f1.utils import check_season, rank_best_lap_times, filter_laps_by_driver
 
@@ -44,7 +44,7 @@ async def on_message(message: Message):
     await bot.process_commands(message)
 
 
-async def on_command_handler(ctx: commands.Context | ApplicationContext):
+def on_command_handler(ctx: commands.Context | ApplicationContext):
     logger.info(f"Command: {ctx.command} in {ctx.channel} by {ctx.user}")
 
 
@@ -58,17 +58,19 @@ async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
 
     # Catch DriverNotFoundError
     elif isinstance(err, DriverNotFoundError):
-        await target.send("Could not find a matching driver. Check ID is correct.")
+        await target.send("Could not find a matching driver. Check ID.")
+
+    # Invocation errors
+    elif isinstance(err, ApplicationCommandInvokeError):
+        await target.send(f":x: Error: {str(err.original)}")
 
     # Catch all other errors
     else:
         if isinstance(err, commands.CommandNotFound):
             await target.send("Command not recognised.")
-        elif isinstance(err, ApplicationCommandInvokeError):
-            await target.send("Invalid command argument. Are you trying to predict the future? :thinking:")
         else:
             await target.send(
-                f"Command failed: {err.message if (hasattr(err, 'message') or hasattr(err, 'msg')) else ''}"
+                f"Command failed: {err.message if (hasattr(err, 'message') or hasattr(err, 'msg')) else err}"
             )
 
     # Random chance to show img with error output if rng is multiple of 12
@@ -88,7 +90,8 @@ async def on_command(ctx: commands.Context):
 
 @bot.event
 async def on_application_command(ctx: ApplicationContext):
-    await on_command_handler(ctx)
+    await ctx.defer(ephemeral=Config().settings["MESSAGE"]["EPHEMERAL"])
+    on_command_handler(ctx)
 
 
 @bot.event
@@ -220,7 +223,7 @@ async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
 
     chart.plot_all_driver_laps(laps_to_plot)
 
-    f = File(f"{OUT_DIR}/plot_laps.png", filename='plot_laps.png')
+    f = File(f"{CACHE_DIR}/plot_laps.png", filename='plot_laps.png')
     await target.send(f"**Lap timings - {laps_to_plot['race']} ({laps_to_plot['season']})**")
     await target.send(file=f)
 
@@ -273,7 +276,7 @@ async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
 
     chart.plot_race_pos(laps_to_plot)
 
-    f = File(f"{OUT_DIR}/plot_pos.png", filename='plot_pos.png')
+    f = File(f"{CACHE_DIR}/plot_pos.png", filename='plot_pos.png')
     await target.send(f"**Race position - {laps_to_plot['race']} ({laps_to_plot['season']})**")
     await target.send(file=f)
 
@@ -311,7 +314,7 @@ async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
     res['data'] = sorted_laps
     chart.plot_best_laps(res)
 
-    f = File(f"{OUT_DIR}/plot_fastest.png", filename='plot_fastest.png')
+    f = File(f"{CACHE_DIR}/plot_fastest.png", filename='plot_fastest.png')
     await target.send(f"**Fastest laps - {res['race']} ({res['season']})**")
     await target.send(file=f)
 
@@ -341,6 +344,6 @@ async def stints(ctx, season='current', rnd='last'):
     res = await ergast.get_pitstops(rnd, season)
     chart.plot_pitstops(res)
 
-    f = File(f"{OUT_DIR}/plot_pitstops.png", filename='plot_pitstops.png')
+    f = File(f"{CACHE_DIR}/plot_pitstops.png", filename='plot_pitstops.png')
     await target.send(f"**Race stints - {res['race']} ({res['season']})**")
     await target.send(file=f)
