@@ -106,7 +106,7 @@ class Config:
                 # Base logger config
                 logger.propagate = False
                 logger.setLevel(level)
-                formatter = logging.Formatter('%(asctime)s | %(levelname)s %(name)s: %(message)s')
+                formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)8s %(message)s')
 
                 # stdout log handler
                 console = logging.StreamHandler()
