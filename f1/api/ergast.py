@@ -64,6 +64,29 @@ async def check_status():
         return 1
 
 
+async def race_info(season, rnd):
+    """Returns the basic info for the race.
+
+    Raises
+    ------
+    `MissingDataError`
+    """
+    soup = await get_soup(f'{BASE_URL}/{season}/{rnd}')
+    if soup:
+        race = soup.race
+        data = {
+            'season': race['season'],
+            'round': race['round'],
+            'url': race['url'],
+            'name': race.racename.string,
+            'circuit': race.circuit.circuitname.string,
+            'date': race.date.string,
+            'time': race.time.string,
+        }
+        return data
+    raise MissingDataError()
+
+
 async def get_all_drivers():
     """Fetch all driver data as JSON. Returns a dict."""
     url = f'{BASE_URL}/drivers.json?limit=1000'
