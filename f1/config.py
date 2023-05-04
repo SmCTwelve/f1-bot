@@ -2,10 +2,11 @@ import os
 import sys
 import logging
 import warnings
-import fastf1
 from pathlib import Path
 from typing import List
 from configparser import ConfigParser
+
+import fastf1
 from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
 from discord.ext import commands
@@ -121,6 +122,9 @@ class Config:
                 discord_logger = logging.getLogger('discord')
                 discord_logger.setLevel(logging.WARNING)
                 discord_logger.addHandler(file_handler)
+
+                # FastF1 logger config
+                fastf1.set_log_level(logging.WARNING)
 
                 # suppress BS4 warning
                 warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
