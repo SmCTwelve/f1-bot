@@ -5,7 +5,7 @@ from . import models
 responses = {
     'driver_standings': models.driver_standings,
     'constructor_standings': models.constructor_standings,
-    'driver_info': models.driver_info,
+    'driver_info_xml': models.driver_info_xml,
     'grid': models.grid,
     'race_schedule': models.race_schedule,
     'race_results': models.race_results,

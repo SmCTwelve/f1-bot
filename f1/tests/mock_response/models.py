@@ -61,7 +61,7 @@ constructor_standings = standings_wrapper('''
         </Constructor>
     </ConstructorStanding>''')
 
-driver_info = '''
+driver_info_xml = '''
     <DriverTable driverId="alonso">
         <Driver driverId="alonso" code="ALO" url="http://en.wikipedia.org/wiki/Fernando_Alonso">
             <PermanentNumber>14</PermanentNumber>
@@ -71,6 +71,25 @@ driver_info = '''
             <Nationality>Spanish</Nationality>
         </Driver>
     </DriverTable>'''
+
+driver_info_json = {
+    "MRData": {
+        "DriverTable": {
+            "Drivers": [
+                {
+                    "driverId": "alonso",
+                    "permanentNumber": "14",
+                    "code": "ALO",
+                    "url": "http:\/\/en.wikipedia.org\/wiki\/Fernando_Alonso",
+                    "givenName": "Fernando",
+                    "familyName": "Alonso",
+                    "dateOfBirth": "1981-07-29",
+                    "nationality": "Spanish"
+                }
+            ]
+        }
+    }
+}
 
 race_schedule = '''
     <RaceTable season="2018">
@@ -319,15 +338,9 @@ driver2_laps = result_wrapper('''
 
 pitstops = result_wrapper('''
     <PitStopsList>
-        <PitStop driverId="brendon_hartley" stop="1" lap="1" time="17:16:20" duration="41.012"/>
-        <PitStop driverId="hamilton" stop="1" lap="7" time="17:29:33" duration="21.283"/>
-        <PitStop driverId="leclerc" stop="1" lap="7" time="17:29:43" duration="21.828"/>
-        <PitStop driverId="grosjean" stop="1" lap="7" time="17:29:48" duration="22.354"/>
-        <PitStop driverId="vettel" stop="1" lap="15" time="17:44:11" duration="22.630"/>
-        <PitStop driverId="bottas" stop="1" lap="16" time="17:45:52" duration="21.600"/>
-        <PitStop driverId="max_verstappen" stop="1" lap="17" time="17:47:44" duration="21.057"/>
-        <PitStop driverId="ocon" stop="1" lap="18" time="17:49:58" duration="21.979"/>
-        <PitStop driverId="perez" stop="1" lap="26" time="18:04:04" duration="22.112"/>
+        <PitStop driverId="alonso" stop="1" lap="1" time="17:16:20" duration="41.012"/>
+        <PitStop driverId="alonso" stop="2" lap="7" time="17:29:33" duration="21.283"/>
+        <PitStop driverId="alonso" stop="3" lap="15" time="17:44:11" duration="22.630"/>
     </PitStopsList>''')
 
 

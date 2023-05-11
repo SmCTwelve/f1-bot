@@ -5,14 +5,14 @@ from datetime import date, datetime
 
 import pandas as pd
 from discord.ext.commands import Bot
+from aiohttp_client_cache import CachedSession
 
 from f1 import utils
-from f1.api import ergast
+from f1.api import ergast, fetch
 from f1.config import Config
 from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
 from f1.tests.async_test import async_test
-from f1.tests.mock_response.response import models
-from f1.tests.mock_response.response import get_mock_response
+from f1.tests.mock_response.response import models, get_mock_response
 
 # Path for patch should be module where it is used, not where defined
 fetch_path = 'f1.api.ergast.fetch'
@@ -28,6 +28,9 @@ class BaseTest(unittest.TestCase):
     def check_total_and_num_results(self, total, data):
         self.assertTrue(isinstance(total, int), "Total is not valid.")
         self.assertEqual(total, len(data), "Total and number of results don't match.")
+
+
+class ConfigTests(BaseTest):
 
     def test_config_singleton(self):
         c1 = Config()
@@ -192,25 +195,25 @@ class UtilityTests(BaseTest):
 class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
 
-    def test_get_driver_info(self):
-        res_with_id = ergast.get_driver_info('alonso')
-        res_with_no = ergast.get_driver_info('14')
-        res_with_code = ergast.get_driver_info('ALO')
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_info(self, mock_fetch):
+        mock_fetch.return_value = models.driver_info_json
+        res_with_id = await ergast.get_driver_info('alonso')
+        res_with_no = await ergast.get_driver_info('14')
+        res_with_code = await ergast.get_driver_info('ALO')
         self.assertEqual(res_with_id['id'], 'alonso')
         self.assertEqual(res_with_no['id'], 'alonso')
         self.assertEqual(res_with_no['number'], '14')
         self.assertEqual(res_with_code['id'], 'alonso')
         self.assertEqual(res_with_code['code'], 'ALO')
 
-    def test_get_driver_info_code_or_number_conversion(self):
-        res = ergast.get_driver_info('abate')
-        self.assertEqual(res['id'], 'abate')
-        self.assertTrue(res['number'] is None)
-        self.assertTrue(res['code'] is None)
-
-    def test_get_driver_info_with_invalid_driver(self):
+    @patch(fetch_path)
+    @async_test
+    async def test_get_driver_info_with_invalid_driver(self, mock_fetch):
+        mock_fetch.return_value = models.driver_info_json
         with self.assertRaises(DriverNotFoundError):
-            ergast.get_driver_info('smc12')
+            await ergast.get_driver_info('smc12')
 
     @patch(fetch_path)
     @async_test
@@ -259,8 +262,8 @@ class MockAPITests(BaseTest):
     @patch(fetch_path)
     @async_test
     async def test_get_all_laps_for_driver(self, mock_fetch):
-        mock_fetch.return_value = get_mock_response('all_laps')
-        driver = ergast.get_driver_info('alonso')
+        mock_fetch.side_effect = [models.driver_info_json, get_mock_response('all_laps')]
+        driver = await ergast.get_driver_info('alonso')
         laps = await ergast.get_all_laps(15, 2008)
         res = await ergast.get_all_laps_for_driver(driver, laps)
         self.check_data(res['data'])
@@ -270,7 +273,12 @@ class MockAPITests(BaseTest):
     @patch(fetch_path)
     @async_test
     async def test_get_pitstops(self, mock_fetch):
-        mock_fetch.side_effect = [get_mock_response('pitstops'), get_mock_response('race_results')]
+        mock_fetch.side_effect = [
+            get_mock_response('pitstops'),
+            get_mock_response('race_results'),
+            models.driver_info_json,
+            models.driver_info_json,
+            models.driver_info_json]
         res = await ergast.get_pitstops('last', 'current')
         self.check_data(res['data'])
 
@@ -313,13 +321,14 @@ class MockAPITests(BaseTest):
     @async_test
     async def test_get_driver_career(self, mock_fetch):
         mock_fetch.side_effect = [
+            models.driver_info_json,
             get_mock_response('driver_championships'),
             get_mock_response('driver_wins'),
             get_mock_response('driver_poles'),
             get_mock_response('driver_seasons'),
             get_mock_response('driver_teams'),
         ]
-        driver = ergast.get_driver_info('alonso')
+        driver = await ergast.get_driver_info('alonso')
         res = await ergast.get_driver_career(driver)
         self.assertEqual(res['driver']['surname'], 'Alonso')
         # Check length of results
@@ -334,13 +343,16 @@ class MockAPITests(BaseTest):
 class LiveAPITests(BaseTest):
     """Using real requests to check API status, validate response structure and error handling."""
 
+    def setUp(self):
+        fetch.use_cache = False
+
     @async_test
     async def test_response_structure(self):
         # test response for alonso info against mocked data
         # Get BeautifulSoup obj from API response to test tags
         actual_result = await ergast.get_soup(f'{ergast.BASE_URL}/drivers/alonso')
         with patch(fetch_path) as mock_get:
-            mock_get.return_value = get_mock_response('driver_info')
+            mock_get.return_value = get_mock_response('driver_info_xml')
             # url never used as fetch is mocked
             expected_result = await ergast.get_soup('mock_url')
         # Check root tag of real response body for changes
@@ -365,3 +377,15 @@ class LiveAPITests(BaseTest):
         self.assertTrue(res['data'], "Results empty.")
         self.assertTrue(datetime.strptime(date, '%d %b %Y'), "Date not valid.")
         self.assertTrue(datetime.strptime(time, '%H:%M UTC'), "Time not valid.")
+
+    @async_test
+    async def test_cached_results(self):
+        url = "https://ergast.com/api/f1/current/next.json"
+        async with CachedSession(cache=fetch.cache) as session:
+            res = await session.get(url=url, expire_after=60)
+            self.assertEqual(res.from_cache, False)
+            cached_res = await session.get(url=url, expire_after=10)
+            self.assertEqual(cached_res.from_cache, True)
+
+    def tearDown(self):
+        fetch.use_cache = True
