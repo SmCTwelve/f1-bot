@@ -1,18 +1,17 @@
 import logging
 from operator import itemgetter
 
-from discord import Embed, Option
 import discord
+from discord import Embed
 from discord.ext import commands
 
+from f1 import options
 from f1.api import ergast
 from f1.target import MessageTarget
 from f1.config import Config
 from f1.utils import make_table, check_season
 
 logger = logging.getLogger("f1-bot")
-
-SeasonOption = Option(str, default="current", description="Season year. If not specified uses current season.")
 
 
 class Season(commands.Cog, guild_ids=Config().guilds):
@@ -22,7 +21,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         self.bot = bot
 
     @commands.slash_command(description="Driver championship standings.")
-    async def wdc(self, ctx, season: SeasonOption):
+    async def wdc(self, ctx, season: options.SeasonOption):
         """Display the Driver Championship standings as of the last race or `season`.
 
         Usage:
@@ -32,8 +31,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         await check_season(ctx, season)
         result = await ergast.get_driver_standings(season)
         table = make_table(result['data'], fmt='simple')
-        target = MessageTarget(ctx)
-        await target.send(
+        await MessageTarget(ctx).send(
             embed=Embed(
                 title=f"**World Constructor Championship ({result['season']})**",
                 description=f"```\n{table}\n```"
@@ -42,7 +40,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         )
 
     @commands.slash_command(description="Constructors Championship standings.")
-    async def wcc(self, ctx, season: SeasonOption):
+    async def wcc(self, ctx, season: options.SeasonOption):
         """Display Constructor Championship standings as of the last race or `season`.
 
         Usage:
@@ -52,8 +50,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         await check_season(ctx, season)
         result = await ergast.get_team_standings(season)
         table = make_table(result['data'])
-        target = MessageTarget(ctx)
-        await target.send(
+        await MessageTarget(ctx).send(
             embed=Embed(
                 title=f"**World Constructor Championship ({result['season']})**",
                 description=f"```\n{table}\n```"
@@ -62,7 +59,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         )
 
     @commands.slash_command(desciption="All drivers and teams participating in the season.")
-    async def grid(self, ctx, season: SeasonOption):
+    async def grid(self, ctx, season: options.SeasonOption):
         """Display all the drivers and teams participating in the `season`.
 
         Usage:
@@ -73,8 +70,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         await check_season(ctx, season)
         result = await ergast.get_all_drivers_and_teams(season)
         table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
-        target = MessageTarget(ctx)
-        await target.send(
+        await MessageTarget(ctx).send(
             content=f"```\n{table}\n```",
             embed=Embed(
                 title=f"**Formula 1 Grid ({result['season']})**",

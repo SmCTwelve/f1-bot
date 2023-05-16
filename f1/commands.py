@@ -90,6 +90,7 @@ async def on_command(ctx: commands.Context):
 
 @bot.event
 async def on_application_command(ctx: ApplicationContext):
+    # Defer slash commands by default
     await ctx.defer(ephemeral=Config().settings["MESSAGE"]["EPHEMERAL"])
     on_command_handler(ctx)
 
