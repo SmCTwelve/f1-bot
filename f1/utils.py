@@ -166,14 +166,9 @@ def find_driver(id: str, drivers: list[dict]):
     `DriverNotFoundError`
     """
     for d in drivers:
-        if d.get('driverId', '').lower() == str(id).lower():
+        if str(id).casefold() in (str(v).casefold() for v in d.values()):
             return d
-        elif d.get('code', '').lower() == str(id).lower():
-            return d
-        elif d.get('permanentNumber', '') == str(id):
-            return d
-        else:
-            continue
+        continue
     raise DriverNotFoundError()
 
 
