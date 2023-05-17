@@ -243,17 +243,17 @@ def filter_times(sorted_times, filter: str | None):
     elif filter == 'fastest':
         return [sorted_times[0]]
     # fastest 5
-    elif filter == 'top':
+    elif 'top' in filter:
         return sorted_times[:5]
     # slowest 5
-    elif filter == 'bottom':
+    elif 'bottom' in filter:
         return sorted_times[len(sorted_times) - 5:]
     # no filter given, return full sorted results
     else:
         return sorted_times
 
 
-def remove_driver_duplicates_from_timing(lst: list[dict], key: str):
+def keep_fastest(lst: list[dict], key: str):
     """Checks list of sorted timing data e.g. pitstops and removes duplicates to
     keep only the fastest entry.
 
