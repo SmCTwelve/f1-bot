@@ -12,7 +12,7 @@ from f1.config import CACHE_DIR
 BASE_URL = 'http://ergast.com/api/f1'
 SESSION_TIMEOUT = 120
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("f1-bot")
 
 # Disable caching e.g. for testing
 use_cache = True
@@ -38,10 +38,10 @@ def _is_json(res): return 'application/json' in res.content_type
 
 async def _send_request(session, url):
     """Attempt to request the URL. Returns content of the Response if successful or None."""
-    logger.info('GET {}'.format(url))
+    logger.debug('GET {}'.format(url))
     # open connection context, all response handling must be within
     async with session.get(url) as res:
-        logger.info('Response HTTP/{}'.format(res.status))
+        logger.debug('Response HTTP/{}'.format(res.status))
         if res.status != 200:
             logger.warning('Problem fetching request. Failed with HTTP/{} {}'.format(res.status, res.reason))
             return None
