@@ -20,14 +20,15 @@ class MessageTarget:
 
     def send(self, *args, **kwargs):
         self.kwargs = kwargs
-        return self._get_send()(*args, **self.kwargs)  # pass to func returned by _get_send(), not itself
+        # Passes the args into the function returned by _get_send(), not the call itself
+        return self._get_send()(*args, **self.kwargs)
 
     def _get_send(self):
         """Return a reference to the send method to use for the context."""
         # Target DM channel
         if self.msg_settings["DM"] is True:
             return self.ctx.author.send
-        # Use Application response for slash commands
+        # Use ApplicationContext followup for deferred slash commands
         if isinstance(self.ctx, ApplicationContext):
             self.kwargs["ephemeral"] = self.msg_settings["EPHEMERAL"]
             return self.ctx.followup.send
