@@ -1,7 +1,7 @@
 import logging
 import asyncio
-import random
 import re
+
 from discord import ApplicationCommandInvokeError, ApplicationContext, Colour, File, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
@@ -25,10 +25,6 @@ bot.load_extensions(
     # 'f1.cogs.admin',
 )
 
-# TODO
-# Add new Emphemeral (only you can see) option preferred over DM and enabled by default
-# Use "public" param to override ephemeral/dm for that specific message - check for it in on_command() hook ??
-
 
 @bot.event
 async def on_ready():
@@ -45,11 +41,11 @@ async def on_message(message: Message):
 
 
 def on_command_handler(ctx: commands.Context | ApplicationContext):
-    logger.info(f"Command: {ctx.command} in {ctx.channel} by {ctx.user}")
+    logger.info(f"Command: /{ctx.command} in {ctx.channel} by {ctx.user}")
 
 
 async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
-    logger.error(f"Command failed: {ctx.command}\n {err}")
+    logger.error(f"Command failed: /{ctx.command}\n {err}")
     target = MessageTarget(ctx)
 
     # Catch TimeoutError
@@ -72,15 +68,6 @@ async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
             await target.send(
                 f"Command failed: {err.message if (hasattr(err, 'message') or hasattr(err, 'msg')) else err}"
             )
-
-    # Random chance to show img with error output if rng is multiple of 12
-    rng = random.randint(1, 60)
-    if rng % 12 == 0:
-        n = random.randint(1, 3)
-        img = {1: 'https://i.imgur.com/xocNTde.jpg',
-               2: 'https://i.imgur.com/morumoC.jpg',
-               3: 'https://i.imgur.com/Cn8Gdh1.gifv'}
-        await ctx.send(img[n])
 
 
 @bot.event
