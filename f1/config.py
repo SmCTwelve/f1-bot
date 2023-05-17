@@ -74,11 +74,8 @@ class Config:
     def _get_guilds(self):
         # Used for syncing slash commands instantly and limit bot scope
         list_str = self.settings.get('GUILDS', 'LIST')
-        if ',' in list_str:
-            guilds_list = [int(i.strip()) for i in list_str.split(',')]
-        else:
-            guilds_list = [int(list_str.strip())]
-        return guilds_list
+        # Basic parsing of comma separated list of guilds
+        return [int(s.strip()) for s in list_str.split(',')]
 
     def _load_config(self):
         try:
