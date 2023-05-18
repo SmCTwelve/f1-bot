@@ -160,8 +160,10 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
     data = res.content[0]
 
     # Group the rows
+    # Show all stops for a driver, which can then be filtered
     if driver is not None:
         row_mask = data["driverId"] == driver
+    # Get the fastest stop for each driver when no specific driver is given
     else:
         row_mask = data.groupby("driverId")["duration"].idxmin()
 
@@ -170,7 +172,7 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
     # Convert timedelta into seconds for stop duration
     df["duration"] = df["duration"].transform(lambda x: x.total_seconds())
 
-    # Add driver abbreviations and number columns from the info dict
+    # Add driver abbreviations and numbers from driver info dict
     df[["No", "Code"]] = df.apply(lambda x: pd.Series({
         "No": drv_info[x.driverId]["permanentNumber"],
         "Code": drv_info[x.driverId]["code"],
@@ -183,5 +185,5 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
         df = df.loc[[df["duration"].idxmax()]]
 
     # Presentation
-    df = df.rename(columns={"stop": "Stop", "lap": "Lap", "duration": "Duration"})
+    df.columns = df.columns.str.capitalize()
     return df.loc[:, ["No", "Code", "Stop", "Lap", "Duration"]]
