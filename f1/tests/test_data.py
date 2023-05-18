@@ -159,7 +159,7 @@ class UtilityTests(BaseTest):
         expected = [{'Driver': "ALO", 'time': "1:15.200"},
                     {'Driver': "VER", 'time': "1:15.310"},
                     {'Driver': "HAM", 'time': "1:16.200"}]
-        res = utils.remove_driver_duplicates_from_timing(timing_data, "time")
+        res = utils.keep_fastest(timing_data, "time")
         self.assertEqual(res, expected, "Duplicates should be removed, keeping lowest key value.")
 
     def test_convert_season(self):

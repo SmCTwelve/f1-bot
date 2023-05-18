@@ -7,13 +7,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 from f1 import utils
-from f1.api.fetch import fetch
+from f1.api.fetch import fetch, BASE_URL
 from f1.errors import MissingDataError
 
-
-BASE_URL = 'http://ergast.com/api/f1'
-
-DRIVERS = utils.load_drivers()
 
 logger = logging.getLogger("f1-bot")
 
@@ -87,21 +83,31 @@ async def race_info(season, rnd):
     raise MissingDataError()
 
 
-async def get_all_drivers():
-    """Fetch all driver data as JSON. Returns a dict."""
-    url = f'{BASE_URL}/drivers.json?limit=1000'
+async def get_all_drivers(season=None, round=None) -> list[dict]:
+    """Fetch all driver data as JSON. Returns a list of driver dict.
+
+    Optional season and round specifier to limit drivers to that race or season.
+
+    Raises `MissingDataError`.
+    """
+    if season and round:
+        url = f'{BASE_URL}/{season}/{round}/drivers.json?limit=1000'
+    elif season:
+        url = f'{BASE_URL}/{season}/drivers.json?limit=1000'
+    else:
+        url = f'{BASE_URL}/drivers.json?limit=1000'
     # Get JSON data as dict
     res = await fetch(url)
     if res is None:
         raise MissingDataError()
-    return res
+    return res['MRData']['DriverTable']['Drivers']
 
 
-def get_driver_info(driver_id):
+async def get_driver_info(driver_id):
     """Get the driver name, age, nationality, code and number.
 
-    Searches a dictionary containing all drivers from the Ergast API for an
-    entry with a matching ID, surname or number given in the `driver_id` arg.
+    Searches a dictionary of drivers from the Ergast API for an
+    entry with a matching ID, surname or number.
 
     Parameters
     ----------
@@ -128,7 +134,7 @@ def get_driver_info(driver_id):
     `DriverNotFoundError`
         if no match found.
     """
-    driver = utils.find_driver(driver_id, DRIVERS)
+    driver = utils.find_driver(driver_id, await get_all_drivers())
     res = {
         'firstname': driver['givenName'],
         'surname': driver['familyName'],
@@ -400,6 +406,8 @@ async def get_race_results(rnd, season, winner_only=False):
 
     Data includes finishing position, fastest lap, finish status, pit stops per driver.
 
+    Fastest laps available under `timings` where available.
+
     Parameters
     ----------
     `rnd` : int
@@ -485,9 +493,6 @@ async def get_race_results(rnd, season, winner_only=False):
                 )
         return res
     raise MissingDataError()
-
-# Consider using /laps url without driver id, seems faster to get all laps
-    # Then filter the response to find the driver id
 
 
 async def get_all_laps(rnd, season):
@@ -677,12 +682,13 @@ async def get_qualifying_results(rnd, season):
     raise MissingDataError()
 
 
-async def get_pitstops(rnd, season):
+async def get_pitstops(rnd, season, driverId: str = None):
     """Get the race pitstop times for each driver.
 
     Parameters
     ----------
     `season`, `rnd` : int
+    `driverId`: Ergast API ID
 
     Returns
     -------
@@ -707,7 +713,11 @@ async def get_pitstops(rnd, season):
     `MissingDataError`
         if API response invalid.
     """
-    url = f"{BASE_URL}/{season}/{rnd}/pitstops?limit=100"
+    if driverId:
+        url = f"{BASE_URL}/{season}/{rnd}/drivers/{driverId}/pitstops?limit=100"
+    else:
+        url = f"{BASE_URL}/{season}/{rnd}/pitstops?limit=100"
+
     soup = await get_soup(url)
     if soup:
         race = soup.race
@@ -725,7 +735,7 @@ async def get_pitstops(rnd, season):
             'data': []
         }
         for stop in pitstops:
-            driver = get_driver_info(stop['driverid'])
+            driver = await get_driver_info(stop['driverid'])
             res['data'].append(
                 {
                     'Driver': f"{driver['code']}",
