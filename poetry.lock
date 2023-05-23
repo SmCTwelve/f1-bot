@@ -641,24 +641,24 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
 name = "fastf1"
-version = "3.0.2"
+version = "3.0.3"
 description = "Wrapper library for F1 data and telemetry API with additional data processing capabilities."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastf1-3.0.2-py3-none-any.whl", hash = "sha256:33c9b36e65b5fde38046b4fc6fde81848daf6370941b57a1936d49b689c30eb8"},
-    {file = "fastf1-3.0.2.tar.gz", hash = "sha256:cd6ac00ac09b60dc212deb1e76bfeac41760f85b5aba34bb406570306b54abf9"},
+    {file = "fastf1-3.0.3-py3-none-any.whl", hash = "sha256:c53a9e11989cee099e1008cfd751401ae52ebefabaaefedffa921f65a0a3282e"},
+    {file = "fastf1-3.0.3.tar.gz", hash = "sha256:b4af9a2d3cf8ebf9e2887354c151b9828d81d4020449c5b9d71611b350fd3965"},
 ]
 
 [package.dependencies]
-matplotlib = ">=3.4.2"
-numpy = ">=1.20.3"
-pandas = ">=1.2.4"
+matplotlib = ">=3.4.2,<4.0.0"
+numpy = ">=1.20.3,<2.0.0"
+pandas = ">=1.2.4,<3.0.0"
 python-dateutil = "*"
 requests = ">=2.28.0"
 requests-cache = ">=0.8.0"
-scipy = ">=1.6.3"
+scipy = ">=1.6.3,<2.0.0"
 thefuzz = "*"
 timple = ">=0.1.2"
 websockets = ">=8.1"
