@@ -1,7 +1,7 @@
-from discord.ext.commands import errors
+import discord
 
 
-class BotError(errors.CommandError):
+class BotError(discord.DiscordException):
     """Base error class for the bot."""
 
     def __init__(self, message=''):
