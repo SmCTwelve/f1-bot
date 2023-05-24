@@ -110,6 +110,26 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             description=f"```\n{table}\n```"
         ))
 
+    @commands.slash_command(description="Tyre compound stints in a race.")
+    async def stints(self, ctx, year: options.SeasonOption, round: options.RoundOption,
+                     driver: Option(str, default=None)):
+        """Get the race stints on each tyre compound during the race, optionally for a specific driver.
+
+        Usage:
+            /stints [season] [round] [driver]
+        """
+        await utils.check_season(ctx, year)
+        event = await stats.to_event(year, round)
+        session = await stats.load_session(event, 'R', laps=True)
+
+        stints = await stats.tyre_stints(session, driver)
+        table = utils.make_table(stints, showindex=False)
+
+        await MessageTarget(ctx).send(embed=Embed(
+            title=f"**Race Tyre Stints - {event['EventName']} ({event['EventDate'].year})**",
+            description=f"```\n{table}\n```"
+        ))
+
     @commands.slash_command(description="Details and countdown to the next race weekend.")
     async def next(self, ctx):
         result = await ergast.get_next_race()

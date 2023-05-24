@@ -9,6 +9,7 @@ from fastf1.core import Session, SessionResults
 
 from f1 import utils
 from f1.api import ergast
+from f1.errors import MissingDataError
 
 logger = logging.getLogger("f1-bot")
 
@@ -187,3 +188,33 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
     # Presentation
     df.columns = df.columns.str.capitalize()
     return df.loc[:, ["No", "Code", "Stop", "Lap", "Duration"]]
+
+
+async def tyre_stints(session: Session, driver: str = None):
+    """Return a DataFrame showing each driver's stint on a tyre compound and
+    the number of laps driven on the tyre.
+
+    The `session` must be a loaded race session with laps data.
+
+    Raises
+    ------
+        `MissingDataError`: if session does not support the API lap data
+    """
+    # Check data availability
+    if not session.f1_api_support:
+        raise MissingDataError()
+
+    # Group laps data to individual sints per compound with the total number of driven laps
+    stints = session.laps.loc[:, ["Driver", "Stint", "Compound", "LapNumber", "TyreLife"]]
+    stints = stints.groupby(["Driver", "Stint", "Compound"]).count().reset_index() \
+        .rename(columns={"LapNumber": "Laps", "TyreLife": "Age"})
+    stints["Stint"] = stints["Stint"].astype(int)
+
+    # Try to find the driver provided and filter results
+    if driver:
+        year, rnd = session.event["EventDate"].year, session.event["RoundNumber"]
+        drv_code = utils.find_driver(driver, await ergast.get_all_drivers(year, rnd))["code"]
+
+        return stints.loc[stints["Driver"] == drv_code].reset_index(drop=True)
+
+    return stints
