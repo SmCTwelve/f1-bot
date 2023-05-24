@@ -5,7 +5,7 @@ import discord
 from discord import Colour, Embed, Option
 from discord.ext import commands
 
-from f1 import utils, options
+from f1 import utils, options, errors
 from f1.api import ergast, stats
 from f1.target import MessageTarget
 from f1.config import Config
@@ -129,6 +129,14 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             title=f"**Race Tyre Stints - {event['EventName']} ({event['EventDate'].year})**",
             description=f"```\n{table}\n```"
         ))
+
+    @stints.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, err: Exception):
+        if isinstance(err, errors.MissingDataError):
+            logger.error(f"Command {ctx.command} failed with {err}")
+            await MessageTarget(ctx).send(":x: No tyre data available for seasons before 2018.")
+        else:
+            raise err
 
     @commands.slash_command(description="Details and countdown to the next race weekend.")
     async def next(self, ctx):
