@@ -1,11 +1,13 @@
-import discord
 
-
-class BotError(discord.DiscordException):
+class BotError(Exception):
     """Base error class for the bot."""
 
-    def __init__(self, message=''):
+    def __init__(self, message=""):
         self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}: {self.message}"
 
 
 class MissingDataError(BotError):
@@ -15,8 +17,11 @@ class MissingDataError(BotError):
     can be handled by `bot.on_command_error()`.
     """
 
-    def __init__(self):
-        self.message = "Returned data missing or invalid, results could not be processed."
+    def __init__(
+        self,
+        message="Returned data missing or invalid, results could not be processed."
+    ):
+        super().__init__(message)
 
 
 class MessageTooLongError(BotError):

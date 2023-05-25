@@ -22,6 +22,7 @@ bot = Config().bot
 bot.load_extensions(
     'f1.cogs.race',
     'f1.cogs.season',
+    'f1.cogs.plot',
     # 'f1.cogs.admin',
 )
 
@@ -40,11 +41,11 @@ async def on_message(message: Message):
     await bot.process_commands(message)
 
 
-def on_command_handler(ctx: commands.Context | ApplicationContext):
+def handle_command(ctx: commands.Context | ApplicationContext):
     logger.info(f"Command: /{ctx.command} in {ctx.channel} by {ctx.user}")
 
 
-async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
+async def handle_errors(ctx: commands.Context | ApplicationContext, err):
     logger.error(f"Command failed: /{ctx.command}\n {err}")
     target = MessageTarget(ctx)
 
@@ -58,7 +59,7 @@ async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
 
     # Invocation errors
     elif isinstance(err, ApplicationCommandInvokeError):
-        await target.send(f":x: Error: {str(err.original)}")
+        await target.send(f":x: {err.original}")
 
     # Catch all other errors
     else:
@@ -66,20 +67,20 @@ async def on_error_handler(ctx: commands.Context | ApplicationContext, err):
             await target.send("Command not recognised.")
         else:
             await target.send(
-                f"Command failed: {err.message if (hasattr(err, 'message') or hasattr(err, 'msg')) else err}"
+                f"Command failed: {err}"
             )
 
 
 @bot.event
 async def on_command(ctx: commands.Context):
-    await on_command_handler(ctx)
+    await handle_command(ctx)
 
 
 @bot.event
 async def on_application_command(ctx: ApplicationContext):
     # Defer slash commands by default
+    handle_command(ctx)
     await ctx.defer(ephemeral=Config().settings["MESSAGE"]["EPHEMERAL"])
-    on_command_handler(ctx)
 
 
 @bot.event
@@ -89,12 +90,12 @@ async def on_command_completion(ctx: commands.Context):
 
 @bot.event
 async def on_command_error(ctx: commands.Context, err):
-    await on_error_handler(ctx, err)
+    await handle_errors(ctx, err)
 
 
 @bot.event
 async def on_application_command_error(ctx: ApplicationContext, err):
-    await on_error_handler(ctx, err)
+    await handle_errors(ctx, err)
 
 
 # Main command group
