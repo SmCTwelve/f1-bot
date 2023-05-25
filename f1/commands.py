@@ -46,6 +46,10 @@ def handle_command(ctx: commands.Context | ApplicationContext):
 
 
 async def handle_errors(ctx: commands.Context | ApplicationContext, err):
+    # Command or Cog handler already responded
+    if ctx.response.is_done():
+        return
+
     logger.error(f"Command failed: /{ctx.command}\n {err}")
     target = MessageTarget(ctx)
 
@@ -59,7 +63,7 @@ async def handle_errors(ctx: commands.Context | ApplicationContext, err):
 
     # Invocation errors
     elif isinstance(err, ApplicationCommandInvokeError):
-        await target.send(f":x: {err.original}")
+        await target.send(f":x: {err.__cause__}")
 
     # Catch all other errors
     else:

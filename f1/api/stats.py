@@ -16,7 +16,7 @@ logger = logging.getLogger("f1-bot")
 ff1_erg = Ergast()
 
 
-async def to_event(year: str, round: str) -> Event:
+async def to_event(year: str, rnd: str) -> Event:
     """Get a `fastf1.events.Event` for a race weekend corresponding to `year` and `round`.
 
     Handles conversion of "last" round and "current" season from Ergast API.
@@ -24,14 +24,19 @@ async def to_event(year: str, round: str) -> Event:
     The `round` can also be a GP name or circuit.
     """
     # Get the actual round number from the last race identifier
-    if round == "last":
+    if rnd == "last":
         data = await ergast.race_info(year, "last")
-        round = data["round"]
+        rnd = data["round"]
 
-    if str(round).isdigit():
-        round = int(round)
+    if str(rnd).isdigit():
+        rnd = int(rnd)
 
-    return await asyncio.to_thread(ff1.get_event, year=utils.convert_season(year), gp=round)
+    try:
+        event = await asyncio.to_thread(ff1.get_event, year=utils.convert_season(year), gp=rnd)
+    except Exception:
+        raise MissingDataError()
+
+    return event
 
 
 async def load_session(event: Event, name: str, **kwargs) -> Session:
@@ -39,14 +44,19 @@ async def load_session(event: Event, name: str, **kwargs) -> Session:
 
     Loads and returns the `Session`.
     """
-    # Run FF1 blocking I/O in async thread so the bot can await
-    session = await asyncio.to_thread(event.get_session, identifier=name)
-    await asyncio.to_thread(session.load,
-                            laps=kwargs.get("laps", False),
-                            telemetry=kwargs.get('telemetry', False),
-                            weather=kwargs.get("weather", False),
-                            messages=kwargs.get("messages", False),
-                            livedata=kwargs.get("livedata", None))
+    try:
+        # Run FF1 blocking I/O in async thread so the bot can await
+        session = await asyncio.to_thread(event.get_session, identifier=name)
+        await asyncio.to_thread(session.load,
+                                laps=kwargs.get("laps", False),
+                                telemetry=kwargs.get('telemetry', False),
+                                weather=kwargs.get("weather", False),
+                                messages=kwargs.get("messages", False),
+                                livedata=kwargs.get("livedata", None))
+    except Exception:
+        raise MissingDataError("Unable to get session data, check the event name. " +
+                               "Or are you trying to predict the future?")
+
     return session
 
 
@@ -77,6 +87,7 @@ async def format_results(session: Session, name: str):
     })
 
     # FP1, FP2, FP3
+    ###############
     if "Practice" in name:
         # Reload the session to fetch missing lap info
         await asyncio.to_thread(session.load, laps=True, telemetry=False,
@@ -103,6 +114,7 @@ async def format_results(session: Session, name: str):
         return fp
 
     # QUALI / SS
+    ############
     if name in ("Qualifying", "Sprint Shootout"):
         res_df["Pos"] = res_df["Pos"].astype(int)
         qs_res = res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Q1", "Q2", "Q3"]]
@@ -114,7 +126,7 @@ async def format_results(session: Session, name: str):
         return qs_res
 
     # RACE / SPRINT
-    # Session must be Race or Sprint race
+    ###############
 
     # Get leader finish time
     leader_time = res_df["Time"].iloc[0]
@@ -127,6 +139,7 @@ async def format_results(session: Session, name: str):
 
     # Format the timestamp of the leader lap
     res_df.loc[res_df.first_valid_index(), "Finish"] = utils.format_timedelta(leader_time, hours=True)
+
     res_df["Pos"] = res_df["Pos"].astype(int)
     res_df["Pts"] = res_df["Points"].astype(int)
     res_df["Grid"] = res_df["Grid"].astype(int)
@@ -202,19 +215,19 @@ async def tyre_stints(session: Session, driver: str = None):
     """
     # Check data availability
     if not session.f1_api_support:
-        raise MissingDataError()
+        raise MissingDataError("Lap data not supported before 2018.")
 
-    # Group laps data to individual sints per compound with the total number of driven laps
-    stints = session.laps.loc[:, ["Driver", "Stint", "Compound", "LapNumber", "TyreLife"]]
+    # Group laps data to individual sints per compound with total laps driven
+    stints = session.laps.loc[:, ["Driver", "Stint", "Compound", "LapNumber"]]
     stints = stints.groupby(["Driver", "Stint", "Compound"]).count().reset_index() \
-        .rename(columns={"LapNumber": "Laps", "TyreLife": "Age"})
+        .rename(columns={"LapNumber": "Laps"})
     stints["Stint"] = stints["Stint"].astype(int)
 
-    # Try to find the driver provided and filter results
-    if driver:
+    # Try to find the driver if given and filter results
+    if driver is not None:
         year, rnd = session.event["EventDate"].year, session.event["RoundNumber"]
         drv_code = utils.find_driver(driver, await ergast.get_all_drivers(year, rnd))["code"]
 
-        return stints.loc[stints["Driver"] == drv_code].reset_index(drop=True)
+        return stints.loc[stints["Driver"] == drv_code].set_index(["Driver", "Stint"], drop=True)
 
     return stints

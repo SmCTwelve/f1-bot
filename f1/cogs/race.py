@@ -1,8 +1,9 @@
 import asyncio
 import logging
 
+import pandas as pd
 import discord
-from discord import Colour, Embed, Option
+from discord import ApplicationCommandError, Colour, Embed, Option
 from discord.ext import commands
 
 from f1 import utils, options, errors
@@ -121,9 +122,18 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         await utils.check_season(ctx, year)
         event = await stats.to_event(year, round)
         session = await stats.load_session(event, 'R', laps=True)
-
         stints = await stats.tyre_stints(session, driver)
-        table = utils.make_table(stints, showindex=False)
+
+        if driver:
+            table = stints.to_string()
+        else:
+            # Group data as pivot table with laps driven per compound and indexed by driver
+            # Does not show individual stints but total laps for each compound.
+            pivot = pd.pivot_table(stints, values="Laps",
+                                   index=["Driver"],
+                                   columns="Compound",
+                                   aggfunc="sum").fillna(0).astype(int)
+            table = utils.make_table(pivot, showindex=True)
 
         await MessageTarget(ctx).send(embed=Embed(
             title=f"**Race Tyre Stints - {event['EventName']} ({event['EventDate'].year})**",
@@ -131,10 +141,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @stints.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, err: Exception):
-        if isinstance(err, errors.MissingDataError):
-            logger.error(f"Command {ctx.command} failed with {err}")
-            await MessageTarget(ctx).send(":x: No tyre data available for seasons before 2018.")
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, err: ApplicationCommandError):
+        if isinstance(err.__cause__, errors.MissingDataError):
+            logger.error(f"Command {ctx.command} failed with\n {err}")
+            await MessageTarget(ctx).send(f":x: {err.__cause__.message}")
         else:
             raise err
 
@@ -152,7 +162,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             title=f"**{result['data']['Name']}**",
             description=f"{result['countdown']}",
             url=page_url,
-            colour=Colour.brand_red(),
+            colour=Colour.from_rgb(226, 36, 32),
         )
         emd.set_thumbnail(url=await flag_img_task)
         emd.set_author(name="View schedule", url="https://f1calendar.com/")
