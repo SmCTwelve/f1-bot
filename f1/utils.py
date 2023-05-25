@@ -69,7 +69,7 @@ def make_table(data, headers='keys', fmt='fancy_grid', **kwargs):
     table = tabulate(data, headers=headers, tablefmt=fmt, **kwargs)
     # remove cell borders if too long
     if too_long(table):
-        table = tabulate(data, headers=headers, tablefmt='simple', **kwargs)
+        table = tabulate(data, headers=headers, tablefmt='plain', **kwargs)
         # cannot send table if too large even without borders
         if too_long(table):
             raise MessageTooLongError('Table too large to send.', table)
