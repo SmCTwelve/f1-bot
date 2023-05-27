@@ -4,7 +4,14 @@ from discord import Option
 
 RankedPitstopFilter = Option(str, choices=["Best", "Worst", "Ranked"], default="Ranked")
 
-DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname.")
+DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname")
+
+SectorFilter = Option(
+    str,
+    choices=["Time", "Speed"],
+    description="The type of data to show",
+    required=True
+)
 
 LaptimeFilter = Option(
     str,
@@ -14,12 +21,12 @@ LaptimeFilter = Option(
 SeasonOption = Option(
     str,
     default="current",
-    description="The season year. Leave blank for the current season.")
+    description="The season year. Leave blank for the current season")
 
 RoundOption = Option(
     str,
     default="last",
-    description="The race name, location or round number. Default is lastest.")
+    description="The race name, location or round number. Default is lastest")
 
 SessionOption = Option(
     str,
@@ -33,4 +40,4 @@ SessionOption = Option(
         "Race"
     ],
     default="Race",
-    description="The session to view.")
+    description="The session to view")
