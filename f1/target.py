@@ -26,11 +26,11 @@ class MessageTarget:
     def _get_send(self):
         """Return a reference to the send method to use for the context."""
         # Target DM channel
-        if self.msg_settings["DM"] is True:
+        if self.msg_settings.getboolean("DM") is True:
             return self.ctx.author.send
-        # Use ApplicationContext followup for deferred slash commands
+        # Use ApplicationContext webhook followup for deferred slash commands
         if isinstance(self.ctx, ApplicationContext):
-            self.kwargs["ephemeral"] = self.msg_settings["EPHEMERAL"]
+            self.kwargs["ephemeral"] = self.msg_settings.getboolean("EPHEMERAL")
             return self.ctx.followup.send
         # Use normal reply for message commands
         return self.ctx.reply
