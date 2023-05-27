@@ -3,7 +3,7 @@ import logging
 
 import pandas as pd
 import discord
-from discord import ApplicationCommandError, Colour, Embed, Option
+from discord import ApplicationCommandError, ApplicationContext, Colour, Embed
 from discord.ext import commands
 
 from f1 import utils, options, errors
@@ -21,7 +21,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         self.bot = bot
 
     @commands.slash_command(description="Result data for the session. Default last race.")
-    async def results(self, ctx, year: options.SeasonOption, round: options.RoundOption,
+    async def results(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
                       session: options.SessionOption):
         """Get the results for a session. The `round` can be the event name, location or round number in the season.
         The `session` is the identifier selected from the command choices.
@@ -46,8 +46,8 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         )
 
     @commands.slash_command(description="Race pitstops ranked by duration or filtered to a driver.", name="pitstops")
-    async def pitstops(self, ctx, year: options.SeasonOption, round: options.RoundOption,
-                       filter: options.RankedPitstopFilter, driver: Option(str, default=None)):
+    async def pitstops(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                       filter: options.RankedPitstopFilter, driver: options.DriverOption):
         """Display pitstops for the race ranked by `filter` or `driver`.
 
         All parameters are optional. Defaults to the best pitstop per driver for the most recent race.
@@ -80,7 +80,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @commands.slash_command(description="Best ranked lap times per driver.")
-    async def laptimes(self, ctx, year: options.SeasonOption, round: options.RoundOption,
+    async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
                        filter: options.LaptimeFilter):
         """Best ranked lap times per driver in the race. All parameters optional.
 
@@ -112,8 +112,8 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @commands.slash_command(description="Tyre compound stints in a race.")
-    async def stints(self, ctx, year: options.SeasonOption, round: options.RoundOption,
-                     driver: Option(str, default=None)):
+    async def stints(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                     driver: options.DriverOption):
         """Get the race stints on each tyre compound during the race, optionally for a specific driver.
 
         Usage:
@@ -141,7 +141,8 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @stints.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, err: ApplicationCommandError):
+    async def on_application_command_error(self, ctx: ApplicationContext, err: ApplicationCommandError):
+        """Specifically handle error loading laps data if the session is not supported."""
         if isinstance(err.__cause__, errors.MissingDataError):
             logger.error(f"Command {ctx.command} failed with\n {err}")
             await MessageTarget(ctx).send(f":x: {err.__cause__.message}")
@@ -149,7 +150,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             raise err
 
     @commands.slash_command(description="Details and countdown to the next race weekend.")
-    async def next(self, ctx):
+    async def next(self, ctx: ApplicationContext):
         result = await ergast.get_next_race()
 
         # Extract wiki data and country flag for use in embed
