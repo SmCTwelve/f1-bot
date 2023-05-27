@@ -231,3 +231,23 @@ async def tyre_stints(session: Session, driver: str = None):
         return stints.loc[stints["Driver"] == drv_code].set_index(["Driver", "Stint"], drop=True)
 
     return stints
+
+
+def pos_change(session: Session):
+    """Returns each driver start, finish position and the difference between them. Session must be race."""
+
+    if session.name != "Race":
+        raise MissingDataError("The session should be race.")
+
+    diff = session.results.loc[:, ["Abbreviation", "GridPosition", "Position"]].rename(
+        columns={
+            "Abbreviation": "Driver",
+            "GridPosition": "Start",
+            "Position": "Finish"
+        }
+    ).reset_index(drop=True).sort_values(by="Finish")
+
+    diff["Diff"] = diff["Start"] - diff["End"]
+    diff[["Start", "Finish", "Diff"]] = diff[["Start", "Finish", "Diff"]].astype(int)
+
+    return diff
