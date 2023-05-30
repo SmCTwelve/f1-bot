@@ -65,15 +65,18 @@ class Config:
         bot = commands.Bot(
             command_prefix=f"{self.settings['BOT']['PREFIX']}f1 ",
             guilds=self.guilds,
+            debug_guilds=self._get_guilds(debug=True),
             help_command=commands.DefaultHelpCommand(dm_help=True),
             case_insensitive=True,
             intents=intents
         )
         return bot
 
-    def _get_guilds(self):
+    def _get_guilds(self, debug=False):
         # Used for syncing slash commands instantly and limit bot scope
-        list_str = self.settings.get('GUILDS', 'LIST')
+        list_str = self.settings.get('GUILDS', 'LIST' if not debug else 'DEBUG')
+        if len(list_str) == 0:
+            return None
         # Basic parsing of comma separated list of guilds
         return [int(s.strip()) for s in list_str.split(',')]
 
