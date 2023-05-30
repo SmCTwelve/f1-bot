@@ -1,11 +1,16 @@
+import asyncio
 import logging
 import time
 import sys
+
 import discord
-from discord import Colour, Embed
+from discord import ApplicationContext, Colour, Embed, default_permissions
 from discord.ext import commands
 
+from fastf1 import Cache as ff1_cache
+
 from f1.api.ergast import check_status
+from f1.api import fetch
 from f1.target import MessageTarget
 from f1.config import Config
 
@@ -23,7 +28,7 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
 
     admin = discord.SlashCommandGroup(
         name="admin",
-        description="Restricted commands."
+        description="Admin commands."
     )
 
     def get_uptime(self):
@@ -35,13 +40,20 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         mins, secs = divmod(rem, 60)
         return (int(days), int(hours), int(mins), int(secs))
 
+    async def _enable_cache(self, minutes: int):
+        await asyncio.sleep(float(minutes * 60))
+        fetch.use_cache = True
+        ff1_cache.set_enabled()
+        logger.warning("Cache re-enabled after timeout")
+
     @commands.slash_command(description="Bot information and status.")
-    async def info(self, ctx):
+    async def info(self, ctx: ApplicationContext):
         uptime = self.get_uptime()
         api_status = await check_status()
         app_info = await self.bot.application_info()
         latency = int(self.bot.latency * 1000)
 
+        # Use diff code block styling to get coloured text
         if api_status in [0, 3]:
             api_txt = "```diff\n- Slow\n```"
         else:
@@ -65,7 +77,19 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         emd.add_field(name="Connection", value=ws, inline=True)
         emd.add_field(name="API", value=api_txt, inline=True)
 
-        MessageTarget().send(embed=emd)
+        MessageTarget(ctx).send(embed=emd)
+
+    @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes.")
+    @default_permissions(administrator=True)
+    async def disable_cache(self, ctx: ApplicationContext, minutes: int = 5):
+        """Temporarily disable result caching. Will automatically re-enable the
+        cache after `minutes`, default 5."""
+        fetch.use_cache = False
+        ff1_cache.set_disabled()
+        logger.warning(f"Disabling caching for {minutes} minutes")
+        # Schedule the sleep task in the background so the command doesn't wait
+        asyncio.create_task(self._enable_cache(minutes))
+        await MessageTarget(ctx).send(f":warning: Cache disabled for {minutes} minutes.")
 
     @admin.command(description="Shut down the bot application. Bot owner only.")
     @commands.is_owner()
