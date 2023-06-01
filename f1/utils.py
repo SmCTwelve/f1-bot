@@ -5,14 +5,17 @@ from datetime import date, datetime
 
 import pandas as pd
 from tabulate import tabulate
-from discord import ApplicationContext
+from discord import ApplicationContext, Colour
 from discord.ext import commands
+from f1.api.fetch import fetch
 
 from f1.target import MessageTarget
 from f1.config import CACHE_DIR
 from f1.errors import MessageTooLongError, DriverNotFoundError
 
 logger = logging.getLogger("f1-bot")
+
+F1_RED = Colour.from_rgb(226, 36, 32)
 
 
 async def check_season(ctx: commands.Context | ApplicationContext, season):
@@ -274,3 +277,21 @@ def keep_fastest(lst: list[dict], key: str):
         if d['Driver'] not in seen or d[key] < seen[d['Driver']][key]:
             seen[d['Driver']] = d
     return list(seen.values())
+
+
+async def get_wiki_thumbnail(url: str):
+    """Get image thumbnail from Wikipedia link. Returns the thumbnail URL."""
+    if url is None or url == '':
+        return 'https://i.imgur.com/kvZYOue.png'
+    # Get URL name after the first '/'
+    wiki_title = url.rsplit('/', 1)[1]
+    # Get page thumbnail from wikipedia API if it exists
+    api_query = ('https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2' +
+                 '&prop=pageimages&piprop=thumbnail&pithumbsize=600' + f'&titles={wiki_title}')
+    res = await fetch(api_query)
+    first = res['query']['pages'][0]
+    # Get page thumb or return placeholder
+    if 'thumbnail' in first:
+        return first['thumbnail']['source']
+    else:
+        return 'https://i.imgur.com/kvZYOue.png'

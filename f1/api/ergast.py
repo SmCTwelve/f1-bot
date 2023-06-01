@@ -23,24 +23,6 @@ async def get_soup(url):
     return BeautifulSoup(res, features='lxml')
 
 
-async def get_wiki_thumbnail(url: str):
-    """Get image thumbnail from Wikipedia link. Returns the thumbnail URL."""
-    if url is None or url == '':
-        return 'https://i.imgur.com/kvZYOue.png'
-    # Get URL name after the first '/'
-    wiki_title = url.rsplit('/', 1)[1]
-    # Get page thumbnail from wikipedia API if it exists
-    api_query = ('https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2' +
-                 '&prop=pageimages&piprop=thumbnail&pithumbsize=600' + f'&titles={wiki_title}')
-    res = await fetch(api_query)
-    first = res['query']['pages'][0]
-    # Get page thumb or return placeholder
-    if 'thumbnail' in first:
-        return first['thumbnail']['source']
-    else:
-        return 'https://i.imgur.com/kvZYOue.png'
-
-
 async def check_status():
     """Monitor connection to Ergast API by recording connection status and time for response.
 
