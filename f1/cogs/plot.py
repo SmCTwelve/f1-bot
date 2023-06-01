@@ -4,6 +4,7 @@ from io import BytesIO
 import discord
 from discord.commands import ApplicationContext
 from discord.ext import commands
+from matplotlib.collections import LineCollection
 
 import numpy as np
 import fastf1.plotting
@@ -11,19 +12,22 @@ import matplotlib.patches as mpatches
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 
-from f1 import options
-from f1.api import stats
+from f1 import options, utils
+from f1.api import ergast, stats
 from f1.config import Config
 from f1.target import MessageTarget
 from f1.errors import MissingDataError
 
 logger = logging.getLogger("f1-bot")
 
+# Set the DPI of the figure image output; discord preview seems sharper at higher value
+DPI = 300
+
 
 def plot_to_file(fig: Figure, name: str):
-    """Generates a `discord.File` object without saving to disk. Takes a plot Figure and
-        saves it to a `BytesIO` memory buffer as `name`.
-        """
+    """Generates a `discord.File` as `name`. Takes a plot Figure and
+    saves it to a `BytesIO` memory buffer without saving to disk.
+    """
     with BytesIO() as buffer:
         fig.savefig(buffer, format="png")
         buffer.seek(0)
@@ -38,7 +42,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         self.bot = bot
 
     fastf1.plotting.setup_mpl(misc_mpl_mods=False)
-
     plot = discord.SlashCommandGroup(
         name="plot",
         description="Commands for plotting charts"
@@ -57,7 +60,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         drivers = [session.get_driver(d)["Abbreviation"] for d in session.drivers]
 
         plt.style.use("dark_background")
-        fig, ax = plt.subplots(figsize=(5, 8), dpi=300)
+        fig, ax = plt.subplots(figsize=(5, 8), dpi=DPI)
 
         for driver in drivers:
             stints = data.loc[data["Driver"] == driver]
@@ -97,17 +100,18 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.tight_layout()
 
         # Get plot image
-        file = plot_to_file(fig, f"plot_stints-{yr}-{rd}")
-        await MessageTarget(ctx).send(file=file)
+        f = plot_to_file(fig, f"plot_stints-{yr}-{rd}")
+        await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Plot driver position changes in the race.")
     async def position(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
         """Line graph per driver showing position for each lap."""
+
         # Load the data
         ev = await stats.to_event(year, round)
         session = await stats.load_session(ev, 'R', laps=True)
 
-        fig, ax = plt.subplots(figsize=(8.5, 5.46), dpi=300)
+        fig, ax = plt.subplots(figsize=(8.5, 5.46), dpi=DPI)
 
         # Plot the drivers position per lap
         for d in session.drivers:
@@ -126,8 +130,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.tight_layout()
 
         # Create image
-        file = plot_to_file(fig, f"plot_pos-{ev['EventDate'].year}-{ev['RoundNumber']}")
-        await MessageTarget(ctx).send(file=file)
+        f = plot_to_file(fig, f"plot_pos-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Show a bar chart comparing fastest laps in the session.")
     async def fastestlap(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
@@ -137,36 +141,68 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
     @plot.command(description="Plot track sector speed or time for a driver (2018 or later).")
     async def sectors(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                      driver: options.DriverOption, data: options.SectorFilter):
+                      data: options.SectorFilter, driver: options.DriverOption):
         """Plot per sector times for best lap, worst lap or average of all laps as bar chart."""
         # Pick the best/worst lap or use .mean
         # Get the SectorXTime/Speeds
         pass
 
-    @plot.command(description="Plot the fastest lap speed telemetry on track.")
-    async def telemetry(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                        driver: options.DriverOption):
+    @plot.command(description="View driver speed on track.")
+    async def trackspeed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                         driver: options.DriverOption):
         """Get the `driver` fastest lap data and use the lap position and speed
-        telemetry to produce a track speed visualisation.
+        telemetry to produce a track visualisation.
         """
-        # Pick driver's fastest lap
-        # Load lap telemetry
+        # Load laps and telemetry data
+        ev = await stats.to_event(year, round)
+        session = await stats.load_session(ev, 'R', laps=True, telemetry=True)
 
-        pass
+        # Filter laps to the driver's fastest and get telemetry for the lap
+        drv_id = utils.find_driver(driver, await ergast.get_all_drivers(year, round))["code"]
+        lap = session.laps.pick_driver(drv_id).pick_fastest()
+        pos = lap.get_pos_data()
+        car = lap.get_car_data()
 
-    @plot.command(description="Compare the lap speed of up to 4 drivers.")
-    async def speed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                    drivers: str):
-        """Compare up to 4 drivers fastest lap speed as a line graph."""
-        # drivers option should be a list with max=4 min of 1
+        # Reshape positional data to 3-d array of [X, Y] segments on track
+        # (num of samples) x (sample row) x (x and y pos)
+        # Then stack the points together to get the beginning and end of each segment so they can be coloured
+        points = np.array([pos["X"], pos["Y"]]).T.reshape(-1, 1, 2)
+        segs = np.concatenate([points[:-1], points[1:]], axis=1)
+        speed = car["Speed"]
 
-        pass
+        fig, ax = plt.subplots(sharex=True, sharey=True, figsize=(12, 6.75), dpi=DPI)
 
-    @plot.command(description="Display on track gear shifts of the driver's fastest lap.")
-    async def gears(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                    driver: options.DriverOption):
-        """Load fastest lap telemetry and plot position and gear as a track map."""
-        pass
+        # Create the track outline from pos coordinates
+        ax.plot(pos["X"], pos["Y"], color="black", linestyle="-", linewidth=12, zorder=0)
+
+        # Map the segments to colours
+        norm = plt.Normalize(speed.min(), speed.max())
+        lc = LineCollection(segs, cmap="plasma", norm=norm, linestyle="-", linewidth=5)
+
+        # Plot the coloured speed segments on track
+        speed_line = ax.add_collection(lc)
+
+        # Add legend
+        cax = fig.add_axes([0.25, 0.05, 0.5, 0.025])
+        fig.colorbar(speed_line, cax=cax, location="bottom", label="Speed (km/h)")
+
+        plt.suptitle(f"{drv_id} Track Speed", size=18)
+        f = plot_to_file(fig, f"plot_trackspeed-{drv_id}-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
+
+    # @plot.command(description="Compare the lap speed of up to 4 drivers.")
+    # async def speed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+    #                 drivers: str):
+    #     """Compare up to 4 drivers fastest lap speed as a line graph."""
+    #     # drivers option should be a list with max=4 min of 1
+
+    #     pass
+
+    # @plot.command(description="Display on track gear shifts of the driver's fastest lap.")
+    # async def gears(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+    #                 driver: options.DriverOption):
+    #     """Load fastest lap telemetry and plot position and gear as a track map."""
+    #     pass
 
     @plot.command(description="Show the position gains/losses per driver in the race.")
     async def gains(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
@@ -177,7 +213,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         s = await stats.load_session(ev, 'R')
         data = stats.pos_change(s)
 
-        fig, ax = plt.subplots(figsize=(12, 5), dpi=300)
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=DPI)
 
         # Plot pos diff for each driver
         for row in data.itertuples():
@@ -191,12 +227,12 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         plt.title(f"Pos Gain/Loss - {ev['EventName']} ({(ev['EventDate'].year)})")
         plt.xlabel("Driver")
-        plt.ylabel("Pos Change")
+        plt.ylabel("Change")
         ax.grid(True, alpha=0.03)
         plt.tight_layout()
 
-        file = plot_to_file(fig, f"plot_poschange-{ev['EventDate'].year}-{ev['RoundNumber']}")
-        await MessageTarget(ctx).send(file=file)
+        f = plot_to_file(fig, f"plot_poschange-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
 
     async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
         """Handle loading errors from unsupported API lap data."""
