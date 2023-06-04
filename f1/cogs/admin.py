@@ -1,18 +1,18 @@
 import asyncio
 import logging
-import time
 import sys
+import time
 
 import discord
-from discord import ApplicationContext, Colour, Embed, default_permissions
+from discord import ApplicationContext, Embed, default_permissions
 from discord.ext import commands
-
 from fastf1 import Cache as ff1_cache
 
-from f1.api.ergast import check_status
+from f1 import utils
 from f1.api import fetch
-from f1.target import MessageTarget
+from f1.api.ergast import check_status
 from f1.config import Config
+from f1.target import MessageTarget
 
 logger = logging.getLogger("f1-bot")
 
@@ -65,19 +65,18 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
             ws = "```diff\n+ Open\n```"
 
         emd = Embed(
-            title=f"Info - {app_info.name}",
+            title=f"{app_info.name}",
             description=app_info.description,
-            colour=Colour.teal()
+            colour=utils.F1_RED
         )
         emd.set_thumbnail(url=app_info.icon.url)
-        emd.set_author(name="github.com/SmCTwelve", url="https://github.com/SmCTwelve/f1-bot")
-        emd.add_field(name="Owner", value=app_info.owner.display_name, inline=False)
+        emd.add_field(name="Owner", value=app_info.owner.name, inline=True)
         emd.add_field(name="Uptime", value=f"{uptime[0]}d, {uptime[1]}h, {uptime[2]}m", inline=True)
         emd.add_field(name="Ping", value=f"{latency} ms", inline=True)
         emd.add_field(name="Connection", value=ws, inline=True)
         emd.add_field(name="API", value=api_txt, inline=True)
 
-        MessageTarget(ctx).send(embed=emd)
+        await MessageTarget(ctx).send(embed=emd)
 
     @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes.")
     @default_permissions(administrator=True)
