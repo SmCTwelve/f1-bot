@@ -2,17 +2,15 @@ import logging
 import asyncio
 import re
 
-from discord import ApplicationCommandInvokeError, ApplicationContext, Colour, File, Message
+from discord import ApplicationCommandInvokeError, ApplicationContext, Colour, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
 
 from f1.api import ergast
-from f1.stats import chart
 from f1.target import MessageTarget
-from f1.config import Config, CACHE_DIR
+from f1.config import Config
 from f1.errors import DriverNotFoundError
-from f1.utils import check_season, rank_best_lap_times, filter_laps_by_driver
 import f1.utils
 
 
