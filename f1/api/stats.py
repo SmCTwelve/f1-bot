@@ -1,11 +1,11 @@
-import logging
 import asyncio
+import logging
 
-import pandas as pd
 import fastf1 as ff1
-from fastf1.events import Event
-from fastf1.ergast import Ergast
+import pandas as pd
 from fastf1.core import Session, SessionResults
+from fastf1.ergast import Ergast
+from fastf1.events import Event
 
 from f1 import utils
 from f1.api import ergast
@@ -23,7 +23,7 @@ async def to_event(year: str, rnd: str) -> Event:
 
     The `round` can also be a GP name or circuit.
     """
-    # Get the actual round number from the last race identifier
+    # Get the actual round id from the last race endpoint
     if rnd == "last":
         data = await ergast.race_info(year, "last")
         rnd = data["round"]
@@ -247,7 +247,7 @@ def pos_change(session: Session):
         }
     ).reset_index(drop=True).sort_values(by="Finish")
 
-    diff["Diff"] = diff["Start"] - diff["End"]
+    diff["Diff"] = diff["Start"] - diff["Finish"]
     diff[["Start", "Finish", "Diff"]] = diff[["Start", "Finish", "Diff"]].astype(int)
 
     return diff
