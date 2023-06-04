@@ -1,15 +1,16 @@
 import asyncio
 import logging
+from datetime import datetime
 
-import pandas as pd
 import discord
-from discord import ApplicationCommandError, ApplicationContext, Colour, Embed
+import pandas as pd
+from discord import ApplicationCommandError, ApplicationContext, Embed
 from discord.ext import commands
 
-from f1 import utils, options, errors
+from f1 import errors, options, utils
 from f1.api import ergast, stats
-from f1.target import MessageTarget
 from f1.config import Config
+from f1.target import MessageTarget
 
 logger = logging.getLogger('f1-bot')
 
@@ -156,22 +157,25 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         # Extract wiki data and country flag for use in embed
         page_url = str(result['url']).replace(f"{result['season']}_", '')
         flag_img_task = asyncio.create_task(
-            ergast.get_wiki_thumbnail(f"/{result['data']['Country']}")
+            utils.get_wiki_thumbnail(f"/{result['data']['Country']}")
         )
+
+        date, time = result['data']['Date'], result['data']['Time']
+        ts = datetime.strptime(f"{date} {time}", "%d %b %Y %H:%M %Z").timestamp()
+        cd = str(result['countdown']).split(', ')
 
         emd = Embed(
             title=f"**{result['data']['Name']}**",
-            description=f"{result['countdown']}",
+            description=f"{cd[0]}, {cd[1]}, {cd[2]}",
             url=page_url,
-            colour=Colour.from_rgb(226, 36, 32),
+            colour=utils.F1_RED,
         )
         emd.set_thumbnail(url=await flag_img_task)
         emd.set_author(name="View schedule", url="https://f1calendar.com/")
         emd.add_field(name='Circuit', value=result['data']['Circuit'], inline=False)
         emd.add_field(name='Round', value=result['data']['Round'], inline=True)
         emd.add_field(name='Country', value=result['data']['Country'], inline=True)
-        emd.add_field(name='Date', value=result['data']['Date'], inline=True)
-        emd.add_field(name='Time', value=result['data']['Time'], inline=True)
+        emd.add_field(name='Date', value=f"<t:{int(ts)}>", inline=False)
 
         await MessageTarget(ctx).send(embed=emd)
 
