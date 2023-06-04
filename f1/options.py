@@ -2,7 +2,9 @@
 
 from discord import Option
 
-RankedPitstopFilter = Option(str, choices=["Best", "Worst", "Ranked"], default="Ranked")
+RankedPitstopFilter = Option(
+    str, choices=["Best", "Worst", "Ranked"],
+    default="Ranked", description="Which stops to view")
 
 DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname")
 
