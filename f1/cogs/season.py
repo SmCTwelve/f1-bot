@@ -7,9 +7,9 @@ from discord.ext import commands
 
 from f1 import options
 from f1.api import ergast
-from f1.target import MessageTarget
 from f1.config import Config
-from f1.utils import make_table, check_season
+from f1.target import MessageTarget
+from f1.utils import F1_RED, check_season, make_table
 
 logger = logging.getLogger("f1-bot")
 
@@ -55,7 +55,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
                 title=f"**World Constructor Championship ({result['season']})**",
                 description=f"```\n{table}\n```"
             )
-            .set_footer(name=f"Round: {result['round']}")
+            .set_footer(text=f"Round: {result['round']}")
         )
 
     @commands.slash_command(desciption="All drivers and teams participating in the season.")
@@ -75,7 +75,7 @@ class Season(commands.Cog, guild_ids=Config().guilds):
             embed=Embed(
                 title=f"**Formula 1 Grid ({result['season']})**",
             )
-            .set_footer(name=f"Round: {result['round']}")
+            .set_footer(text=f"Round: {result['round']}")
         )
 
     @commands.slash_command(description="Race schedule for the season.")
@@ -85,7 +85,8 @@ class Season(commands.Cog, guild_ids=Config().guilds):
                 title="Formula 1 Season Calendar",
                 description="Start times for each session in your local timezone.",
                 type="link",
-                url="https://f1calendar.com/"
+                url="https://f1calendar.com/",
+                colour=F1_RED
             )
         )
 
