@@ -13,6 +13,7 @@ from f1.target import MessageTarget
 from f1.config import Config, CACHE_DIR
 from f1.errors import DriverNotFoundError
 from f1.utils import check_season, rank_best_lap_times, filter_laps_by_driver
+import f1.utils
 
 
 logger = logging.getLogger("f1-bot")
@@ -23,14 +24,14 @@ bot.load_extensions(
     'f1.cogs.race',
     'f1.cogs.season',
     'f1.cogs.plot',
-    # 'f1.cogs.admin',
+    'f1.cogs.admin',
 )
 
 
 @bot.event
 async def on_ready():
     logger.info("Bot ready...")
-    job = Activity(name=bot.command_prefix, type=ActivityType.watching)
+    job = Activity(name="/f1", type=ActivityType.watching)
     await bot.change_presence(activity=job)
 
 
@@ -63,7 +64,7 @@ async def handle_errors(ctx: commands.Context | ApplicationContext, err):
 
     # Invocation errors
     elif isinstance(err, ApplicationCommandInvokeError):
-        await target.send(f":x: {err.__cause__}")
+        await target.send(f":x: {str(err.__cause__)}")
 
     # Catch all other errors
     else:
@@ -108,12 +109,6 @@ async def on_application_command_error(ctx: ApplicationContext, err):
 # ==================
 
 
-@bot.command(aliases=['source', 'git'])
-async def github(ctx, *args):
-    """Display a link to the GitHub repository."""
-    await MessageTarget(ctx).send("https://github.com/SmCTwelve/f1-bot")
-
-
 @bot.command(aliases=['driver'])
 async def career(ctx, driver_id):
     """Career stats for the `driver_id`.
@@ -133,7 +128,7 @@ async def career(ctx, driver_id):
     await target.send("*Gathering driver data, this may take a few moments...*")
     driver = ergast.get_driver_info(driver_id)
     result = await ergast.get_driver_career(driver)
-    thumb_url_task = asyncio.create_task(ergast.get_wiki_thumbnail(driver['url']))
+    thumb_url_task = asyncio.create_task(f1.utils.get_wiki_thumbnail(driver['url']))
     season_list = result['data']['Seasons']['years']
     champs_list = result['data']['Championships']['years']
     embed = Embed(
@@ -172,173 +167,3 @@ async def career(ctx, driver_id):
         inline=False
     )
     await target.send(embed=embed)
-
-
-# Plotting commands
-# ==================
-
-
-@bot.group(invoke_without_command=True, case_insensitive=True)
-async def plot(ctx, *args):
-    """Command group for all plotting functions."""
-    await ctx.send(f"Command not recognised. Type `{bot.command_prefix}help plot` for plotting subcommands.")
-
-
-@plot.command(aliases=['laps'])
-async def timings(ctx, season: int = 'current', rnd: int = 'last', *drivers):
-    """Plot all lap data for the specified driver(s) or all drivers.
-
-    **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
-
-    Both the season and round must be given before any drivers. A single driver or multiple drivers seperated by
-    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers
-    will return all driver laps.
-
-    A valid driver ID must be used, which can be either of:
-        - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
-        - driver code, e.g. 'HAM', 'VET';
-        - driver number e.g. 44, 6
-
-    Usage:
-    ------
-        !f1 plot position [season] [round]
-        !f1 plot position <season> <round> [driver1 driver2... | all]
-    """
-    target = MessageTarget(ctx)
-    await check_season(ctx, season)
-    # No drivers specified, skip filter and plot all
-    if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [ergast.get_driver_info(d)['id'] for d in drivers]
-    else:
-        driver_list = []
-    laps_task = asyncio.create_task(ergast.get_all_laps(rnd, season))
-    await target.send("*Gathering lap data; this may take a few moments...*")
-
-    laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
-
-    chart.plot_all_driver_laps(laps_to_plot)
-
-    f = File(f"{CACHE_DIR}/plot_laps.png", filename='plot_laps.png')
-    await target.send(f"**Lap timings - {laps_to_plot['race']} ({laps_to_plot['season']})**")
-    await target.send(file=f)
-
-
-@timings.error
-async def timings_handler(ctx, error):
-    target = MessageTarget(ctx)
-    # Check error is missing arguments
-    if isinstance(error, commands.MissingRequiredArgument):
-        # Drivers are missing
-        if error.param.name == 'drivers':
-            await target.send("No driver_id provided.")
-    # Round or season is missing
-    if isinstance(error, commands.BadArgument):
-        await target.send("Invalid season or round provided.")
-
-
-@plot.command(aliases=['pos', 'overtakes'])
-async def position(ctx, season: int = 'current', rnd: int = 'last', *drivers):
-    """Plot race position per lap for the specified driver(s) or all drivers.
-
-    **NOTE**: It may take some time to gather all the lap data. Consider using `plot best` command instead.
-
-    Both the season and round must be given before any drivers. A single driver or multiple drivers seperated by
-    a space may be given as the last parameter. Suppling 'all' or not specifying any drivers
-    will return all driver laps.
-
-    A valid driver ID must be used, which can be either of:
-        - name-based ID as used by Ergast API, e.g. 'alonso', 'vettel', 'max_verstappen';
-        - driver code, e.g. 'HAM', 'VET';
-        - driver number e.g. 44, 6
-
-    Usage:
-    ------
-        !f1 plot position [season] [round]
-        !f1 plot position <season> <round> [driver1 driver2... | all]
-    """
-    target = MessageTarget(ctx)
-    await check_season(ctx, season)
-    # Filter by driver
-    if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [ergast.get_driver_info(d)['id'] for d in drivers]
-    # No drivers specified, skip filter and plot all
-    else:
-        driver_list = []
-    laps_task = asyncio.create_task(ergast.get_all_laps(rnd, season))
-    await target.send("*Gathering lap data; this may take a few moments...*")
-
-    laps_to_plot = filter_laps_by_driver(await laps_task, driver_list)
-
-    chart.plot_race_pos(laps_to_plot)
-
-    f = File(f"{CACHE_DIR}/plot_pos.png", filename='plot_pos.png')
-    await target.send(f"**Race position - {laps_to_plot['race']} ({laps_to_plot['season']})**")
-    await target.send(file=f)
-
-
-@position.error
-async def position_handler(ctx, error):
-    target = MessageTarget(ctx)
-    # Check error is missing arguments
-    if isinstance(error, commands.MissingRequiredArgument):
-        # Drivers are missing
-        if error.param.name == 'drivers':
-            await target.send("No driver_id provided.")
-    # Round or season is missing
-    if isinstance(error, commands.BadArgument):
-        await target.send("Invalid season or round provided.")
-
-
-@plot.command(aliases=['best'])
-async def fastest(ctx, season: int = 'current', rnd: int = 'last', *drivers):
-    """Plot fastest lap times for all drivers in the race as a bar chart.
-
-    Usage:
-    ------
-        !f1 plot fastest [<season> <round>]
-        !f1 plot fastest <season> <round> [driver1 driver2... | all]
-    """
-    target = MessageTarget(ctx)
-    await check_season(ctx, season)
-    res = await ergast.get_best_laps(rnd, season)
-    sorted_laps = rank_best_lap_times(res)
-    # Filter by driver if specified
-    if not (len(drivers) == 0 or drivers[0] == 'all'):
-        driver_list = [ergast.get_driver_info(d)['code'] for d in drivers]
-        sorted_laps = [lap for lap in sorted_laps if lap['Driver'] in driver_list]
-    res['data'] = sorted_laps
-    chart.plot_best_laps(res)
-
-    f = File(f"{CACHE_DIR}/plot_fastest.png", filename='plot_fastest.png')
-    await target.send(f"**Fastest laps - {res['race']} ({res['season']})**")
-    await target.send(file=f)
-
-
-@fastest.error
-async def fastest_handler(ctx, error):
-    target = MessageTarget(ctx)
-    # Round or season is missing
-    if isinstance(error, commands.BadArgument):
-        await target.send("Invalid season or round provided.")
-
-
-@plot.command(aliases=['stops', 'pits', 'pitstops'])
-async def stints(ctx, season='current', rnd='last'):
-    """Plot race stints and pit stops per driver.
-
-    Usage:
-        !f1 plot stints [<season> <round>]
-    """
-    target = MessageTarget(ctx)
-    # Pit data only available from 2012 so catch seasons before
-    if not season == 'current':
-        if int(season) < 2012:
-            await ctx.send("Pitstop data not available before 2012.")
-            raise commands.BadArgument(message="Tried to get pitstops before 2012.")
-    await check_season(ctx, season)
-    res = await ergast.get_pitstops(rnd, season)
-    chart.plot_pitstops(res)
-
-    f = File(f"{CACHE_DIR}/plot_pitstops.png", filename='plot_pitstops.png')
-    await target.send(f"**Race stints - {res['race']} ({res['season']})**")
-    await target.send(file=f)
