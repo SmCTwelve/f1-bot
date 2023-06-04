@@ -23,12 +23,12 @@ LaptimeFilter = Option(
 SeasonOption = Option(
     str,
     default="current",
-    description="The season year. Leave blank for the current season")
+    description="The season year (default current)")
 
 RoundOption = Option(
     str,
     default="last",
-    description="The race name, location or round number. Default is lastest")
+    description="The race name, location or round number (default last race)")
 
 SessionOption = Option(
     str,

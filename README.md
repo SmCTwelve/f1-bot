@@ -2,6 +2,8 @@
 
 Discord bot to view F1 stats.
 
+**V2 WIP**
+
 ## Description
 
 This bot application uses the [Pycord](https://pycord.dev/) library to view Formula 1 data within Discord. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library.
