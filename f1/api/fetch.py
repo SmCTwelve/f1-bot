@@ -23,6 +23,7 @@ cache = SQLiteBackend(
     urls_expire_after={
         f"{BASE_URL}/drivers": timedelta(weeks=1),
         f"{BASE_URL}/drivers/*": 3600,
+        f"{BASE_URL}/current/last": 300,
         f"{BASE_URL}/current/last/*": 600,
         f"{BASE_URL}/current/next": 600,
     },
