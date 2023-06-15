@@ -233,6 +233,33 @@ async def tyre_stints(session: Session, driver: str = None):
     return stints
 
 
+async def team_pace(session: Session):
+    """Get the max sector speeds and min sector times from the lap data for each team in the session.
+
+    The `session` must be loaded with laps data.
+
+    Returns
+    ------
+        `DataFrame` containing max sector speeds and min times indexed by team.
+
+    Raises
+    ------
+        `MissingDataError`: if session doesn't support lap data.
+    """
+    # Check lap data support
+    if not session.f1_api_support:
+        raise MissingDataError("Lap data not supported before 2018.")
+
+    # Get only the quicklaps in session to exclude pits and slow laps
+    laps = session.laps.pick_quicklaps()
+    times = laps.groupby(["Team"])[["Sector1Time", "Sector2Time", "Sector3Time"]].min()
+    speeds = laps.groupby(["Team"])[["SpeedI1", "SpeedI2", "SpeedFL", "SpeedST"]].max()
+
+    df = pd.merge(times, speeds, how="left", left_index=True, right_index=True)
+
+    return df
+
+
 def pos_change(session: Session):
     """Returns each driver start, finish position and the difference between them. Session must be race."""
 

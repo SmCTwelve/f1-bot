@@ -1,3 +1,4 @@
+from calendar import c
 import logging
 from io import BytesIO
 
@@ -6,6 +7,7 @@ import fastf1.plotting
 import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from discord.commands import ApplicationContext
 from discord.ext import commands
 from fastf1.core import Laps
@@ -188,14 +190,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = plot_to_file(fig, f"plt_fastlap-{s.name}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
-    # @plot.command(description="Plot track sector speed or time for a driver (2018 or later).")
-    # async def sectors(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-    #                   data: options.SectorFilter, driver: options.DriverOption):
-    #     """Plot per sector times for best lap, worst lap or average of all laps as bar chart."""
-    #     # Pick the best/worst lap or use .mean
-    #     # Get the SectorXTime/Speeds
-    #     pass
-
     @plot.command(description="View driver speed on track.")
     async def trackspeed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
                          driver: options.DriverOption):
@@ -300,12 +294,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = plot_to_file(fig, f"plot_telcompare-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
-    # @plot.command(description="Display on track gear shifts of the driver's fastest lap.")
-    # async def gears(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-    #                 driver: options.DriverOption):
-    #     """Load fastest lap telemetry and plot position and gear as a track map."""
-    #     pass
-
     @plot.command(description="Show the position gains/losses per driver in the race.")
     async def gains(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
         """Plot each driver position change from starting grid position to finish position as a bar chart."""
@@ -332,10 +320,119 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.title(f"Pos Gain/Loss - {ev['EventName']} ({(ev['EventDate'].year)})")
         plt.xlabel("Driver")
         plt.ylabel("Change")
-        ax.grid(True, alpha=0.03)
+        ax.grid(True, alpha=0.1)
         plt.tight_layout()
 
         f = plot_to_file(fig, f"plot_poschange-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
+
+    @plot.command(name="tyre-choice", description="Percentage distribution of tyre compounds.")
+    async def tyre_choice(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                          session: options.SessionOption):
+        """Plot the distribution of tyre compound for all laps in the session."""
+        await utils.check_season(ctx, year)
+
+        # Get lap data and count occurance of each compound
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, session, laps=True)
+        t_count = s.laps["Compound"].value_counts()
+
+        # Calculate percentages and sort
+        t_percent = t_count / len(s.laps) * 100
+        sorted_count = t_count.sort_values(ascending=False)
+        sorted_percent = t_percent.loc[sorted_count.index]
+
+        # Get tyre colours
+        clrs = [fastf1.plotting.COMPOUND_COLORS[i] for i in sorted_count.index]
+
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=DPI, subplot_kw={"aspect": "equal"})
+        ax.pie(sorted_percent, colors=clrs, autopct="%1.1f%%")
+
+        plt.legend(sorted_count.index)
+        plt.title(f"Tyre Distribution - {session}\n{ev['EventName']} ({ev['EventDate'].year})")
+        plt.tight_layout()
+
+        f = plot_to_file(fig, f"plt_tyrechoice-{ev['RoundNumber']}-{ev['EventDate'].year}")
+        await MessageTarget(ctx).send(file=f)
+
+    @plot.command(description="Compare laptime difference between two drivers.")
+    async def gapdiff(self, ctx: ApplicationContext,
+                      first: discord.Option(str, required=True), second: discord.Option(str, required=True),
+                      year: options.SeasonOption, round: options.RoundOption):
+        """Plot the lap times between two drivers for all laps, excluding pitstops and slow laps."""
+        await utils.check_season(ctx, year)
+
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, "R", laps=True, telemetry=True)
+        # Get driver codes from the identifiers given
+        drivers = [await utils.find_driver(d)["code"] for d in (first, second)]
+
+        # Group laps using only quicklaps to exclude pitstops and slow laps
+        laps = s.laps.pick_drivers(drivers).pick_quicklaps()
+        times = laps.loc[:, ["Driver", "LapNumber", "LapTime"]].groupby("Driver")
+
+        fig, ax = plt.subplots(figsize=(8, 5), dpi=DPI)
+
+        for d, t in times:
+            ax.plot(
+                t["LapNumber"],
+                t["LapTime"],
+                label=d,
+                color=fastf1.plotting.driver_color(d)
+            )
+
+        plt.title(f"Lap Difference -\n{ev['EventName']} ({ev['EventDate'].year})")
+        plt.xlabel("Lap")
+        plt.ylabel("Time")
+        ax.grid(True, alpha=0.1)
+        plt.legend()
+
+        f = plot_to_file(fig, f"plt_comparelaps-{drivers[0]}{drivers[1]}-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
+
+    @plot.command(name="lap-distribution",
+                  description="Violin plot comparing distribution of laptimes on different tyres.")
+    async def lap_distribution(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+        """Plot a swarmplot and violin plot showing laptime distributions and tyre compound
+        for the top 10 point finishers."""
+        await utils.check_season(ctx, year)
+
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, "R", laps=True)
+
+        # Get the point finishers
+        point_finishers = s.drivers[:10]
+
+        laps = s.laps.pick_drivers(point_finishers).pick_quicklaps().set_index("Driver")
+        # Convert laptimes to seconds for seaborn compatibility
+        laps["LapTIme (s)"] = laps["LapTime"].dt.total_seconds()
+        labels = [s.get_driver(d)["Abbreviation"] for d in point_finishers]
+        compounds = laps["Compound"].unique()
+
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=DPI)
+
+        sns.violinplot(data=laps,
+                       x=laps.index,
+                       y="LapTime (s)",
+                       inner=None,
+                       scale="area",
+                       order=labels,
+                       palette=[fastf1.plotting.driver_color(c) for d in labels])
+
+        sns.violinplot(data=laps,
+                       x="Driver",
+                       y="LapTime (s)",
+                       order=labels,
+                       hue="Compound",
+                       palette=[fastf1.plotting.COMPOUND_COLORS[c] for c in compounds],
+                       linewidth=0,
+                       size=5)
+
+        ax.set_xlabel("Driver (Point Finishers)")
+        plt.title(f"Lap Distribution - {ev['EventName']} ({ev['EventDate'].year})")
+        sns.despine(left=True, right=True)
+
+        f = plot_to_file(fig, f"plt_lapdist-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
