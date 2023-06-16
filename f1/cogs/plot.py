@@ -435,6 +435,37 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = plot_to_file(fig, f"plt_lapdist-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
+    @plot.command(name="tyre-performance",
+                  description="Plot the performance of each tyre compound based on the age of the tyre.")
+    async def tyreperf(ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+        """Plot a line graph showing the performance of each tyre compound based on the age of the tyre."""
+        await utils.check_season(ctx, year)
+
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, "R", laps=True)
+
+        data = stats.tyre_performance(s)
+        compounds = data["Compound"].unique()
+
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=DPI)
+
+        for cmp in compounds:
+            mask = data["Compound"] == cmp
+            ax.plot(
+                data.loc[mask, "TyreLife"].values,
+                data.loc[mask, "Seconds"].values,
+                label=cmp,
+                color=fastf1.plotting.COMPOUND_COLORS[cmp]
+            )
+
+        plt.xlabel("Tyre Life")
+        plt.ylabel("Lap Time (s)")
+        plt.title(f"Tyre Performance - {ev['EventDate'].year} {ev['EventName']}")
+        plt.tight_layout()
+
+        f = plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
+
     async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
         """Handle loading errors from unsupported API lap data."""
         if isinstance(error.__cause__, MissingDataError):

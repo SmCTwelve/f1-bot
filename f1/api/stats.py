@@ -260,6 +260,31 @@ async def team_pace(session: Session):
     return df
 
 
+def tyre_performance(session: Session):
+    """Get a DataFrame showing the average lap times for each tyre compound based on the
+    number of laps driven on the tyre.
+
+    `session` should already be loaded with lap data.
+
+    Data is grouped by Compound and TyreLife to get the average time for each lap driven.
+    Lap time values are based on quicklaps using a threshold of 105%.
+
+    Returns
+    ------
+        `DataFrame` [Compound, TyreLife, LapTime, Seconds]
+    """
+
+    # Check lap data support
+    if not session.f1_api_support:
+        raise MissingDataError("Lap data not supported for this session.")
+
+    # Filter and group quicklaps within 105% by Compound and TyreLife to get the mean times per driven lap
+    laps = session.laps.pick_quicklaps(1.05).groupby(["Compound", "TyreLife"])["LapTime"].mean().reset_index()
+    laps["Seconds"] = laps["LapTime"].dt.total_seconds()
+
+    return laps
+
+
 def pos_change(session: Session):
     """Returns each driver start, finish position and the difference between them. Session must be race."""
 
