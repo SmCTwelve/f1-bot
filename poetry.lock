@@ -641,14 +641,13 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
 name = "fastf1"
-version = "3.0.3"
+version = "3.0.6"
 description = "Wrapper library for F1 data and telemetry API with additional data processing capabilities."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastf1-3.0.3-py3-none-any.whl", hash = "sha256:c53a9e11989cee099e1008cfd751401ae52ebefabaaefedffa921f65a0a3282e"},
-    {file = "fastf1-3.0.3.tar.gz", hash = "sha256:b4af9a2d3cf8ebf9e2887354c151b9828d81d4020449c5b9d71611b350fd3965"},
+    {file = "fastf1-3.0.6-py3-none-any.whl", hash = "sha256:a393f37c743da4bd3794384d8e3221055e696a2e57a7d93f319cae0f6b2ba6ec"},
 ]
 
 [package.dependencies]
@@ -660,7 +659,7 @@ requests = ">=2.28.0"
 requests-cache = ">=0.8.0"
 scipy = ">=1.6.3,<2.0.0"
 thefuzz = "*"
-timple = ">=0.1.2"
+timple = ">=0.1.6"
 websockets = ">=8.1"
 
 [[package]]
@@ -2091,14 +2090,14 @@ speedup = ["python-levenshtein (>=0.12)"]
 
 [[package]]
 name = "timple"
-version = "0.1.5"
+version = "0.1.6"
 description = "Extended functionality for plotting timedelta-like values with Matplotlib"
 category = "main"
 optional = false
-python-versions = ">=3.*"
+python-versions = ">=3.7"
 files = [
-    {file = "timple-0.1.5-py3-none-any.whl", hash = "sha256:e3810a7cf7deccabe66bf1e83586009629a9f86ca2f0620e3e05e34dea83516f"},
-    {file = "timple-0.1.5.tar.gz", hash = "sha256:aa7eeb1dead4d187a7de3d1cb8bbf674543cfdb4d77e6cc4d324ddf35de1fb71"},
+    {file = "timple-0.1.6-py3-none-any.whl", hash = "sha256:ef1e645c37c81a76cf072242aea0e98669be2a9188eddf81b61fbfb77b44c897"},
+    {file = "timple-0.1.6.tar.gz", hash = "sha256:5dd9240c7e6629c85f3d646da9a3d312edf3cbbe5a91befc5d83cfd757192496"},
 ]
 
 [package.dependencies]
