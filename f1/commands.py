@@ -2,10 +2,11 @@ import logging
 import asyncio
 import re
 
-from discord import ApplicationCommandInvokeError, ApplicationContext, Colour, Message
+from discord import ApplicationCommandInvokeError, ApplicationContext, Message
 from discord.activity import Activity, ActivityType
 from discord.embeds import Embed
 from discord.ext import commands
+from f1 import options
 
 from f1.api import ergast
 from f1.target import MessageTarget
@@ -107,8 +108,8 @@ async def on_application_command_error(ctx: ApplicationContext, err):
 # ==================
 
 
-@bot.command(aliases=['driver'])
-async def career(ctx, driver_id):
+@commands.slash_command(description="Career stats for a driver.")
+async def career(ctx: ApplicationContext, driver_id: options.DriverOption):
     """Career stats for the `driver_id`.
 
     Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
@@ -123,16 +124,17 @@ async def career(ctx, driver_id):
         !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
     """
     target = MessageTarget(ctx)
-    await target.send("*Gathering driver data, this may take a few moments...*")
-    driver = ergast.get_driver_info(driver_id)
+
+    driver = await ergast.get_driver_info(driver_id)
     result = await ergast.get_driver_career(driver)
     thumb_url_task = asyncio.create_task(f1.utils.get_wiki_thumbnail(driver['url']))
     season_list = result['data']['Seasons']['years']
     champs_list = result['data']['Championships']['years']
+
     embed = Embed(
         title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
         url=result['driver']['url'],
-        colour=Colour.teal(),
+        colour=f1.utils.F1_RED,
     )
     embed.set_thumbnail(url=await thumb_url_task)
     embed.add_field(name='Number', value=result['driver']['number'], inline=True)
@@ -164,4 +166,5 @@ async def career(ctx, driver_id):
         ),
         inline=False
     )
+
     await target.send(embed=embed)

@@ -1,4 +1,3 @@
-from calendar import c
 import logging
 from io import BytesIO
 
@@ -346,7 +345,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         clrs = [fastf1.plotting.COMPOUND_COLORS[i] for i in sorted_count.index]
 
         fig, ax = plt.subplots(figsize=(8, 6), dpi=DPI, subplot_kw={"aspect": "equal"})
-        ax.pie(sorted_percent, colors=clrs, autopct="%1.1f%%")
+        ax.pie(sorted_percent, colors=clrs, autopct="%1.1f%%", textprops={"color": "black"})
 
         plt.legend(sorted_count.index)
         plt.title(f"Tyre Distribution - {session}\n{ev['EventName']} ({ev['EventDate'].year})")
@@ -405,7 +404,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         laps = s.laps.pick_drivers(point_finishers).pick_quicklaps().set_index("Driver")
         # Convert laptimes to seconds for seaborn compatibility
-        laps["LapTIme (s)"] = laps["LapTime"].dt.total_seconds()
+        laps["LapTime (s)"] = laps["LapTime"].dt.total_seconds()
         labels = [s.get_driver(d)["Abbreviation"] for d in point_finishers]
         compounds = laps["Compound"].unique()
 
@@ -417,16 +416,16 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                        inner=None,
                        scale="area",
                        order=labels,
-                       palette=[fastf1.plotting.driver_color(c) for d in labels])
+                       palette=[fastf1.plotting.driver_color(d) for d in labels])
 
-        sns.violinplot(data=laps,
-                       x="Driver",
-                       y="LapTime (s)",
-                       order=labels,
-                       hue="Compound",
-                       palette=[fastf1.plotting.COMPOUND_COLORS[c] for c in compounds],
-                       linewidth=0,
-                       size=5)
+        sns.swarmplot(data=laps,
+                      x="Driver",
+                      y="LapTime (s)",
+                      order=labels,
+                      hue="Compound",
+                      palette=[fastf1.plotting.COMPOUND_COLORS[c] for c in compounds],
+                      linewidth=0,
+                      size=5)
 
         ax.set_xlabel("Driver (Point Finishers)")
         plt.title(f"Lap Distribution - {ev['EventName']} ({ev['EventDate'].year})")
@@ -437,7 +436,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
     @plot.command(name="tyre-performance",
                   description="Plot the performance of each tyre compound based on the age of the tyre.")
-    async def tyreperf(ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+    async def tyreperf(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
         """Plot a line graph showing the performance of each tyre compound based on the age of the tyre."""
         await utils.check_season(ctx, year)
 
