@@ -4,7 +4,9 @@ Discord bot to view F1 stats.
 
 ## Description
 
-View Formula 1 statistics within Discord using the [Pycord](https://pycord.dev/) library. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library. View a range of data including race results, championship standings, lap times, pitstops and telemetry. Additionally, the bot can output visualisations such as tyre strategy, lap distributions, driver speed comparisons and more.
+View Formula 1 statistics within Discord using the [Pycord](https://pycord.dev/) library. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library. 
+
+Displays a range of data including race results, championship standings, lap times, pitstops and telemetry. Additionally, the bot can output visualisations such as tyre strategy, lap distributions, driver speed comparisons and more.
 
 <p align="center"><img src="https://i.imgur.com/bdd7emE.gif" /></p>
 
