@@ -140,7 +140,7 @@ Display the fastest lap delta for each driver as a bar plot.
 
 Show the drivers fastest lap speed telemetry mapped to the track. Driver is _required_.
 
->`/plot speed [year] [round] [ [drv1] [drv2] [drv3] [drv4] ]`
+>`/plot speed [year] [round] [ driver1..driver4 ]`
 
 Plot driver speed telemetry and distance to compare performance in different sectors.
 At least 1 driver must be specified, up to a maximum of 4.
@@ -153,7 +153,7 @@ Show the number of places gained or lost per driver during the race.
 
 View a pie chart showing distribution of tyre compounds in the session.
 
->`/plot gapdiff [first] [second] [year] [round]`
+>`/plot gapdiff <driver1> <driver2> [year] [round]`
 
 Plot the lap time difference between two drivers for all laps, excluding pitstops and slow laps.
 Both `first` and `second` must be provided as a driver name, code or number.
@@ -164,4 +164,4 @@ Plot a violin plot and swarm plot showing the distributions of lap times and tyr
 
 >`/plot tyre-performance [year] [round]`
 
-View a line graph comparing the aggregate performance of each tyre compound over the life of the tyre.
+View a line graph comparing the average performance of each tyre compound over the life of the tyre.
