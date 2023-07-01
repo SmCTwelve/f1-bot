@@ -1,17 +1,19 @@
 import json
 import logging
-from operator import itemgetter
 from datetime import date, datetime
+from io import BytesIO
+from operator import itemgetter
 
 import pandas as pd
-from tabulate import tabulate
-from discord import ApplicationContext, Colour
+from discord import ApplicationContext, Colour, File
 from discord.ext import commands
-from f1.api.fetch import fetch
+from matplotlib.figure import Figure
+from tabulate import tabulate
 
-from f1.target import MessageTarget
+from f1.api.fetch import fetch
 from f1.config import CACHE_DIR
-from f1.errors import MessageTooLongError, DriverNotFoundError
+from f1.errors import DriverNotFoundError, MessageTooLongError
+from f1.target import MessageTarget
 
 logger = logging.getLogger("f1-bot")
 
@@ -295,3 +297,14 @@ async def get_wiki_thumbnail(url: str):
         return first['thumbnail']['source']
     else:
         return 'https://i.imgur.com/kvZYOue.png'
+
+
+def plot_to_file(fig: Figure, name: str):
+    """Generates a `discord.File` as `name`. Takes a plot Figure and
+    saves it to a `BytesIO` memory buffer without saving to disk.
+    """
+    with BytesIO() as buffer:
+        fig.savefig(buffer, format="png", bbox_inches="tight")
+        buffer.seek(0)
+        file = File(buffer, filename=f"{name}.png")
+        return file

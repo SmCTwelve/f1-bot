@@ -1,5 +1,4 @@
 import logging
-from io import BytesIO
 
 import discord
 import fastf1.plotting
@@ -12,7 +11,6 @@ from discord.ext import commands
 from fastf1.core import Laps
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
-from matplotlib.figure import Figure
 
 from f1 import options, utils
 from f1.api import ergast, stats
@@ -24,17 +22,6 @@ logger = logging.getLogger("f1-bot")
 
 # Set the DPI of the figure image output; discord preview seems sharper at higher value
 DPI = 300
-
-
-def plot_to_file(fig: Figure, name: str):
-    """Generates a `discord.File` as `name`. Takes a plot Figure and
-    saves it to a `BytesIO` memory buffer without saving to disk.
-    """
-    with BytesIO() as buffer:
-        fig.savefig(buffer, format="png", bbox_inches="tight")
-        buffer.seek(0)
-        file = discord.File(buffer, filename=f"{name}.png")
-        return file
 
 
 class Plot(commands.Cog, guild_ids=Config().guilds):
@@ -104,7 +91,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.tight_layout()
 
         # Get plot image
-        f = plot_to_file(fig, f"plot_stints-{yr}-{rd}")
+        f = utils.plot_to_file(fig, f"plot_stints-{yr}-{rd}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Plot driver position changes in the race.")
@@ -136,7 +123,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.tight_layout()
 
         # Create image
-        f = plot_to_file(fig, f"plot_pos-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plot_pos-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Show a bar chart comparing fastest laps in the session.")
@@ -186,7 +173,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.suptitle(f"Fastest: {utils.format_timedelta(top['LapTime'])} ({top['Driver']})")
         plt.tight_layout()
 
-        f = plot_to_file(fig, f"plt_fastlap-{s.name}-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plt_fastlap-{s.name}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="View driver speed on track.")
@@ -236,7 +223,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         fig.colorbar(speed_line, cax=cax, location="bottom", label="Speed (km/h)")
         plt.suptitle(f"{drv_id} Track Speed - {ev['EventDate'].year} {ev['EventName']}", size=16)
 
-        f = plot_to_file(fig, f"plot_trackspeed-{drv_id}-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plot_trackspeed-{drv_id}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Compare the lap speed of up to 4 drivers.")
@@ -290,7 +277,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.legend(loc="lower left")
         plt.tight_layout()
 
-        f = plot_to_file(fig, f"plot_telcompare-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plot_telcompare-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Show the position gains/losses per driver in the race.")
@@ -322,7 +309,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.grid(True, alpha=0.1)
         plt.tight_layout()
 
-        f = plot_to_file(fig, f"plot_poschange-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plot_poschange-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(name="tyre-choice", description="Percentage distribution of tyre compounds.")
@@ -351,7 +338,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.title(f"Tyre Distribution - {session}\n{ev['EventName']} ({ev['EventDate'].year})")
         plt.tight_layout()
 
-        f = plot_to_file(fig, f"plt_tyrechoice-{ev['RoundNumber']}-{ev['EventDate'].year}")
+        f = utils.plot_to_file(fig, f"plt_tyrechoice-{ev['RoundNumber']}-{ev['EventDate'].year}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Compare laptime difference between two drivers.")
@@ -386,7 +373,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.grid(True, alpha=0.1)
         plt.legend()
 
-        f = plot_to_file(fig, f"plt_comparelaps-{drivers[0]}{drivers[1]}-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(
+            fig, f"plt_comparelaps-{drivers[0]}{drivers[1]}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(name="lap-distribution",
@@ -431,7 +419,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.title(f"Lap Distribution - {ev['EventName']} ({ev['EventDate'].year})")
         sns.despine(left=True, right=True)
 
-        f = plot_to_file(fig, f"plt_lapdist-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plt_lapdist-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(name="tyre-performance",
@@ -462,7 +450,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.title(f"Tyre Performance - {ev['EventDate'].year} {ev['EventName']}")
         plt.tight_layout()
 
-        f = plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
+        f = utils.plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
