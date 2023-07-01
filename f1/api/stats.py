@@ -6,6 +6,8 @@ import pandas as pd
 from fastf1.core import Session, SessionResults
 from fastf1.ergast import Ergast
 from fastf1.events import Event
+from plottable import Table, ColDef
+from matplotlib import pyplot as plt
 
 from f1 import utils
 from f1.api import ergast
@@ -14,6 +16,19 @@ from f1.errors import MissingDataError
 logger = logging.getLogger("f1-bot")
 
 ff1_erg = Ergast()
+
+
+def get_session_type(name: str):
+    """Return one of `["R", "Q", "P"]` depending on session `name`.
+
+    E.g. "Race/Sprint" is type "R".
+    "Qualifying/Sprint Shootout" is type "Q".
+    """
+    if "Practice" in name:
+        return "P"
+    if name in ("Qualifying", "Sprint Shootout"):
+        return "Q"
+    return "R"
 
 
 async def to_event(year: str, rnd: str) -> Event:
@@ -70,8 +85,8 @@ async def format_results(session: Session, name: str):
     `DataFrame` with columns:
 
     Qualifying / Sprint Shootout - `[Pos, Code, Driver, Team, Q1, Q2, Q3]` \n
-    Race / Sprint - `[Pos, Code, Driver, Team, Grid, Finish, Points]` \n
-    Practice - `[No, Code, Driver, Team, Fastest, Laps]`
+    Race / Sprint - `[Pos, Code, Driver, Team, Grid, Finish, Points, Status]` \n
+    Practice - `[Code, Driver, Team, Fastest, Laps]`
     """
 
     _sr: SessionResults = session.results
@@ -86,9 +101,11 @@ async def format_results(session: Session, name: str):
         "TeamName": "Team"
     })
 
+    session_type = get_session_type(name)
+
     # FP1, FP2, FP3
     ###############
-    if "Practice" in name:
+    if session_type == "P":
         # Reload the session to fetch missing lap info
         await asyncio.to_thread(session.load, laps=True, telemetry=False,
                                 weather=False, messages=False, livedata=None)
@@ -99,7 +116,7 @@ async def format_results(session: Session, name: str):
 
         # Combine the fastest lap data with the results data
         fp = pd.merge(
-            res_df[["No", "Code", "Driver", "Team"]],
+            res_df[["Code", "Driver", "Team"]],
             fastest_laps["LapTime"],
             left_index=True, right_index=True)
 
@@ -115,7 +132,7 @@ async def format_results(session: Session, name: str):
 
     # QUALI / SS
     ############
-    if name in ("Qualifying", "Sprint Shootout"):
+    if session_type == "Q":
         res_df["Pos"] = res_df["Pos"].astype(int)
         qs_res = res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Q1", "Q2", "Q3"]]
 
@@ -144,7 +161,7 @@ async def format_results(session: Session, name: str):
     res_df["Pts"] = res_df["Points"].astype(int)
     res_df["Grid"] = res_df["Grid"].astype(int)
 
-    return res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Grid", "Finish", "Pts"]]
+    return res_df.loc[:, ["Pos", "Driver", "Team", "Grid", "Finish", "Pts", "Status"]]
 
 
 async def filter_pitstops(year, round, filter: str = None, driver: str = None) -> pd.DataFrame:
@@ -155,7 +172,7 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
 
     Returns
     ------
-    `DataFrame`: `[No, Code, Stop Num, Lap, Duration]`
+    `DataFrame`: `[Code, Stop, Lap, Duration]`
     """
 
     # Create a dict with driver info from all drivers in the session
@@ -200,7 +217,7 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
 
     # Presentation
     df.columns = df.columns.str.capitalize()
-    return df.loc[:, ["No", "Code", "Stop", "Lap", "Duration"]]
+    return df.loc[:, ["Code", "Stop", "Lap", "Duration"]]
 
 
 async def tyre_stints(session: Session, driver: str = None):
@@ -303,3 +320,92 @@ def pos_change(session: Session):
     diff[["Start", "Finish", "Diff"]] = diff[["Start", "Finish", "Diff"]].astype(int)
 
     return diff
+
+
+def results_table(results: pd.DataFrame, name: str):
+    """Return a formatted matplotlib table from a session results dataframe.
+
+    `name` is the session name parameter.
+    """
+    base_defs = [
+        ColDef(name="Driver", width=0.9, textprops={"ha": "left"}),
+        ColDef(name="Team", width=0.8, textprops={"ha": "left"}),
+    ]
+    pos_def = ColDef("Pos", width=0.5, textprops={"weight": "bold"}, border="right")
+    if get_session_type(name) == "R":
+        size = (8.65, 10)
+        idx = "Pos"
+        dnfs = results.loc[~results["Status"].isin(["+1 Lap", "Finished"]), "Pos"].astype(int).values
+        results = results.drop("Status", axis=1)
+        col_defs = base_defs + [
+            pos_def,
+            ColDef(name="Code", width=0.4),
+            ColDef("Grid", width=0.35),
+            ColDef("Pts", width=0.35, border="l"),
+            ColDef("Finish", width=0.6, textprops={"ha": "right"}, border="l"),
+        ]
+
+    if get_session_type(name) == "Q":
+        size = (10, 10)
+        idx = "Pos"
+        col_defs = base_defs.append(ColDef(name="Code", width=0.4)) + [
+            ColDef(n, width=0.5) for n in ("Q1", "Q2", "Q3")
+        ]
+
+    if get_session_type(name) == "P":
+        size = (8, 10)
+        idx = "Code"
+        col_defs = base_defs + [
+            ColDef("Code", width=0.4, textprops={"weight": "bold"}, border="right"),
+            ColDef("Fastest", width=0.5, textprops={"ha": "right"}),
+            ColDef("Laps", width=0.35, textprops={"ha": "right"}),
+        ]
+
+    fig, ax = plt.subplots(figsize=size, dpi=300)
+
+    table = Table(
+        results,
+        ax=ax,
+        index_col=idx,
+        textprops={"fontsize": 10, "ha": "center"},
+        column_border_kw={"color": fig.get_facecolor(), "lw": 2},
+        col_label_cell_kw={"facecolor": (0, 0, 0, 0.35)},
+        col_label_divider_kw={"color": fig.get_facecolor(), "lw": 4},
+        row_divider_kw={"color": fig.get_facecolor(), "lw": 1.2},
+        column_definitions=col_defs
+    )
+    table.col_label_row.set_fontsize(11)
+
+    # Highlight DNFs in race
+    if get_session_type(name) == "R":
+        for i in dnfs:
+            table.rows[i - 1].set_facecolor((0, 0, 0, 0.38)).set_hatch("/").set_fontcolor((1, 1, 1, 0.5))
+
+    return fig
+
+
+def pitstops_table(results: pd.DataFrame):
+    """Returns matplotlib table from pitstops results DataFrame."""
+    col_defs = [
+        ColDef("Code", width=0.4, textprops={"weight": "bold"}, border="r"),
+        ColDef("Stop", width=0.25),
+        ColDef("Lap", width=0.25),
+        ColDef("Duration", width=0.5, textprops={"ha": "right"}, border="l"),
+    ]
+
+    fig, ax = plt.subplots(dpi=300)
+
+    table = Table(
+        results,
+        ax=ax,
+        index_col="Code",
+        textprops={"fontsize": 10, "ha": "center"},
+        column_border_kw={"color": fig.get_facecolor(), "lw": 2},
+        col_label_cell_kw={"facecolor": (0, 0, 0, 0.35)},
+        col_label_divider_kw={"color": fig.get_facecolor(), "lw": 4},
+        row_divider_kw={"color": fig.get_facecolor(), "lw": 1.2},
+        column_definitions=col_defs
+    )
+    table.col_label_row.set_fontsize(11)
+
+    return fig

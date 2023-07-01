@@ -39,12 +39,11 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, session)
         data = await stats.format_results(s, session)
-        table = utils.make_table(data, fmt="simple", showindex=False)
+        table = stats.results_table(data, session)
+        table.get_axes()[0].set_title(f"{ev['EventDate'].year} {ev['EventName']} - {session}")
 
-        await MessageTarget(ctx).send(
-            content=f"```\n{table}\n```",
-            embed=Embed(title=f"**{s.name} - {ev.EventName} ({ev.EventDate.year})**"),
-        )
+        f = utils.plot_to_file(table, f"results_{s.name}_{ev['EventDate'].year}_{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(description="Race pitstops ranked by duration or filtered to a driver.", name="pitstops")
     async def pitstops(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
