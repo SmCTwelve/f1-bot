@@ -1574,6 +1574,27 @@ docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.2.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
+name = "plottable"
+version = "0.1.5"
+description = "Beautifully customized tables with matplotlib"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "plottable-0.1.5-py3-none-any.whl", hash = "sha256:5c5d1128d90065fc940e5c8445b2603d253909745bb0cee0c9828651b812441c"},
+    {file = "plottable-0.1.5.tar.gz", hash = "sha256:235d762a31c82129dc5bf74205c103a14b1e4393d0f921cc0231be5de884041d"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+pandas = "*"
+Pillow = "*"
+
+[package.extras]
+development = ["black", "pytest"]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.38"
 description = "Library for building powerful interactive command lines in Python"
@@ -2369,4 +2390,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "0deb4689ea53cef29f4cd853ce652b07406a05897b11456bf80e028ff7eae577"
+content-hash = "189a7a0d1ebc404e8d89f98d8d67e9b2b0208bea765a0e5ebbc3f3f9a2a5417a"

@@ -20,6 +20,7 @@ aiohttp = "^3.8.4"
 fastf1 = "^3.0.0"
 aiohttp-client-cache = {extras = ["sqlite"], version = "^0.8.1"}
 seaborn = "^0.12.2"
+plottable = "^0.1.5"
 
 
 [tool.poetry.group.dev.dependencies]
