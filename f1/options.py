@@ -30,6 +30,20 @@ RoundOption = Option(
     default="last",
     description="The race name, location or round number (default last race)")
 
+TyreOption = Option(
+    str,
+    description="Choice of tyre compound",
+    choices=[
+        "SOFT",
+        "MEDIUM",
+        "HARD",
+        "INTERMEDIATE",
+        "WET",
+        None
+    ],
+    default=None
+)
+
 SessionOption = Option(
     str,
     choices=[
