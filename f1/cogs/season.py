@@ -1,15 +1,15 @@
 import logging
-from operator import itemgetter
 
 import discord
 from discord import Embed
 from discord.ext import commands
 
 from f1 import options
-from f1.api import ergast
+from f1 import utils
+from f1.api import ergast, stats
 from f1.config import Config
 from f1.target import MessageTarget
-from f1.utils import F1_RED, check_season, make_table
+from f1.utils import F1_RED, check_season
 
 logger = logging.getLogger("f1-bot")
 
@@ -30,14 +30,12 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         """
         await check_season(ctx, year)
         result = await ergast.get_driver_standings(year)
-        table = make_table(result['data'], fmt='simple')
-        await MessageTarget(ctx).send(
-            embed=Embed(
-                title=f"**World Constructor Championship ({result['season']})**",
-                description=f"```\n{table}\n```"
-            )
-            .set_footer(text=f"Round: {result['round']}")
-        )
+        table, ax = stats.championship_table(result['data'], type="wdc")
+        yr, rd = result['season'], result['round']
+        ax.set_title(f"{yr} Driver Championship - Round {rd}").set_fontsize(12)
+
+        f = utils.plot_to_file(table, f"wdc_{yr}_{rd}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(description="Constructors Championship standings.")
     async def wcc(self, ctx, year: options.SeasonOption):
@@ -49,14 +47,12 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         """
         await check_season(ctx, year)
         result = await ergast.get_team_standings(year)
-        table = make_table(result['data'])
-        await MessageTarget(ctx).send(
-            embed=Embed(
-                title=f"**World Constructor Championship ({result['season']})**",
-                description=f"```\n{table}\n```"
-            )
-            .set_footer(text=f"Round: {result['round']}")
-        )
+        table, ax = stats.championship_table(result['data'], type="wcc")
+        yr, rd = result['season'], result['round']
+        ax.set_title(f"{yr} Constructor Championship - Round {rd}").set_fontsize(12)
+
+        f = utils.plot_to_file(table, f"wcc_{yr}_{rd}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(desciption="All drivers and teams participating in the season.")
     async def grid(self, ctx, year: options.SeasonOption):
@@ -69,14 +65,12 @@ class Season(commands.Cog, guild_ids=Config().guilds):
         """
         await check_season(ctx, year)
         result = await ergast.get_all_drivers_and_teams(year)
-        table = make_table(sorted(result['data'], key=itemgetter('Team')), fmt='simple')
-        await MessageTarget(ctx).send(
-            content=f"```\n{table}\n```",
-            embed=Embed(
-                title=f"**Formula 1 Grid ({result['season']})**",
-            )
-            .set_footer(text=f"Round: {result['round']}")
-        )
+        table, ax = stats.grid_table(result['data'])
+        yr, rd = result['season'], result['round']
+        ax.set_title(f"{yr} Formula 1 Grid").set_fontsize(12)
+
+        f = utils.plot_to_file(table, f"grid_{yr}_{rd}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(description="Race schedule for the season.")
     async def schedule(self, ctx):
