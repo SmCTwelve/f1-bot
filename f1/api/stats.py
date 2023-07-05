@@ -1,7 +1,10 @@
 import asyncio
 import logging
+from typing import Literal
 
 import fastf1 as ff1
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import pandas as pd
 from fastf1.core import Session, SessionResults
 from fastf1.ergast import Ergast
@@ -29,6 +32,26 @@ def get_session_type(name: str):
     if name in ("Qualifying", "Sprint Shootout"):
         return "Q"
     return "R"
+
+
+def plot_table(df: pd.DataFrame, col_defs: list[ColDef], idx: str, figsize: tuple[float]):
+    """Returns plottable table from data."""
+    fig, ax = plt.subplots(figsize=figsize, dpi=300, layout="constrained")
+
+    table = Table(
+        df=df,
+        ax=ax,
+        index_col=idx,
+        textprops={"fontsize": 10, "ha": "center"},
+        column_border_kw={"color": fig.get_facecolor(), "lw": 2},
+        col_label_cell_kw={"facecolor": (0, 0, 0, 0.35)},
+        col_label_divider_kw={"color": fig.get_facecolor(), "lw": 4},
+        row_divider_kw={"color": fig.get_facecolor(), "lw": 1.2},
+        column_definitions=col_defs,
+    )
+    table.col_label_row.set_fontsize(11)
+
+    return table
 
 
 async def to_event(year: str, rnd: str) -> Event:
@@ -69,8 +92,7 @@ async def load_session(event: Event, name: str, **kwargs) -> Session:
                                 messages=kwargs.get("messages", False),
                                 livedata=kwargs.get("livedata", None))
     except Exception:
-        raise MissingDataError("Unable to get session data, check the event name. " +
-                               "Or are you trying to predict the future?")
+        raise MissingDataError("Unable to get session data, check the round and year is correct.")
 
     return session
 
@@ -89,7 +111,12 @@ async def format_results(session: Session, name: str):
     Practice - `[Code, Driver, Team, Fastest, Laps]`
     """
 
-    _sr: SessionResults = session.results
+    try:
+        _sr: SessionResults = session.results
+    except Exception:
+        raise MissingDataError(
+            "Session data unavailable. If the session finished recently, check again later."
+        )
 
     # Results presentation
     res_df: SessionResults = _sr.rename(columns={
@@ -257,7 +284,7 @@ async def team_pace(session: Session):
 
     Returns
     ------
-        `DataFrame` containing max sector speeds and min times indexed by team.
+        `DataFrame` containing max sector speeds and avg times indexed by team.
 
     Raises
     ------
@@ -269,10 +296,64 @@ async def team_pace(session: Session):
 
     # Get only the quicklaps in session to exclude pits and slow laps
     laps = session.laps.pick_quicklaps()
-    times = laps.groupby(["Team"])[["Sector1Time", "Sector2Time", "Sector3Time"]].min()
+    times = laps.groupby(["Team"])[["Sector1Time", "Sector2Time", "Sector3Time"]].mean()
     speeds = laps.groupby(["Team"])[["SpeedI1", "SpeedI2", "SpeedFL", "SpeedST"]].max()
 
     df = pd.merge(times, speeds, how="left", left_index=True, right_index=True)
+
+    return df
+
+
+def sectors(s: Session, tyre: str = None):
+    """Get a DataFrame showing the minimum sector times and max speed trap recorded for each driver.
+    Based on quicklaps only. Optionally filter by tyre compound.
+
+    Parameters
+    ------
+        `s`: a loaded race session
+
+    Returns
+    ------
+        `DataFrame` [Driver, S1, S2, S3, ST]
+
+    Raises
+    ------
+        `MissingDataError` if lap data not supported or not enough laps with tyre compound.
+    """
+    if not s.f1_api_support:
+        raise MissingDataError("Lap data not supported for this session.")
+
+    # Get quicklaps
+    laps = s.laps.pick_quicklaps()
+
+    # Filter by tyre if chosen
+    laps = laps.pick_tyre(tyre)
+    if laps["Driver"].size == 0:
+        raise MissingDataError("No quick laps available for this tyre.")
+
+    # Get finish order for sorting
+    finish_order = pd.DataFrame(
+        {"Driver": s.results["Abbreviation"].values}
+    ).set_index("Driver", drop=True)
+
+    # Max speed for each driver
+    speeds = laps.groupby("Driver")["SpeedST"].max().reset_index().set_index("Driver", drop=True)
+
+    # Min sectors
+    sectors = laps.groupby("Driver")[["Sector1Time", "Sector2Time", "Sector3Time"]] \
+        .min().reset_index().set_index("Driver", drop=True)
+    sectors["ST"] = speeds["SpeedST"].astype(int)
+
+    # Merge with the finish order to get the data sorted
+    df = pd.merge(finish_order, sectors, left_index=True, right_index=True).reset_index().rename(
+        columns={
+            "Sector1Time": "S1",
+            "Sector2Time": "S2",
+            "Sector3Time": "S3"
+        }
+    )
+    # Convert timestamps to seconds
+    df[["S1", "S2", "S3"]] = df[["S1", "S2", "S3"]].applymap(lambda x: f"{x.total_seconds():.3f}")
 
     return df
 
@@ -281,10 +362,12 @@ def tyre_performance(session: Session):
     """Get a DataFrame showing the average lap times for each tyre compound based on the
     number of laps driven on the tyre.
 
-    `session` should already be loaded with lap data.
-
     Data is grouped by Compound and TyreLife to get the average time for each lap driven.
     Lap time values are based on quicklaps using a threshold of 105%.
+
+    Parameters
+    ------
+        `session` should already be loaded with lap data.
 
     Returns
     ------
@@ -322,7 +405,7 @@ def pos_change(session: Session):
     return diff
 
 
-def results_table(results: pd.DataFrame, name: str):
+def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
     """Return a formatted matplotlib table from a session results dataframe.
 
     `name` is the session name parameter.
@@ -332,6 +415,7 @@ def results_table(results: pd.DataFrame, name: str):
         ColDef(name="Team", width=0.8, textprops={"ha": "left"}),
     ]
     pos_def = ColDef("Pos", width=0.5, textprops={"weight": "bold"}, border="right")
+
     if get_session_type(name) == "R":
         size = (8.65, 10)
         idx = "Pos"
@@ -361,30 +445,17 @@ def results_table(results: pd.DataFrame, name: str):
             ColDef("Laps", width=0.35, textprops={"ha": "right"}),
         ]
 
-    fig, ax = plt.subplots(figsize=size, dpi=300)
-
-    table = Table(
-        results,
-        ax=ax,
-        index_col=idx,
-        textprops={"fontsize": 10, "ha": "center"},
-        column_border_kw={"color": fig.get_facecolor(), "lw": 2},
-        col_label_cell_kw={"facecolor": (0, 0, 0, 0.35)},
-        col_label_divider_kw={"color": fig.get_facecolor(), "lw": 4},
-        row_divider_kw={"color": fig.get_facecolor(), "lw": 1.2},
-        column_definitions=col_defs
-    )
-    table.col_label_row.set_fontsize(11)
+    table = plot_table(df=results, col_defs=col_defs, idx=idx, figsize=size)
 
     # Highlight DNFs in race
     if get_session_type(name) == "R":
         for i in dnfs:
-            table.rows[i - 1].set_facecolor((0, 0, 0, 0.38)).set_hatch("/").set_fontcolor((1, 1, 1, 0.5))
+            table.rows[i - 1].set_facecolor((0, 0, 0, 0.38)).set_hatch("//").set_fontcolor((1, 1, 1, 0.5))
 
-    return fig
+    return table.figure, table.ax
 
 
-def pitstops_table(results: pd.DataFrame):
+def pitstops_table(results: pd.DataFrame) -> tuple[Figure, Axes]:
     """Returns matplotlib table from pitstops results DataFrame."""
     col_defs = [
         ColDef("Code", width=0.4, textprops={"weight": "bold"}, border="r"),
@@ -393,19 +464,89 @@ def pitstops_table(results: pd.DataFrame):
         ColDef("Duration", width=0.5, textprops={"ha": "right"}, border="l"),
     ]
 
-    fig, ax = plt.subplots(dpi=300)
+    # Different sizes depending on amound of data shown with filters
+    table = plot_table(results, col_defs, "Code", figsize=(5, 10))
 
-    table = Table(
-        results,
-        ax=ax,
-        index_col="Code",
-        textprops={"fontsize": 10, "ha": "center"},
-        column_border_kw={"color": fig.get_facecolor(), "lw": 2},
-        col_label_cell_kw={"facecolor": (0, 0, 0, 0.35)},
-        col_label_divider_kw={"color": fig.get_facecolor(), "lw": 4},
-        row_divider_kw={"color": fig.get_facecolor(), "lw": 1.2},
-        column_definitions=col_defs
-    )
-    table.col_label_row.set_fontsize(11)
+    return table.figure, table.ax
 
-    return fig
+
+def championship_table(data: list[dict], type: Literal["wcc", "wdc"]) -> tuple[Figure, Axes]:
+    """Return matplotlib table displaying championship results."""
+
+    # make dataframe from dict results
+    df = pd.DataFrame(data)
+    base_defs = [
+        ColDef("Pos", width=0.35, textprops={"weight": "bold"}, border="r"),
+        ColDef("Points", width=0.35, textprops={"ha": "right"}),
+        ColDef("Wins", width=0.35, textprops={"ha": "right"}, border="l"),
+    ]
+
+    # Driver
+    if type == "wdc":
+        col_defs = base_defs + [ColDef("Driver", width=0.9, textprops={"ha": "left"})]
+    # Constructors
+    if type == "wcc":
+        col_defs = base_defs + [ColDef("Team", width=0.8, textprops={"ha": "left"})]
+
+    table = plot_table(df, col_defs, "Pos", figsize=(6, 10))
+
+    return table.figure, table.ax
+
+
+def grid_table(data: list[dict]) -> tuple[Figure, Axes]:
+    """Return table showing the season grid."""
+
+    df = pd.DataFrame(data)
+    col_defs = [
+        ColDef("Code", width=0.4, textprops={"weight": "bold"}, border="r"),
+        ColDef("No", width=0.35),
+        ColDef("Name", width=0.9, textprops={"ha": "left"}),
+        ColDef("Age", width=0.35),
+        ColDef("Nationality", width=0.75, textprops={"ha": "left"}),
+        ColDef("Team", width=0.8, textprops={"ha": "left"}),
+    ]
+    table = plot_table(df, col_defs, "Code", figsize=(10, 10))
+
+    return table.figure, table.ax
+
+
+def laptime_table(data: list[dict]) -> tuple[Figure, Axes]:
+    """Return table with fastest lap data per driver."""
+
+    df = pd.DataFrame(data)
+    col_defs = [
+        ColDef("Rank", width=0.35, textprops={"weight": "bold"}, border="r"),
+        ColDef("Driver", width=0.4, textprops={"ha": "left"}),
+        ColDef("Time", width=0.5, textprops={"ha": "right"}),
+        ColDef("Speed", width=0.35, textprops={"ha": "right"}),
+    ]
+    table = plot_table(df, col_defs, "Rank", figsize=(6, 10))
+
+    return table.figure, table.ax
+
+
+def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
+    """Return table with fastest sector times and speed."""
+
+    s_defs = [ColDef(c, width=0.4, textprops={"ha": "right"}) for c in ("S1", "S2", "S3")]
+    col_defs = [
+        ColDef("Driver", width=0.25, textprops={"weight": "bold"}, border="r"),
+        ColDef("ST", width=0.25, textprops={"ha": "right"}, border="l")
+    ] + s_defs
+
+    # Calculate table height based on rows
+    size = (6, (df["Driver"].size) / 3.333)
+
+    table = plot_table(df, col_defs, "Driver", size)
+
+    # Highlight fastest values
+    table.columns["S1"].cells[df["S1"].idxmin()].text.set_color("#b138dd")
+    table.columns["S2"].cells[df["S2"].idxmin()].text.set_color("#b138dd")
+    table.columns["S3"].cells[df["S3"].idxmin()].text.set_color("#b138dd")
+    table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
+
+    return table.figure, table.ax
+
+# Laptimes tables (except filter best/worst)
+# Pitstops table
+#   How to adapt figsize for 1 row or multiple
