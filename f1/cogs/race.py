@@ -39,8 +39,10 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, session)
         data = await stats.format_results(s, session)
-        table = stats.results_table(data, session)
-        table.get_axes()[0].set_title(f"{ev['EventDate'].year} {ev['EventName']} - {session}")
+        table, ax = stats.results_table(data, session)
+        ax.set_title(
+            f"{ev['EventDate'].year} {ev['EventName']} - {session}"
+        ).set_fontsize(12)
 
         f = utils.plot_to_file(table, f"results_{s.name}_{ev['EventDate'].year}_{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
@@ -80,20 +82,15 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @commands.slash_command(description="Best ranked lap times per driver.")
-    async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                       filter: options.LaptimeFilter):
+    async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
         """Best ranked lap times per driver in the race. All parameters optional.
 
         Only the best recorded lap for each driver in the race.
 
         Usage:
         ----------
-            /laptimes [season] [round] [filter] \n
-            /laptimes 2022 5 fastest
+            /laptimes [season] [round] \n
         """
-        # TODO:
-        # Refactor with `driver` param to apply same filters on all laps per driver
-
         await utils.check_season(ctx, year)
         event = await stats.to_event(year, round)
 
@@ -110,6 +107,24 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             title=f"**Laptimes ({filter}) - {res['race']} ({res['season']})**",
             description=f"```\n{table}\n```"
         ))
+
+    @commands.slash_command(
+        description="View fastest sectors and speed trap based on quick laps. Seasons >= 2018.")
+    async def sectors(self, ctx: ApplicationContext, year: options.SeasonOption,
+                      round: options.RoundOption, tyre: options.TyreOption):
+        """View min sector times and max speedtrap per driver. Based on recorded quicklaps only."""
+        ev = await stats.to_event(year, round)
+        yr, rd = ev["EventDate"].year, ev["RoundNumber"]
+        s = await stats.load_session(ev, "R", laps=True)
+        data = stats.sectors(s, tyre)
+
+        table, ax = stats.sectors_table(data)
+        ax.set_title(
+            f"{yr} {ev['EventName']} - Sectors" + f"\nTyre: {tyre}" if tyre else ""
+        ).set_fontsize(12)
+
+        f = utils.plot_to_file(table, f"sectors_{yr}_{rd}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(description="Tyre compound stints in a race.")
     async def stints(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
