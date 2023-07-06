@@ -3,6 +3,7 @@ import logging
 from typing import Literal
 
 import fastf1 as ff1
+from fastf1.core import Laps
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import pandas as pd
@@ -277,7 +278,7 @@ async def tyre_stints(session: Session, driver: str = None):
     return stints
 
 
-async def team_pace(session: Session):
+def team_pace(session: Session):
     """Get the max sector speeds and min sector times from the lap data for each team in the session.
 
     The `session` must be loaded with laps data.
@@ -302,6 +303,45 @@ async def team_pace(session: Session):
     df = pd.merge(times, speeds, how="left", left_index=True, right_index=True)
 
     return df
+
+
+def fastest_laps(session: Session, tyre: str):
+    """Get fastest laptimes for all drivers in the session, optionally filtered by `tyre`.
+
+    Returns
+    ------
+        `DataFrame` [Driver, LapTime, Lap, Tyre, ST]
+
+    Raises
+    ------
+        `MissingDataError` if lap data unsupported or no lap data for the tyre.
+    """
+    if not session.f1_api_support:
+        raise MissingDataError("Lap data not supported for the session.")
+
+    laps = session.laps.pick_accurate()
+
+    if tyre:
+        laps = laps.pick_tyre(tyre)
+
+    if laps["Driver"].size == 0:
+        raise MissingDataError("Not enough laps on this tyre.")
+
+    fastest = Laps(
+        [laps.pick_driver(d).pick_fastest() for d in laps["Driver"].unique()]
+    ).sort_values(by="LapTime").reset_index(drop=True).rename(
+        columns={
+            "LapNumber": "Lap",
+            "Compound": "Tyre",
+            "SpeedST": "ST"
+        }
+    )
+    fastest.index.name = "Rank"
+    fastest.index += 1
+    fastest["LapTime"] = fastest["LapTime"].apply(lambda x: utils.format_timedelta(x))
+    fastest[["Lap", "ST"]] = fastest[["Lap", "ST"]].fillna(0.0).astype(int)
+
+    return fastest.loc[:, ["Driver", "LapTime", "Lap",  "Tyre", "ST"]]
 
 
 def sectors(s: Session, tyre: str = None):
@@ -510,17 +550,21 @@ def grid_table(data: list[dict]) -> tuple[Figure, Axes]:
     return table.figure, table.ax
 
 
-def laptime_table(data: list[dict]) -> tuple[Figure, Axes]:
+def laptime_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     """Return table with fastest lap data per driver."""
 
-    df = pd.DataFrame(data)
     col_defs = [
-        ColDef("Rank", width=0.35, textprops={"weight": "bold"}, border="r"),
-        ColDef("Driver", width=0.4, textprops={"ha": "left"}),
-        ColDef("Time", width=0.5, textprops={"ha": "right"}),
-        ColDef("Speed", width=0.35, textprops={"ha": "right"}),
+        ColDef("Rank", width=0.25, textprops={"weight": "bold"}, border="r"),
+        ColDef("Driver", width=0.25),
+        ColDef("LapTime", width=0.35, title="Time", textprops={"ha": "right"}),
+        ColDef("Lap", width=0.35),
+        ColDef("Tyre", width=0.35),
+        ColDef("ST", width=0.25)
     ]
-    table = plot_table(df, col_defs, "Rank", figsize=(6, 10))
+    size = (6, (df["Driver"].size / 3.333) + 1)
+    table = plot_table(df, col_defs, "Rank", figsize=size)
+    table.rows[0].set_hatch("//").set_facecolor("#b138dd").set_alpha(0.35)
+    table.columns["ST"].cells[df["ST"].idxmax() - 1].text.set_color("#b138dd")
 
     return table.figure, table.ax
 
@@ -535,7 +579,7 @@ def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     ] + s_defs
 
     # Calculate table height based on rows
-    size = (6, (df["Driver"].size) / 3.333)
+    size = (6, (df["Driver"].size / 3.333) + 1)
 
     table = plot_table(df, col_defs, "Driver", size)
 
@@ -546,7 +590,3 @@ def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
 
     return table.figure, table.ax
-
-# Laptimes tables (except filter best/worst)
-# Pitstops table
-#   How to adapt figsize for 1 row or multiple
