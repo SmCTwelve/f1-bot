@@ -110,17 +110,9 @@ Filters:
 - Best: Show only the fastest stop of the race or from the specified driver's stops
 - Worst: As above, but for the slowest stop.
 
-> `/laptimes [year] [round] [filter]`
+> `/laptimes [year] [round] [tyre]`
 
-View lap times for each driver in the race. Results are based on the best recorded lap for each driver. From this data, results can be narrowed using the filter. Only seasons >=2018.
-
-Filters:
-
-- Ranked (default): Sort all drivers by their time
-- Top 5: Show the top five results based on fastest laps
-- Bottom 5: Show the slowest five drivers based on fastest laps
-- Fastest: Only show the top fastest lap
-- Slowest: Only show the bottom fastest lap
+View the fastest lap times for each driver in the race. Results are based on the best recorded laps for each driver. Only seasons >=2018. Select a tyre from the available choices to get the fastest laps on a specific tyre.
 
 > `/sectors [year] [round] [tyre]`
 

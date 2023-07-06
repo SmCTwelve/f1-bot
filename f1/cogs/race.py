@@ -39,6 +39,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, session)
         data = await stats.format_results(s, session)
+
         table, ax = stats.results_table(data, session)
         ax.set_title(
             f"{ev['EventDate'].year} {ev['EventName']} - {session}"
@@ -82,31 +83,29 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ))
 
     @commands.slash_command(description="Best ranked lap times per driver.")
-    async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+    async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                       tyre: options.TyreOption):
         """Best ranked lap times per driver in the race. All parameters optional.
 
         Only the best recorded lap for each driver in the race.
 
         Usage:
         ----------
-            /laptimes [season] [round] \n
+            /laptimes [season] [round] [tyre]
         """
         await utils.check_season(ctx, year)
         event = await stats.to_event(year, round)
+        s = await stats.load_session(event, "R", laps=True)
+        data = stats.fastest_laps(s, tyre)
 
-        # Fetch and sort laptime data from the race results
-        res = await ergast.get_best_laps(event["RoundNumber"], year)
-        sorted_times = utils.rank_best_lap_times(res)
+        # Get the table
+        table, ax = stats.laptime_table(data)
+        ax.set_title(
+            f"{event['EventDate'].year} {event['EventName']}\nFastest Lap Times"
+        ).set_fontsize(12)
 
-        # Apply the ranking - best lap per driver by default
-        ranking = str(filter).lower()
-        filtered_laps = utils.filter_times(sorted_times, ranking)
-
-        table = utils.make_table(filtered_laps)
-        await MessageTarget(ctx).send(embed=Embed(
-            title=f"**Laptimes ({filter}) - {res['race']} ({res['season']})**",
-            description=f"```\n{table}\n```"
-        ))
+        f = utils.plot_to_file(table, f"laptimes_{event['EventDate'].year}_{event['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
 
     @commands.slash_command(
         description="View fastest sectors and speed trap based on quick laps. Seasons >= 2018.")
@@ -155,6 +154,8 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             description=f"```\n{table}\n```"
         ))
 
+    @sectors.error
+    @laptimes.error
     @stints.error
     async def on_application_command_error(self, ctx: ApplicationContext, err: ApplicationCommandError):
         """Specifically handle error loading laps data if the session is not supported."""
