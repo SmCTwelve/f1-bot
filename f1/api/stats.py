@@ -37,7 +37,7 @@ def get_session_type(name: str):
 
 def plot_table(df: pd.DataFrame, col_defs: list[ColDef], idx: str, figsize: tuple[float]):
     """Returns plottable table from data."""
-    fig, ax = plt.subplots(figsize=figsize, dpi=300, layout="constrained")
+    fig, ax = plt.subplots(figsize=figsize, dpi=200, layout="constrained")
 
     table = Table(
         df=df,
@@ -457,7 +457,7 @@ def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
     pos_def = ColDef("Pos", width=0.5, textprops={"weight": "bold"}, border="right")
 
     if get_session_type(name) == "R":
-        size = (8.65, 10)
+        size = (8, 10)
         idx = "Pos"
         dnfs = results.loc[~results["Status"].isin(["+1 Lap", "Finished"]), "Pos"].astype(int).values
         results = results.drop("Status", axis=1)
