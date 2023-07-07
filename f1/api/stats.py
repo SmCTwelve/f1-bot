@@ -367,7 +367,9 @@ def sectors(s: Session, tyre: str = None):
     laps = s.laps.pick_quicklaps()
 
     # Filter by tyre if chosen
-    laps = laps.pick_tyre(tyre)
+    if tyre:
+        laps = laps.pick_tyre(tyre)
+
     if laps["Driver"].size == 0:
         raise MissingDataError("No quick laps available for this tyre.")
 
