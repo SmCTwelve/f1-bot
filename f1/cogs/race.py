@@ -46,7 +46,9 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ).set_fontsize(12)
 
         f = utils.plot_to_file(table, f"results_{s.name}_{ev['EventDate'].year}_{ev['RoundNumber']}")
-        await MessageTarget(ctx).send(file=f)
+        await MessageTarget(ctx).send(
+            file=f,
+            content=f"**{session} Results | {ev['EventDate'].year} {ev['EventName']}**")
 
     @commands.slash_command(description="Race pitstops ranked by duration or filtered to a driver.", name="pitstops")
     async def pitstops(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
@@ -105,7 +107,9 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ).set_fontsize(12)
 
         f = utils.plot_to_file(table, f"laptimes_{event['EventDate'].year}_{event['RoundNumber']}")
-        await MessageTarget(ctx).send(file=f)
+        await MessageTarget(ctx).send(
+            file=f,
+            content=f"**Fastest Laps | {event['EventDate'].year} {event['EventName']}**")
 
     @commands.slash_command(
         description="View fastest sectors and speed trap based on quick laps. Seasons >= 2018.")
@@ -123,7 +127,9 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         ).set_fontsize(12)
 
         f = utils.plot_to_file(table, f"sectors_{yr}_{rd}")
-        await MessageTarget(ctx).send(file=f)
+        await MessageTarget(ctx).send(
+            file=f,
+            content=f"**Sector Times | {yr} {ev['EventName']}**")
 
     @commands.slash_command(description="Tyre compound stints in a race.")
     async def stints(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
