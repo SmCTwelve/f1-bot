@@ -4,9 +4,9 @@ Discord bot to view F1 stats.
 
 ## Description
 
-View Formula 1 statistics within Discord using the [Pycord](https://pycord.dev/) library. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library.
+View Formula 1 statistics within Discord using the [Pycord](https://pycord.dev/) library. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library. Results are processed using Pandas and matplotlib.
 
-Displays a range of data including race results, championship standings, lap times, pitstops and telemetry. Additionally, the bot can output visualisations such as tyre strategy, lap distributions, driver speed comparisons and more.
+The bot displays a range of data including race results, championship standings, lap times, pitstops and telemetry. Additionally, the bot can output visualisations such as tyre strategy, lap distributions, driver speed comparisons and more.
 
 <p align="center"><img src="https://i.imgur.com/bdd7emE.gif" /></p>
 
@@ -72,23 +72,23 @@ Ergast considers the "last" round to be the last _complete_ race weekend. So whe
 
 Championship and event schedule related commands.
 
-> `/wdc [year]`
+> #### `/wdc [year]`
 
 View Driver Championship standings.
 
-> `/wcc [year]`
+> #### `/wcc [year]`
 
 View Constructors Championship standings.
 
-> `/grid [year]`
+> #### `/grid [year]`
 
 View all drivers and teams participating in the season.
 
-> `/schedule`
+> #### `/schedule`
 
 Get the current season calendar.
 
-> `/next`
+> #### `/next`
 
 Info and countdown to the next race weekend.
 
@@ -96,11 +96,11 @@ Info and countdown to the next race weekend.
 
 Driver and session data.
 
-> `/results [year] [round] [session]`
+> #### `/results [year] [round] [session]`
 
 View results classification for the session. Defaults to latest race results with no parameters.
 
-> `/pitstops [year] [round] [filter] [driver]`
+> #### `/pitstops [year] [round] [filter] [driver]`
 
 View pitstop data. By default this shows the fastest pitstop for each driver. Results can be refined by specifying a driver and/or filter. Data unavailable for seasons before 2018.
 
@@ -110,15 +110,15 @@ Filters:
 - Best: Show only the fastest stop of the race or from the specified driver's stops
 - Worst: As above, but for the slowest stop.
 
-> `/laptimes [year] [round] [tyre]`
+> #### `/laptimes [year] [round] [tyre]`
 
 View the fastest lap times for each driver in the race. Results are based on the best recorded laps for each driver. Only seasons >=2018. Select a tyre from the available choices to get the fastest laps on a specific tyre.
 
-> `/sectors [year] [round] [tyre]`
+> #### `/sectors [year] [round] [tyre]`
 
 View the fastest sector times and speed trap for each driver. Based on recorded quick laps. Optionally filter by tyre compound using the menu selection if there is enough lap data for the tyre. Only season >= 2018.
 
-> `/stints [year] [round] [driver]`
+> #### `/stints [year] [round] [driver]`
 
 View race tyre compound stints and laps driven. Optionally refine results to a specific driver. Only seasons >=2018.
 
@@ -126,44 +126,44 @@ View race tyre compound stints and laps driven. Optionally refine results to a s
 
 Commands in this group are prefixed by `/plot <command>` and will output a Discord image file. Some data requiring lap telemetry may take some time to process if results have not yet been cached.
 
-> `/plot position [year] [round]`
+> #### `/plot position [year] [round]`
 
 Show a line plot of driver position changes during the race.
 
-> `/plot stints [year] [round]`
+> #### `/plot stints [year] [round]`
 
 Show a stacked bar graph for each driver and their tyre stints.
 
-> `/plot fastestlap [year] [round] [session]`
+> #### `/plot fastestlap [year] [round] [session]`
 
 Display the fastest lap delta for each driver as a bar plot.
 
-> `/plot trackspeed [year] [round] <driver>`
+> #### `/plot trackspeed [year] [round] <driver>`
 
 Show the drivers fastest lap speed telemetry mapped to the track. Driver is _required_.
 
-> `/plot speed [year] [round] [ driver1..driver4 ]`
+> #### `/plot speed [year] [round] [ driver1..driver4 ]`
 
 Plot driver speed telemetry and distance to compare performance in different sectors.
 At least 1 driver must be specified, up to a maximum of 4.
 
-> `/plot gains [year] [round]`
+> #### `/plot gains [year] [round]`
 
 Show the number of places gained or lost per driver during the race.
 
-> `/plot tyre-choice [year] [round] [session]`
+> #### `/plot tyre-choice [year] [round] [session]`
 
 View a pie chart showing distribution of tyre compounds in the session.
 
-> `/plot gapdiff <driver1> <driver2> [year] [round]`
+> #### `/plot gapdiff <driver1> <driver2> [year] [round]`
 
 Plot the lap time difference between two drivers for all laps, excluding pitstops and slow laps.
 Both `first` and `second` must be provided as a driver name, code or number.
 
-> `/plot lap-distribution [year] [round]`
+> #### `/plot lap-distribution [year] [round]`
 
 Plot a violin plot and swarm plot showing the distributions of lap times and tyre compound.
 
-> `/plot tyre-performance [year] [round]`
+> #### `/plot tyre-performance [year] [round]`
 
 View a line graph comparing the average performance of each tyre compound over the life of the tyre.
