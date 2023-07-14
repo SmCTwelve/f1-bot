@@ -46,13 +46,13 @@ All commands are implemented as Discord slash commands. Once the commands have s
 
 **Parameters**:
 
-Some commands take specific parameters to refine the results, such as to filter to a specific driver. All `year` and `round` parameters are optional and if not specified will default to the most recent race. Commands which include lap data will not work for seasons before 2018.
+Some commands take parameters to refine the results, such as to filter to a specific driver. All `year` and `round` parameters are optional and if not specified will default to the most recent race. Commands which include lap data will not work for seasons before 2018.
 
-- `round`: This can be the circuit location, GP name or the round number of the season. A partial name will attempt to search for a matching event. E.g. "Bahrain", "Silverstone".
+- `round`: This can be the circuit location, GP name or the round number in the season. A partial name will attempt to search for a matching event. E.g. "Bahrain", "Silverstone". Try to be specific to prevent false matches.
 
-- `driver`: Can be a partial driver name, 3-letter abbreviation or number.
+- `driver`: Can be the driver's partial name, 3-letter abbreviation or number.
 
-- `session`: Some results can be filtered to a session, e.g. FP1, Sprint, Qualifying etc. by choosing an option from the Discord menu. For Sprint Weekends before 2023, "Sprint Shootout" is the equivilent of "Sprint Qualifying".
+- `session`: Some results can be filtered to a session, e.g. FP1, Sprint, Qualifying etc. by choosing an option from the Discord menu. For Sprint Weekends before 2023, "Sprint Shootout" is the equivalent of "Sprint Qualifying".
 
 e.g.
 
@@ -66,7 +66,7 @@ e.g.
 
 Data is sourced from Ergast API and official F1 timing data (through FastF1) and is typically updated within a few hours of a session.
 
-Ergast considers the "last" round to be the last _complete_ race weekend. So when using commands without specifying a `round` during a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
+Ergast considers the "last" round to be the last _complete_ race weekend. So when using commands with the default `round` during a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
 
 ## Season
 
