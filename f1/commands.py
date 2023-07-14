@@ -4,15 +4,11 @@ import re
 
 from discord import ApplicationCommandInvokeError, ApplicationContext, Message
 from discord.activity import Activity, ActivityType
-from discord.embeds import Embed
 from discord.ext import commands
-from f1 import options
 
-from f1.api import ergast
 from f1.target import MessageTarget
 from f1.config import Config
 from f1.errors import DriverNotFoundError
-import f1.utils
 
 
 logger = logging.getLogger("f1-bot")
@@ -102,69 +98,3 @@ async def on_command_error(ctx: commands.Context, err):
 @bot.event
 async def on_application_command_error(ctx: ApplicationContext, err):
     await handle_errors(ctx, err)
-
-
-# Main command group
-# ==================
-
-
-@commands.slash_command(description="Career stats for a driver.")
-async def career(ctx: ApplicationContext, driver_id: options.DriverOption):
-    """Career stats for the `driver_id`.
-
-    Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
-
-    Parameters:
-    -----------
-    `driver_id`
-        Supported Ergast API ID, e.g. 'alonso', 'michael_schumacher', 'vettel', 'di_resta'.
-
-    Usage:
-    --------
-        !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
-    """
-    target = MessageTarget(ctx)
-
-    driver = await ergast.get_driver_info(driver_id)
-    result = await ergast.get_driver_career(driver)
-    thumb_url_task = asyncio.create_task(f1.utils.get_wiki_thumbnail(driver['url']))
-    season_list = result['data']['Seasons']['years']
-    champs_list = result['data']['Championships']['years']
-
-    embed = Embed(
-        title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
-        url=result['driver']['url'],
-        colour=f1.utils.F1_RED,
-    )
-    embed.set_thumbnail(url=await thumb_url_task)
-    embed.add_field(name='Number', value=result['driver']['number'], inline=True)
-    embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
-    embed.add_field(name='Age', value=result['driver']['age'], inline=True)
-    embed.add_field(
-        name='Seasons',
-        # Total and start to latest season
-        value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
-        inline=True
-    )
-    embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
-    embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
-    embed.add_field(
-        name='Championships',
-        # Total and list of seasons
-        value=(
-            f"{result['data']['Championships']['total']} " + "\n"
-            + ", ".join(y for y in champs_list if champs_list)
-        ),
-        inline=False
-    )
-    embed.add_field(
-        name='Teams',
-        # Total and list of teams
-        value=(
-            f"{result['data']['Teams']['total']} " + "\n"
-            + ", ".join(t for t in result['data']['Teams']['names'])
-        ),
-        inline=False
-    )
-
-    await target.send(embed=embed)

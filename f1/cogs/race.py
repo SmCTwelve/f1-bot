@@ -200,6 +200,67 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
         await MessageTarget(ctx).send(embed=emd)
 
+    @commands.slash_command(description="Career stats for a driver.")
+    async def career(ctx: ApplicationContext, driver: options.DriverOption):
+        """Career stats for the `driver_id`.
+
+        Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
+
+        Parameters:
+        -----------
+        `driver_id`
+            Supported Ergast API ID, e.g. 'alonso', 'michael_schumacher', 'vettel', 'di_resta'.
+
+        Usage:
+        --------
+            !f1 career vettel | VET | 55   Get career stats for Sebastian Vettel.
+        """
+        target = MessageTarget(ctx)
+
+        driver = await ergast.get_driver_info(driver)
+        result = await ergast.get_driver_career(driver)
+        thumb_url_task = asyncio.create_task(utils.get_wiki_thumbnail(driver['url']))
+        season_list = result['data']['Seasons']['years']
+        champs_list = result['data']['Championships']['years']
+
+        embed = Embed(
+            title=f"**{result['driver']['firstname']} {result['driver']['surname']} Career**",
+            url=result['driver']['url'],
+            colour=utils.F1_RED,
+        )
+        embed.set_thumbnail(url=await thumb_url_task)
+        embed.add_field(name='Number', value=result['driver']['number'], inline=True)
+        embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
+        embed.add_field(name='Age', value=result['driver']['age'], inline=True)
+        embed.add_field(
+            name='Seasons',
+            # Total and start to latest season
+            value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
+            inline=True
+        )
+        embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
+        embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
+        embed.add_field(
+            name='Championships',
+            # Total and list of seasons
+            value=(
+                f"{result['data']['Championships']['total']} " + "\n"
+                + ", ".join(y for y in champs_list if champs_list)
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name='Teams',
+            # Total and list of teams
+            value=(
+                f"{result['data']['Teams']['total']} " + "\n"
+                + ", ".join(t for t in result['data']['Teams']['names'])
+            ),
+            inline=False
+        )
+
+        await target.send(embed=embed)
+
 
 def setup(bot: discord.Bot):
     bot.add_cog(Race(bot))
