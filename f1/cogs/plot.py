@@ -230,7 +230,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
     @plot.command(description="Compare fastest lap telemetry between two drivers.")
     async def telemetry(self, ctx: ApplicationContext,
                         driver1: discord.Option(str, required=True), driver2: discord.Option(str, default=None),
-                        year: options.SeasonOption, round: options.RoundOption, session: options.SeasonOption):
+                        year: options.SeasonOption, round: options.RoundOption, session: options.SessionOption):
         """Plot lap telemetry (speed, distance, rpm, gears, brake) between two driver's fastest lap."""
 
         await utils.check_season(ctx, year)
@@ -348,8 +348,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(file=f, content="**Lap Telemetry**")
 
     @plot.command(description="Compare fastest driver sectors on track map.")
-    async def track_sectors(self, ctx: ApplicationContext, first: options.DriverOptionRequired,
-                            second: options.DriverOptionRequired, year: options.SeasonOption,
+    async def track_sectors(self, ctx: ApplicationContext, first_driver: options.DriverOptionRequired,
+                            second_driver: options.DriverOptionRequired, year: options.SeasonOption,
                             round: options.RoundOption, session: options.SessionOption):
         """Plot a track map showing where a driver was faster based on minisectors."""
         await utils.check_season(ctx, year)
@@ -362,7 +362,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         yr, rd = ev["EventDate"].year, ev["RoundNumber"]
         drivers = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
-                   for d in (first, second)]
+                   for d in (first_driver, second_driver)]
 
         # Get telemetry and minisectors for each driver
         telemetry = stats.minisectors([
