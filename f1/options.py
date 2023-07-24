@@ -8,7 +8,11 @@ RankedPitstopFilter = Option(
 
 DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname")
 
-DriverOptionRequired = Option(str, required=True, description="Driver number, 3-letter code or surname")
+
+class DriverOptionRequired(Option):
+    def __init__(self, input_type=str, description="Driver number, 3-letter code or surname", **kwargs) -> None:
+        super().__init__(input_type, description, **kwargs)
+
 
 SectorFilter = Option(
     str,
