@@ -8,6 +8,8 @@ RankedPitstopFilter = Option(
 
 DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname")
 
+DriverOptionRequired = Option(str, required=True, description="Driver number, 3-letter code or surname")
+
 SectorFilter = Option(
     str,
     choices=["Time", "Speed"],
