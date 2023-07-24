@@ -191,6 +191,19 @@ class UtilityTests(BaseTest):
         td = pd.Timedelta("")
         self.assertEqual(utils.format_timedelta(td), "")
 
+    def test_find_driver(self):
+        data = models.driver_info_json["MRData"]["DriverTable"]["Drivers"]
+        res = utils.find_driver("ALO", data)
+        self.assertIsInstance(utils.find_driver("ALO", data), dict)
+        self.assertIsInstance(utils.find_driver("Fernando", data), dict)
+        self.assertIsInstance(utils.find_driver("14", data), dict)
+        self.assertEqual(res["driverId"], "alonso")
+
+    def test_find_driver_invalid(self):
+        data = models.driver_info_json["MRData"]["DriverTable"]["Drivers"]
+        with self.assertRaises(DriverNotFoundError):
+            utils.find_driver("TEST", data)
+
 
 class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
