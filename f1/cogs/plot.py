@@ -11,6 +11,7 @@ from discord.ext import commands
 from fastf1.core import Laps
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
+from matplotlib.colors import ListedColormap, Normalize
 
 from f1 import options, utils
 from f1.api import ergast, stats
@@ -127,8 +128,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Show a bar chart comparing fastest laps in the session.")
-    async def fastestlap(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                         session: options.SessionOption):
+    async def fastestlaps(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                          session: options.SessionOption):
         """Bar chart for each driver's fastest lap in `session`."""
         await utils.check_season(ctx, year)
 
@@ -177,8 +178,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="View driver speed on track.")
-    async def trackspeed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                         driver: options.DriverOption):
+    async def track_speed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                          driver: options.DriverOption):
         """Get the `driver` fastest lap data and use the lap position and speed
         telemetry to produce a track visualisation.
         """
@@ -192,7 +193,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         session = await stats.load_session(ev, "R", laps=True, telemetry=True)
 
         # Filter laps to the driver's fastest and get telemetry for the lap
-        drv_id = utils.find_driver(driver, await ergast.get_all_drivers(year, round))["code"]
+        drv_id = utils.find_driver(driver, await ergast.get_all_drivers(year, ev["RoundNumber"]))["code"]
         lap = session.laps.pick_driver(drv_id).pick_fastest()
         pos = lap.get_pos_data()
         car = lap.get_car_data()
@@ -226,59 +227,197 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = utils.plot_to_file(fig, f"plot_trackspeed-{drv_id}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
-    @plot.command(description="Compare the lap speed of up to 4 drivers.")
-    async def speed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                    driver1: str = None, driver2: str = None,
-                    driver3: str = None, driver4: str = None):
-        """Compare up to 4 drivers fastest lap speed as a line graph."""
+    @plot.command(description="Compare fastest lap telemetry between two drivers.")
+    async def telemetry(self, ctx: ApplicationContext,
+                        driver1: discord.Option(str, required=True), driver2: discord.Option(str, default=None),
+                        year: options.SeasonOption, round: options.RoundOption, session: options.SeasonOption):
+        """Plot lap telemetry (speed, distance, rpm, gears, brake) between two driver's fastest lap."""
 
         await utils.check_season(ctx, year)
 
-        drivers = [driver1, driver2, driver3, driver4]
-        if all(d is None for d in drivers):
-            raise ValueError("At least one driver required.")
-
-        # Load event data and driver IDs
         ev = await stats.to_event(year, round)
-        s = await stats.load_session(ev, 'R', laps=True, telemetry=True)
-        drv_ids = [utils.find_driver(d, await ergast.get_all_drivers(year, round))["code"]
+        yr, rd = ev["EventDate"].year, ev["RoundNumber"]
+        s = await stats.load_session(ev, session, laps=True, telemetry=True)
+        drivers = [driver1, driver2]
+        drv_ids = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
                    for d in drivers if d is not None]
 
-        fig, ax = plt.subplots(figsize=(8.5, 6), dpi=DPI)
-
-        # Plot each driver's fastest lap telemetry
-        for id in drv_ids:
-            lap = s.laps.pick_driver(id).pick_fastest()
-            tel = lap.get_car_data().add_distance()
-            ax.plot(tel["Distance"], tel["Speed"], color=fastf1.plotting.driver_color(id), label=id)
-
-        # Calculate sector distances from the fastest lap
-        fl = s.laps.pick_fastest()
-        max_dis = fl.get_car_data().add_distance()["Distance"].max()
+        # Get data for each driver
+        data: dict[str, pd.DataFrame] = {}
+        for d in drv_ids:
+            tel = s.laps.pick_driver(d).pick_fastest().get_car_data().add_distance()
+            data[d] = tel
 
         # Determine the x-axis position for each sector divider
         # based on the percentage of each sector time from the total lap time
+        fl = s.laps.pick_fastest()
+        max_dis = fl["Distance"].max()
         s1_dis = max_dis * (fl["Sector1Time"] / fl["LapTime"])
         s2_dis = s1_dis + max_dis * (fl["Sector2Time"] / fl["LapTime"])
 
-        # Add sector dividers
-        ylim = ax.get_ylim()
-        ax.vlines([s1_dis, s2_dis], ylim[0], ylim[1],
-                  colors="w", linestyles="dashed", linewidth=1, zorder=0, alpha=0.25)
+        # Plot 6 subplots for each telemetry graph
+        fig, ax = plt.subplots(6, figsize=(18, 14), dpi=DPI,
+                               gridspec_kw={"height_ratios": [3, 2, 1, 1, 2, 1]},
+                               sharex=True)
+
+        for d, t in data.items():
+            c = fastf1.plotting.driver_color(d)
+            # Speed
+            ax[0].plot(
+                t["Distance"].values,
+                t["Speed"].values,
+                color=c,
+                label=d
+            )
+            # Throttle
+            ax[1].plot(
+                t["Distance"].values,
+                t["Throttle"].values,
+                color=c,
+                label=d
+            )
+            # Brake
+            ax[2].plot(
+                t["Distance"].values,
+                t["Brake"].values,
+                color=c,
+                label=d
+            )
+            # Gear
+            ax[3].plot(
+                t["Distance"].values,
+                t["nGear"].values,
+                color=c,
+                label=d
+            )
+            # RPM
+            ax[4].plot(
+                t["Distance"].values,
+                t["RPM"].values,
+                color=c,
+                label=d
+            )
+            # DRS
+            ax[5].plot(
+                t["Distance"].values,
+                t["DRS"].values,
+                color=c,
+                label=d
+            )
 
         # Presentation
-        ax.text(s1_dis - 300, ylim[1], "S1")
-        ax.text(s2_dis - 300, ylim[1], "S2")
-        ax.text(max_dis, ylim[1], "S3")
-        ax.grid(True, axis="y", alpha=0.1)
-        plt.xlabel("Distance (m)")
-        plt.ylabel("Speed (km/h)")
-        plt.title(f"Fastest Lap Comparison \n {ev['EventName']} ({ev['EventDate'].year})")
-        plt.legend(loc="lower left")
-        plt.tight_layout()
+        ax[0].set_ylabel("Speed (kph)")
+        ax[0].legend(loc="lower left")
+        ax[0].text(s1_dis - 200, ax[0].get_ylim()[0], "S1")
+        ax[0].text(s2_dis - 200, ax[0].get_ylim()[0], "S2")
+        ax[0].text(max_dis, ax[0].get_ylim()[0], "S3")
 
-        f = utils.plot_to_file(fig, f"plot_telcompare-{ev['EventDate'].year}-{ev['RoundNumber']}")
-        await MessageTarget(ctx).send(file=f)
+        ax[1].set_ylabel("Throttle %")
+        ax[2].set_ylabel("Brake")
+
+        ax[3].set_ylabel("Gear")
+        ax[3].set_ylim(bottom=1)
+
+        ax[4].set_ylabel("RPM")
+
+        ax[5].set_ylabel("DRS")
+        ax[5].set_yticklabels([""])
+        ax[5].set_xlabel("Distance (m)")
+
+        laptimes = [
+            utils.format_timedelta(
+                s.laps.pick_driver(d).pick_fastest()["LapTime"]
+            ) for d in drv_ids
+        ]
+
+        ax[0].set_title(
+            f"Lap Comparison - {session} - {yr} {ev['EventName']}\n" +
+            f"{drv_ids[0]}: {laptimes[0]}" +
+            f" | {drv_ids[1]}: {laptimes[1]}" if len(laptimes) > 1 else ""
+        ).set_fontsize(18)
+
+        # Show sector dividers
+        for a in ax:
+            a.yaxis.label.set_fontsize(13)
+            ylim = a.get_ylim()
+            a.vlines([s1_dis, s2_dis], ylim[0], ylim[1], colors="w",
+                     linestyles="dotted", linewidth=1, zorder=0, alpha=0.5)
+
+        # File
+        f = utils.plot_to_file(fig, f"plt_telemetry_{yr}_{rd}_{'-'.join(drv_ids)}")
+        await MessageTarget(ctx).send(file=f, content="**Lap Telemetry**")
+
+    @plot.command(description="Compare fastest driver sectors on track map.")
+    async def track_sectors(self, ctx: ApplicationContext, first: options.DriverOptionRequired,
+                            second: options.DriverOptionRequired, year: options.SeasonOption,
+                            round: options.RoundOption, session: options.SessionOption):
+        """Plot a track map showing where a driver was faster based on minisectors."""
+        await utils.check_season(ctx, year)
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, session, laps=True, telemetry=True)
+
+        # Check API support
+        if not s.f1_api_support:
+            raise MissingDataError("Session does not support lap data.")
+
+        yr, rd = ev["EventDate"].year, ev["RoundNumber"]
+        drivers = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
+                   for d in (first, second)]
+
+        # Get telemetry and minisectors for each driver
+        telemetry = stats.minisectors([
+            s.laps.pick_driver(d).pick_fastest()
+            for d in drivers
+        ])
+
+        # Get the mean time for each minisector per driver
+        mTimes = telemetry.groupby(["mSector", "Driver"])["Time"].mean().reset_index()
+
+        # Find the fastest driver in each minisector
+        fastest = mTimes.loc[
+            mTimes.groupby(["mSector"])["Time"].idxmin(),
+            ["mSector", "Driver"]
+        ].rename(columns={"Driver": "Fastest"})
+        telemetry = telemetry.merge(fastest, on=["mSector"]).sort_values(by=["Distance"])
+
+        # Assign fastest driver to int for plotting
+        telemetry.loc[telemetry["Fastest"] == drivers[0], ["Fastest"]] = 1
+        telemetry.loc[telemetry["Fastest"] == drivers[1], ["Fastest"]] = 2
+
+        # Reshape positional data to 3-d array of [X, Y] segments on track
+        # (num of samples) x (sample row) x (x and y pos)
+        # Then stack the points to get the beginning and end of each segment so they can be coloured
+        points = np.array([telemetry["X"].values, telemetry["Y"].values]).T.reshape(-1, 1, 2)
+        segs = np.concatenate([points[:-1], points[1:]], axis=1)
+        fastest_drivers = telemetry["Fastest"].astype(float).values
+
+        fig, ax = plt.subplots(sharex=True, sharey=True, figsize=(10, 8), dpi=DPI)
+        ax.axis("off")
+
+        # Create track outline from pos
+        ax.plot(telemetry["X"].values, telemetry["Y"].values,
+                color="black",
+                linestyle="-",
+                linewidth=12,
+                zorder=0)
+
+        # Map minisector segments to fastest driver colour
+        cmap = ListedColormap([fastf1.plotting.driver_color(d) for d in drivers])
+        lc = LineCollection(segs, norm=Normalize(1, cmap.N + 1), cmap=cmap, linestyle="-", linewidth=4)
+        lc.set_array(fastest_drivers)
+
+        # Add sectors to plot
+        sectors = ax.add_collection(lc)
+
+        # Add colorbar legend
+        cax = fig.add_axes([0.15, 0.1, 0.1, 0.02])
+        fig.colorbar(sectors, cax=cax, location="bottom", ticks=[1.5, 2.5]).set_ticklabels([d for d in drivers])
+        ax.set_title(
+            f"Fastest Sectors | {drivers[0]} v {[drivers[1]]}\n{yr} {ev['EventName']} - {session}"
+        ).set_fontsize(12)
+
+        f = utils.plot_to_file(fig, f"plt_trksectors_{yr}_{rd}")
+        await MessageTarget(ctx).send(file=f, content="**Fastest Sector Comparison**")
 
     @plot.command(description="Show the position gains/losses per driver in the race.")
     async def gains(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
@@ -342,16 +481,17 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Compare laptime difference between two drivers.")
-    async def gapdiff(self, ctx: ApplicationContext,
-                      first: discord.Option(str, required=True), second: discord.Option(str, required=True),
-                      year: options.SeasonOption, round: options.RoundOption):
+    async def gap(self, ctx: ApplicationContext,
+                  first: options.DriverOptionRequired, second: options.DriverOptionRequired,
+                  year: options.SeasonOption, round: options.RoundOption):
         """Plot the lap times between two drivers for all laps, excluding pitstops and slow laps."""
         await utils.check_season(ctx, year)
 
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, "R", laps=True, telemetry=True)
         # Get driver codes from the identifiers given
-        drivers = [await utils.find_driver(d)["code"] for d in (first, second)]
+        drivers = [await utils.find_driver(d, await ergast.get_all_drivers(year, ev["RoundNumber"]))["code"]
+                   for d in (first, second)]
 
         # Group laps using only quicklaps to exclude pitstops and slow laps
         laps = s.laps.pick_drivers(drivers).pick_quicklaps()
