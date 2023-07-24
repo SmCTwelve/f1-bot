@@ -16,6 +16,7 @@
       "program": "${file}",
       "purpose": ["debug-test"],
       "console": "integratedTerminal",
+      "env": { "PYTHONPATH": "${workspaceRoot}" },
       "justMyCode": false
     },
     {
