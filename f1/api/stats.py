@@ -3,15 +3,14 @@ import logging
 from typing import Literal
 
 import fastf1 as ff1
-from fastf1.core import Laps
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 import pandas as pd
-from fastf1.core import Session, SessionResults
+from fastf1.core import Lap, Laps, Session, SessionResults
 from fastf1.ergast import Ergast
 from fastf1.events import Event
-from plottable import Table, ColDef
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from plottable import ColDef, Table
 
 from f1 import utils
 from f1.api import ergast
@@ -276,6 +275,37 @@ async def tyre_stints(session: Session, driver: str = None):
         return stints.loc[stints["Driver"] == drv_code].set_index(["Driver", "Stint"], drop=True)
 
     return stints
+
+
+def minisectors(laps: list[Lap]) -> pd.DataFrame:
+    """Get driver telemetry and calculate the minisectors for each data row based on distacne.
+
+    The `laps` should be loaded from the session.
+
+    Returns
+    ------
+        `DataFrame`: [Driver, Time, Distance, Speed, mSector, X, Y]
+    """
+
+    tel_list = []
+
+    # Load telemetry for the laps
+    for lap in laps:
+        t = lap.get_telemetry()
+        t["Driver"] = lap["Driver"]
+        tel_list.append(t)
+
+    # Create single df with all telemetry
+    telemetry = pd.concat(tel_list).reset_index(drop=True)
+
+    # Assign minisectors to each row based on distance
+    max_dis = telemetry["Distance"].values.max()
+    ms_len = max_dis / 24
+    telemetry["mSector"] = telemetry["Distance"].apply(lambda x: (
+        int((x // ms_len) + 1)
+    ))
+
+    return telemetry.loc["Driver", "Time", "Distance", "Speed", "X", "Y", "mSector"]
 
 
 def team_pace(session: Session):
