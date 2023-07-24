@@ -305,7 +305,7 @@ def minisectors(laps: list[Lap]) -> pd.DataFrame:
         int((x // ms_len) + 1)
     ))
 
-    return telemetry.loc["Driver", "Time", "Distance", "Speed", "X", "Y", "mSector"]
+    return telemetry.loc[:, ["Driver", "Time", "Distance", "Speed", "X", "Y", "mSector"]]
 
 
 def team_pace(session: Session):
