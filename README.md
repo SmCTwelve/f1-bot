@@ -118,7 +118,7 @@ View the fastest lap times for each driver in the race. Results are based on the
 
 View the fastest sector times and speed trap for each driver. Based on recorded quick laps. Optionally filter by tyre compound using the menu selection if there is enough lap data for the tyre. Only season >= 2018.
 
-> #### `/stints [year] [round] [driver]`
+> #### `/stints [year] [round]`
 
 View race tyre compound stints and laps driven. Optionally refine results to a specific driver. Only seasons >=2018.
 
@@ -138,11 +138,11 @@ Show the tyre stints for each driver as a stacked bar chart.
 
 Compare the delta of each driver's fastest lap as a bar chart.
 
-> #### `/plot track_speed [year] [round] <driver>`
+> #### `/plot track-speed [year] [round] <driver>`
 
 A circuit outline mapped to the driver speed over the lap. Driver is _required_.
 
-> #### `/plot track_sectors <first> <second> [year] [round] [session]`
+> #### `/plot track-sectors <first> <second> [year] [round] [session]`
 
 Compare the fastest driver in each minisector plotted on the track.
 

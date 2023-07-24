@@ -5,5 +5,6 @@
   "editor.formatOnSave": true,
   "python.formatting.provider": "autopep8",
   "python.formatting.autopep8Args": ["--max-line-length", "120", "--experimental"],
-  "[python]": {}
+  "[python]": {},
+  "python.analysis.typeCheckingMode": "off"
 }

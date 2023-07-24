@@ -2,7 +2,8 @@ import logging
 import asyncio
 import re
 
-from discord import ApplicationCommandInvokeError, ApplicationContext, Message
+from discord import ApplicationContext, Message
+from discord.errors import ApplicationCommandInvokeError
 from discord.activity import Activity, ActivityType
 from discord.ext import commands
 
