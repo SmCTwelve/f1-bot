@@ -34,11 +34,19 @@ Or download the latest stable [release](https://github.com/SmCTwelve/f1-bot/rele
 
 ## Usage
 
-Run `python -m main.py` from the root. This will start the bot process and attempt to connect with the provided Token. The console will display log messages according to the level specified in `config.ini` and also output to `logs/f1-bot.log`.
+First activate the virtual environment from the project root with `poetry shell`.
 
-Edit `config.ini` to change message display behaviour or restrict the bot to certain Guilds - this will only sync slash commands to the listed servers rather than being globally available (note this prevents the bot commands from being accessed via DM). There may be a delay as Discord syncs the commands if no Guild is listed.
+To start the bot run `python -m main`. This will attempt to connect using the provided Token (see installation above).
 
-The application relies on caching both to speed up command processing and to respect API limits. Additionally the FastF1 library includes its own data cache. A `/cache` directory will be created in the project root when the bot is run.
+The console will display log messages according to the level specified in `config.ini` and also output to `logs/f1-bot.log`.
+
+Edit `config.ini` to change message display behaviour or restrict the bot to certain Guilds - this will only sync slash commands to the listed servers rather than being globally available (note this prevents the bot commands from being accessed via DM). There may be a delay as Discord syncs the commands.
+
+### Cache
+
+The application relies on caching both to speed up command processing and to respect API limits. Additionally the FastF1 library includes its own data cache.
+
+A `/cache` directory will be created in the project root when the bot is run. This may become large over time with session telemetry (~100 MB per race weekend). You can manually delete the `/cache` folder or specific subfolders, or a script is provided in the root directory: `python -m flushcache`. Make sure the bot is not running. A new cache will be created during the next startup if the entire directory is removed.
 
 # Commands
 
