@@ -385,3 +385,26 @@ best_laps = {
         }
     ]
 }
+
+all_drivers = [
+    {
+        "driverId": "alonso",
+        "permanentNumber": "14",
+        "code": "ALO",
+        "url": "http:\/\/en.wikipedia.org\/wiki\/Fernando_Alonso",
+        "givenName": "Fernando",
+        "familyName": "Alonso",
+        "dateOfBirth": "1981-07-29",
+        "nationality": "Spanish"
+    },
+    {
+        "driverId": "max_verstappen",
+        "permanentNumber": "1",
+        "code": "VER",
+        "url": "http:\/\/en.wikipedia.org\/wiki\/Max_Verstappen",
+        "givenName": "Max",
+        "familyName": "Verstappen",
+        "dateOfBirth": "1981-07-29",
+        "nationality": "Dutch"
+    }
+]

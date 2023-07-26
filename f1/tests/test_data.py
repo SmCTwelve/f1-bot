@@ -1,6 +1,6 @@
 import re
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from datetime import date, datetime
 
 import pandas as pd
@@ -8,7 +8,7 @@ from discord.ext.commands import Bot
 from aiohttp_client_cache import CachedSession
 
 from f1 import utils
-from f1.api import ergast, fetch
+from f1.api import ergast, fetch, stats
 from f1.config import Config
 from f1.errors import MissingDataError, MessageTooLongError, DriverNotFoundError
 from f1.tests.async_test import async_test
@@ -205,6 +205,30 @@ class UtilityTests(BaseTest):
             utils.find_driver("TEST", data)
 
 
+class MockStatsTests(BaseTest):
+
+    @patch('f1.api.stats.ff1.get_event')
+    @patch('f1.api.stats.ergast.race_info')
+    @async_test
+    async def test_to_event_call(self, mock_race: MagicMock, mock_event: MagicMock):
+        mock_race.return_value = {"round": "1"}
+        mock_event.return_value = pd.Series({"round": 1})
+        ev = await stats.to_event("2023", "1")
+        mock_event.assert_called_once_with(year=2023, gp=1)
+        self.assertIsInstance(ev, pd.Series)
+
+    @patch('f1.api.stats.ff1.get_event')
+    @patch('f1.api.stats.ergast.race_info')
+    @async_test
+    async def test_to_event_throws_error(self, mock_race: MagicMock, mock_event: MagicMock):
+        # assume ergast accepts invalid year for sake of test
+        mock_race.return_value = {"round": "1"}
+        mock_event.side_effect = Exception
+        with self.assertRaises(MissingDataError):
+            await stats.to_event("-9999", "1")
+            mock_event.assert_called_once()
+
+
 class MockAPITests(BaseTest):
     """Using mock data models to test response parsing and data output."""
 
@@ -395,9 +419,11 @@ class LiveAPITests(BaseTest):
     async def test_cached_results(self):
         url = "https://ergast.com/api/f1/current/next.json"
         async with CachedSession(cache=fetch.cache) as session:
-            res = await session.get(url=url, expire_after=60)
+            # Test a fresh request
+            res = await session.get(url=url, expire_after=10)
             self.assertEqual(res.from_cache, False)
-            cached_res = await session.get(url=url, expire_after=10)
+            # Old request hasn't expired, should be used
+            cached_res = await session.get(url=url, expire_after=5)
             self.assertEqual(cached_res.from_cache, True)
 
     def tearDown(self):
