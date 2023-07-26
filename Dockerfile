@@ -30,4 +30,4 @@ COPY . .
 # BOT_TOKEN env variable will be read from .env when running container
 # OR set with 'docker run -e'
 
-CMD ["python", "-m", "main.py"]
+CMD ["python", "-m", "main"]
