@@ -4,13 +4,23 @@ Discord bot to view F1 stats.
 
 ## Description
 
-View Formula 1 statistics within Discord using the [Pycord](https://pycord.dev/) library. The bot pulls data from [Ergast](http://ergast.com/mrd/) API and [FastF1](https://github.com/theOehrly/Fast-F1) library. Results are processed using Pandas and matplotlib.
+Delve into the world of Formula 1 data and enhance your server with powerful commands for F1 enthusiasts. 🏎️ No more searching Twitter and Reddit for results and analysis; do it right within Discord!
 
-The bot displays a range of data including race results, championship standings, lap times, pitstops and telemetry. Additionally, the bot can output visualisations such as tyre strategy, lap distributions, driver speed comparisons and more.
+Want to know who had the longest stint on Medium tyres? Which teammate is faster in different track sectors? How consistent is Alonso on which compound? When will Ferrari stop throwing? Answer all your questions (well, most of them) and generate your own insight with this handy bot.
 
-<p align="center"><img src="https://i.imgur.com/bdd7emE.gif" /></p>
+🔧 This is a personal hobby project and has not been tested on a large scale. Contributions and suggestions are appreciated.
 
-This is a personal hobby project and has not been tested on a large scale. Contributions and suggestions are welcome.
+Developed with [Pycord](https://pycord.dev/), the bot harnesses the excellent data from [Ergast](http://ergast.com/mrd/) API and the [FastF1](https://github.com/theOehrly/Fast-F1) library with further analysis using Pandas and matplotlib.
+
+### Features
+
+🏁 View results from any season<br />
+🏆 Championship standings<br />
+⏱️ Lap times and pitstops<br />
+🏎️ Car telemetry<br />
+📊 Driver statistics
+
+Plus generate charts 📈 to compare car performance, laptime distribution, tyre compounds, position gains, race stints and more!
 
 ## Installation
 
@@ -28,27 +38,27 @@ Or download the latest stable [release](https://github.com/SmCTwelve/f1-bot/rele
 
 - Rename `example.config.ini` to `config.ini`
 - Refer to [this guide](https://guide.pycord.dev/getting-started/creating-your-first-bot#creating-the-bot-application) to setup a new Discord bot application, obtain your Token and OAuth2 URL.
-  - Ensure that your bot has these permissions: https://i.imgur.com/7l1WWTV.png
+  - Ensure that your bot has [these permissions](https://i.imgur.com/7l1WWTV.png)
 - Create a `.env` file in the project root containing `BOT_TOKEN=YOUR_BOT_TOKEN`
-  - or manually setup an environment variable named `BOT_TOKEN`
+  - or manually setup an environment variable on your host named `BOT_TOKEN`
 
-A basic Docker config is included for convenience which is suitable for running a VPS with an attatched cache volume.
+A basic Docker config is included for convenience which is suitable for running on a VPS with an attatched cache volume.
 
 ## Usage
 
-First activate the virtual environment (skip if launching from Docker container) from the project root with `poetry shell`.
+First activate the virtual environment (skip if using Docker) from the project root with `poetry shell`.
 
-To start the bot run `python -m main`. This will attempt to connect using the provided Token (see installation above).
+To start the bot run `python -m main`. This will attempt to connect using the env Token (see installation above).
 
 The console will display log messages according to the level specified in `config.ini` and also output to `logs/f1-bot.log`.
 
-Edit `config.ini` to change message display behaviour or restrict the bot to certain Guilds - this will only sync slash commands to the listed servers rather than being globally available (note this prevents the bot commands from being accessed via DM). There may be a delay as Discord syncs the commands.
+Edit `config.ini` to change message display behaviour or restrict the bot to certain Guilds - this will only sync slash commands to the listed servers rather than being globally available (note this will prevent commands being accessible via DM). There may be a delay or some commands missing as Discord syncs the commands to your server.
 
 ### Cache
 
 The application relies on caching both to speed up command processing and to respect API limits. Additionally the FastF1 library includes its own data cache.
 
-A `/cache` directory will be created in the project root when the bot is run. This may become large over time with session telemetry (~100 MB per race weekend). You can manually delete the `/cache` folder or specific subfolders, or a script is provided in the root directory: `python -m flushcache`. Make sure the bot is not running. A new cache will be created during the next startup.
+A `/cache` directory will be created in the project root when the bot is running. This may become large over time with session telemetry (~100 MB per race weekend). You can manually delete the `/cache` folder or specific subfolders, or a script is provided in the root directory: `python -m flushcache`. Make sure the bot is not running. A new cache will be created during the next startup.
 
 If using Docker you manage the cache separately by attatching a volume.
 
@@ -78,7 +88,7 @@ e.g.
 
 Data is sourced from Ergast API and official F1 timing data (through FastF1) and is typically updated within a few hours of a session.
 
-Ergast considers the "last" round to be the last _complete_ race weekend. Therefore, when using commands with the default `round` during a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
+Ergast considers the "last" round to be the last _complete_ race weekend. Therefore, when using commands with the default `round` in the middle of a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
 
 ## Season
 
@@ -139,6 +149,7 @@ View race tyre stints and laps driven. Optionally refine results to a specific d
 ## Visualisations
 
 Commands in this group are prefixed by `/plot <command>` and will output a Discord image file.
+
 Lap telemetry may take some time to process if results have not been cached.
 
 > #### `/plot position [year] [round]`
