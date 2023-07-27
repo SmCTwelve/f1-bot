@@ -1,0 +1,8 @@
+services:
+  bot:
+    image: f1-bot:latest
+    volumes:
+      - cache:/app/cache
+
+volumes:
+  cache:
