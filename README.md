@@ -70,7 +70,9 @@ All commands are implemented as Discord slash commands. Once the commands have s
 
 Some commands take parameters to refine the results, such as to filter to a specific driver. All `year` and `round` parameters are optional and if not specified will default to the most recent race. Commands which include lap data will not work for seasons before 2018.
 
-- `round`: This can be the circuit location, GP name or the round number in the season. A partial name will attempt to search for a matching event. E.g. "Bahrain", "Silverstone". Try to be specific to prevent false matches.
+- `round`: This can be the location, Grand Prix name or the round number in the season. A partial name will attempt to search for a matching event. E.g. "Silverstone", "British".
+
+🔧 Try to be specific to prevent false matches; using the shorthand name "Spa" instead of "Spa-Francorchamps" will return a match for "Spain", so it's better to use the country name "Belgium" instead.
 
 - `driver`: Can be the driver surname, 3-letter abbreviation or number.
 
