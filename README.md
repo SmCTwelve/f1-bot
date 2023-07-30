@@ -137,22 +137,26 @@ Filters:
 > #### `/laptimes [year] [round] [tyre]`
 
 View the fastest lap times for each driver in the race. Based on valid PB laps for each driver. Only seasons >=2018.
-Select a tyre from the available choices to get the fastest laps on a specific compound.
+
+Select a `tyre` from the available choices to get the fastest laps on a specific compound.
 
 > #### `/sectors [year] [round] [tyre]`
 
-View the fastest sector times and speed trap for each driver. Based on valid quick laps. Optionally filter by tyre compound using the menu selection if there is enough lap data for the tyre.
+View the fastest sector times and speed trap for each driver. Based on valid quick laps. Optionally filter by `tyre` compound using the menu selection if there is data available.
+
 Only season >= 2018.
 
 > #### `/stints [year] [round]`
 
-View race tyre stints and laps driven. Optionally refine results to a specific driver. Only seasons >=2018.
+View race tyre stints and laps driven. Optionally refine results to a specific driver.
+
+Only seasons >=2018.
 
 ## Visualisations
 
 Commands in this group are prefixed by `/plot <command>` and will output a Discord image file.
 
-Lap telemetry may take some time to process if results have not been cached.
+🔧 Telemetry data may take some time to process if results have not been cached.
 
 > #### `/plot position [year] [round]`
 
@@ -166,17 +170,20 @@ Show the tyre stints for each driver as a stacked bar chart.
 
 Compare the delta of each driver's fastest lap as a bar chart.
 
-> #### `/plot track-speed [year] [round] <driver>`
+> #### `/plot track-speed <driver> [year] [round]`
 
 A circuit outline mapped to the driver speed over the lap. Driver is _required_.
 
 > #### `/plot track-sectors <first> <second> [year] [round] [session]`
 
-Compare fastest minisector between two drivers plotted on the track.
+Compare minisector times between two drivers plotted on track.
+
+Times are currently taken from each drivers' fastest lap so may not be particularly useful if the drivers were on different compounds.
 
 > #### `/plot telemetry <driver1> [driver2] [year] [round] [session]`
 
 View telemetry graphs for Speed, Throttle, Brake, Gears, RPM and DRS for up to 2 drivers on their fastest lap.
+
 At least 1 driver is required.
 
 > #### `/plot gains [year] [round]`
@@ -199,3 +206,5 @@ Plot a violin plot and swarm plot showing the distributions of lap times and tyr
 > #### `/plot tyre-performance [year] [round]`
 
 View a line graph comparing the average performance of each tyre compound over the life of the tyre.
+
+Data is based on quick laps with a threshold of 105%. This means that some compounds may not appear on the graph even if they were used in the race because the times were too slow. Additionally, track conditions, incidents and weather will influence the accuracy of the tyre life metrics.
