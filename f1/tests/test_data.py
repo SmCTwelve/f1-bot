@@ -204,6 +204,48 @@ class UtilityTests(BaseTest):
         with self.assertRaises(DriverNotFoundError):
             utils.find_driver("TEST", data)
 
+    @patch('f1.utils.plotting.driver_color')
+    def test_driver_or_team_color_with_current_driver(self, mock_driver_color: MagicMock):
+        driver_id = "VER"
+        session = MagicMock()
+        session.date.year = datetime.today().year
+        color = "#0600ef"
+        mock_driver_color.return_value = color
+        res = utils.get_driver_or_team_color(driver_id, session)
+        self.assertEqual(res, color)
+        mock_driver_color.assert_called_once_with(driver_id)
+
+    def test_driver_or_team_color_with_past_driver(self):
+        driver_id = "VET"
+        # Set the mock session and its method return
+        session = MagicMock()
+        session.date.year = datetime.today().year
+        session.get_driver.return_value = {"TeamColor": "vettel"}
+        res = utils.get_driver_or_team_color(driver_id, session)
+        self.assertIsInstance(res, str)
+        self.assertEqual(res, "#vettel")
+        session.get_driver.assert_called_once_with(driver_id)
+
+    def test_driver_or_team_color_with_team_only(self):
+        id = "Renault"
+        # Mock the DataFrame
+        session = MagicMock()
+        session.results = pd.DataFrame(
+            {"TeamName": ["Renault", "Mercedes"],
+             "TeamColor": ["RenaultColor", "MercedesColor"]})
+        res = utils.get_driver_or_team_color(id, session, team_only=True)
+        self.assertEqual(res, "#RenaultColor")
+        session.get_driver.assert_not_called()
+
+    def test_driver_or_team_color_with_past_year(self):
+        id = "VER"
+        session = MagicMock()
+        session.date.year = 2019
+        session.get_driver.return_value = {"TeamColor": "color"}
+        res = utils.get_driver_or_team_color(id, session)
+        self.assertEqual(res, "#color")
+        session.get_driver.assert_called_with(id)
+
 
 class MockStatsTests(BaseTest):
 
