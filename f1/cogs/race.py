@@ -4,7 +4,7 @@ from datetime import datetime
 
 import discord
 import pandas as pd
-from discord import ApplicationCommandError, ApplicationContext, Embed
+from discord import ApplicationContext, Embed
 from discord.ext import commands
 
 from f1 import errors, options, utils
@@ -43,7 +43,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         table, ax = stats.results_table(data, session)
         ax.set_title(
             f"{ev['EventDate'].year} {ev['EventName']} - {session}"
-        ).set_fontsize(12)
+        ).set_fontsize(13)
 
         f = utils.plot_to_file(table, f"results_{s.name}_{ev['EventDate'].year}_{ev['RoundNumber']}")
         await MessageTarget(ctx).send(
@@ -75,14 +75,16 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
         # Process pitstop data
         data = await stats.filter_pitstops(yr, rd, filter, driver)
-        table = utils.make_table(
-            data,
-            fmt="simple", showindex=False)
+        table, ax = stats.pitstops_table(data)
+        ax.set_title(
+            f"{yr} {event['EventName']} | Pitstops ({filter})"
+        ).set_fontsize(13)
 
-        await MessageTarget(ctx).send(embed=Embed(
-            title=f"**Pitstops ({filter})** | {event['EventName']} ({yr})",
-            description=f"```\n{table}\n```"
-        ))
+        f = utils.plot_to_file(table, f"pitstops_{yr}_{rd}")
+        await MessageTarget(ctx).send(
+            content=f"**Pitstops ({filter})** | {event['EventName']} ({yr})",
+            file=f
+        )
 
     @commands.slash_command(description="Best ranked lap times per driver.")
     async def laptimes(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
@@ -104,7 +106,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         table, ax = stats.laptime_table(data)
         ax.set_title(
             f"{event['EventDate'].year} {event['EventName']}\nFastest Lap Times"
-        ).set_fontsize(12)
+        ).set_fontsize(13)
 
         f = utils.plot_to_file(table, f"laptimes_{event['EventDate'].year}_{event['RoundNumber']}")
         await MessageTarget(ctx).send(
@@ -160,17 +162,6 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             description=f"```\n{table}\n```"
         ))
 
-    @sectors.error
-    @laptimes.error
-    @stints.error
-    async def on_application_command_error(self, ctx: ApplicationContext, err: ApplicationCommandError):
-        """Specifically handle error loading laps data if the session is not supported."""
-        if isinstance(err.__cause__, errors.MissingDataError):
-            logger.error(f"Command {ctx.command} failed with\n {err}")
-            await MessageTarget(ctx).send(f":x: {err.__cause__.message}")
-        else:
-            raise err
-
     @commands.slash_command(description="Details and countdown to the next race weekend.")
     async def next(self, ctx: ApplicationContext):
         result = await ergast.get_next_race()
@@ -201,7 +192,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(embed=emd)
 
     @commands.slash_command(description="Career stats for a driver.")
-    async def career(ctx: ApplicationContext, driver: options.DriverOption):
+    async def career(self, ctx: ApplicationContext, driver: options.DriverOptionRequired()):
         """Career stats for the `driver_id`.
 
         Includes total poles, wins, points, seasons, teams, fastest laps, and DNFs.
@@ -229,37 +220,38 @@ class Race(commands.Cog, guild_ids=Config().guilds):
             colour=utils.F1_RED,
         )
         embed.set_thumbnail(url=await thumb_url_task)
-        embed.add_field(name='Number', value=result['driver']['number'], inline=True)
-        embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
         embed.add_field(name='Age', value=result['driver']['age'], inline=True)
+        embed.add_field(name='Nationality', value=result['driver']['nationality'], inline=True)
+        embed.add_field(name='Number', value=result['driver']['number'], inline=False)
+        embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
+        embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
         embed.add_field(
             name='Seasons',
             # Total and start to latest season
             value=f"{result['data']['Seasons']['total']} ({season_list[0]}-{season_list[len(season_list)-1]})",
             inline=True
         )
-        embed.add_field(name='Wins', value=result['data']['Wins'], inline=True)
-        embed.add_field(name='Poles', value=result['data']['Poles'], inline=True)
         embed.add_field(
-            name='Championships',
+            name='Championships :trophy:',
             # Total and list of seasons
-            value=(
-                f"{result['data']['Championships']['total']} " + "\n"
-                + ", ".join(y for y in champs_list if champs_list)
-            ),
+            value=("\n".join(y if champs_list else None for y in champs_list)),
             inline=False
         )
         embed.add_field(
             name='Teams',
             # Total and list of teams
-            value=(
-                f"{result['data']['Teams']['total']} " + "\n"
-                + ", ".join(t for t in result['data']['Teams']['names'])
-            ),
-            inline=False
+            value=("\n".join(t for t in result['data']['Teams']['names'])),
+            inline=True
         )
 
         await target.send(embed=embed)
+
+    async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
+        if isinstance(error.__cause__, (errors.MissingDataError, errors.DriverNotFoundError)):
+            logger.error(f"/{ctx.command} failed with\n {error}")
+            await MessageTarget(ctx).send(f":x: {error.__cause__.message}")
+        else:
+            raise error
 
 
 def setup(bot: discord.Bot):
