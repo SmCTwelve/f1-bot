@@ -7,6 +7,7 @@ from typing import List
 from configparser import ConfigParser
 
 import fastf1
+import fastf1.logger
 from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
 from discord.ext import commands
@@ -124,7 +125,10 @@ class Config:
                 discord_logger.addHandler(file_handler)
 
                 # FastF1 logger config
-                fastf1.set_log_level(logging.WARNING)
+                if level == logging.DEBUG:
+                    fastf1.logger.set_log_level(logging.INFO)
+                else:
+                    fastf1.logger.set_log_level(logging.WARNING)
 
                 # suppress BS4 warning
                 warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
