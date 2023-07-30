@@ -52,7 +52,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         drivers = [session.get_driver(d)["Abbreviation"] for d in session.drivers]
 
         plt.style.use("dark_background")
-        fig, ax = plt.subplots(figsize=(5, 8), dpi=DPI)
+        fig, ax = plt.subplots(figsize=(6, 10), dpi=DPI)
 
         for driver in drivers:
             stints = data.loc[data["Driver"] == driver]
@@ -84,7 +84,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.title(f"Race Tyre Stints - \n {event['EventName']} ({yr})")
         plt.xlabel("Lap Number"),
         plt.grid(False)
-        plt.legend(handles=patches)
+        plt.legend(handles=patches, loc="upper center", ncols=len(patches))
         ax.invert_yaxis()
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -111,7 +111,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         for d in session.drivers:
             laps = session.laps.pick_driver(d)
             id = laps["Driver"].iloc[0]
-            ax.plot(laps["LapNumber"], laps["Position"], label=id, color=fastf1.plotting.driver_color(id))
+            ax.plot(laps["LapNumber"], laps["Position"], label=id,
+                    color=utils.get_driver_or_team_color(id, session, api_only=True))
 
         # Presentation
         plt.title(f"Race Position - {ev['EventName']} ({ev['EventDate'].year})")
@@ -148,7 +149,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         fastest_laps["Delta"] = fastest_laps["LapTime"] - top["LapTime"]
 
         # Map each driver to their team colour
-        clr = [fastf1.plotting.team_color(t) for t in fastest_laps["Team"].values]
+        clr = [utils.get_driver_or_team_color(t, s, team_only=True)
+               for t in fastest_laps["Team"].values]
 
         # Plotting
         fig, ax = plt.subplots(figsize=(8, 6.75), dpi=DPI)
@@ -261,7 +263,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                                sharex=True)
 
         for d, t in data.items():
-            c = fastf1.plotting.driver_color(d)
+            c = utils.get_driver_or_team_color(d, s)
             # Speed
             ax[0].plot(
                 t["Distance"].values,
@@ -403,7 +405,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 zorder=0)
 
         # Map minisector segments to fastest driver colour
-        cmap = ListedColormap([fastf1.plotting.driver_color(d) for d in drivers])
+        cmap = ListedColormap([utils.get_driver_or_team_color(d, s) for d in drivers])
         lc = LineCollection(segs, norm=Normalize(1, cmap.N + 1), cmap=cmap, linestyle="-", linewidth=4)
         lc.set_array(fastest_drivers)
 
@@ -506,7 +508,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 t["LapNumber"],
                 t["LapTime"],
                 label=d,
-                color=fastf1.plotting.driver_color(d)
+                color=utils.get_driver_or_team_color(d, s)
             )
 
         plt.title(f"Lap Difference -\n{ev['EventName']} ({ev['EventDate'].year})")
@@ -546,7 +548,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                        inner=None,
                        scale="area",
                        order=labels,
-                       palette=[fastf1.plotting.driver_color(d) for d in labels])
+                       palette=[utils.get_driver_or_team_color(d, s) for d in labels])
 
         sns.swarmplot(data=laps,
                       x="Driver",

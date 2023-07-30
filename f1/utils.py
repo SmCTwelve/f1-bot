@@ -9,6 +9,8 @@ from discord import ApplicationContext, Colour, File
 from discord.ext import commands
 from matplotlib.figure import Figure
 from tabulate import tabulate
+from fastf1.core import Session
+from fastf1 import plotting
 
 from f1.api.fetch import fetch
 from f1.config import CACHE_DIR
@@ -308,3 +310,25 @@ def plot_to_file(fig: Figure, name: str):
         buffer.seek(0)
         file = File(buffer, filename=f"{name}.png")
         return file
+
+
+def get_driver_or_team_color(id: str, session: Session, team_only=False, api_only=False):
+    """Tries to get the color from `fastf1.plotting` or fallback to the team color from F1 API.
+    Use `team_only=True` when searching team name instead of driver. Use `api_only=True` to
+    get driver team color from F1 API instead of fastf1.
+    """
+
+    if team_only:
+        return "#" + str(session.results.loc[
+            session.results["TeamName"] == id,
+            "TeamColor"
+        ].values[0])
+
+    if not api_only and (int(session.date.year) == current_year()):
+        try:
+            c = plotting.driver_color(id)
+            return c
+        except KeyError:
+            pass
+
+    return f"#{session.get_driver(id)['TeamColor']}"
