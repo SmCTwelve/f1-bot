@@ -46,6 +46,21 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         ff1_cache.set_enabled()
         logger.warning("Cache re-enabled after timeout")
 
+    @commands.slash_command()
+    async def help(self, ctx: ApplicationContext):
+        info = await self.bot.application_info()
+        emd = Embed(
+            title=f"{info.name}",
+            description="Type `/command` and choose parameters",
+            url="https://github.com/SmCTwelve/f1-bot/blob/v2/README.md#commands",
+            colour=utils.F1_RED
+        )
+        emd.set_thumbnail(url=info.icon.url)
+        emd.add_field(
+            name="",
+            value="[Available commands description](https://github.com/SmCTwelve/f1-bot/blob/v2/README.md#commands)")
+        await MessageTarget(ctx).send(embed=emd)
+
     @commands.slash_command(description="Bot information and status.")
     async def info(self, ctx: ApplicationContext):
         uptime = self.get_uptime()
@@ -70,6 +85,7 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
             colour=utils.F1_RED
         )
         emd.set_thumbnail(url=app_info.icon.url)
+        emd.add_field(name="Help", value="https://github.com/SmCTwelve/f1-bot", inline=False)
         emd.add_field(name="Owner", value=app_info.owner.name, inline=True)
         emd.add_field(name="Uptime", value=f"{uptime[0]}d, {uptime[1]}h, {uptime[2]}m", inline=True)
         emd.add_field(name="Ping", value=f"{latency} ms", inline=True)
@@ -78,7 +94,7 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
 
         await MessageTarget(ctx).send(embed=emd)
 
-    @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes.")
+    @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes (default 5).")
     @default_permissions(administrator=True)
     async def disable_cache(self, ctx: ApplicationContext, minutes: int = 5):
         """Temporarily disable result caching. Will automatically re-enable the
