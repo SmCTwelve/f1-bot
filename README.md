@@ -4,7 +4,7 @@ Discord bot to view F1 stats.
 
 ## Description
 
-Delve into the world of Formula 1 data and enhance your server with powerful commands for F1 enthusiasts. 🏎️ No more searching Twitter and Reddit for results and analysis; do it right within Discord!
+Delve into the world of Formula 1 data and enhance your server with powerful commands for F1 enthusiasts. No more searching Twitter and Reddit for results and analysis; do it right within Discord!
 
 Want to know who had the longest stint on Medium tyres? Which teammate is faster in different track sectors? How consistent is Alonso on which compound? When will Ferrari stop throwing? Answer all your questions (well, most of them) and generate your own insight with this handy bot.
 
