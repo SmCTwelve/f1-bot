@@ -24,7 +24,7 @@
       "type": "python",
       "request": "launch",
       "program": "${cwd}/main.py",
-      "justMyCode": true
+      "justMyCode": false
     }
   ]
 }
