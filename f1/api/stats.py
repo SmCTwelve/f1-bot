@@ -3,6 +3,7 @@ import logging
 from typing import Literal
 
 import fastf1 as ff1
+import numpy as np
 import pandas as pd
 from fastf1.core import Lap, Laps, Session, SessionResults
 from fastf1.ergast import Ergast
@@ -111,8 +112,16 @@ async def format_results(session: Session, name: str):
     Practice - `[Code, Driver, Team, Fastest, Laps]`
     """
 
+    _session_type = get_session_type(name)
+
+    # Handle missing results data
     try:
         _sr: SessionResults = session.results
+        if _sr["DriverNumber"].size < len(session.drivers):
+            raise Exception
+        if not _session_type == "P" and np.all(_sr["Position"].isna().values):
+            raise Exception
+
     except Exception:
         raise MissingDataError(
             "Session data unavailable. If the session finished recently, check again later."
@@ -128,11 +137,9 @@ async def format_results(session: Session, name: str):
         "TeamName": "Team"
     })
 
-    session_type = get_session_type(name)
-
     # FP1, FP2, FP3
     ###############
-    if session_type == "P":
+    if _session_type == "P":
         # Reload the session to fetch missing lap info
         await asyncio.to_thread(session.load, laps=True, telemetry=False,
                                 weather=False, messages=False, livedata=None)
@@ -159,7 +166,7 @@ async def format_results(session: Session, name: str):
 
     # QUALI / SS
     ############
-    if session_type == "Q":
+    if _session_type == "Q":
         res_df["Pos"] = res_df["Pos"].astype(int)
         qs_res = res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Q1", "Q2", "Q3"]]
 
@@ -228,7 +235,7 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
     df = data.loc[row_mask].sort_values(by="duration").reset_index(drop=True)
 
     # Convert timedelta into seconds for stop duration
-    df["duration"] = df["duration"].transform(lambda x: x.total_seconds())
+    df["duration"] = df["duration"].transform(lambda x: f"{x.total_seconds():.3f}")
 
     # Add driver abbreviations and numbers from driver info dict
     df[["No", "Code"]] = df.apply(lambda x: pd.Series({
@@ -504,7 +511,7 @@ def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
     if get_session_type(name) == "Q":
         size = (10, 10)
         idx = "Pos"
-        col_defs = base_defs.append(ColDef(name="Code", width=0.4)) + [
+        col_defs = base_defs + [pos_def, ColDef(name="Code", width=0.4)] + [
             ColDef(n, width=0.5) for n in ("Q1", "Q2", "Q3")
         ]
 
@@ -537,7 +544,8 @@ def pitstops_table(results: pd.DataFrame) -> tuple[Figure, Axes]:
     ]
 
     # Different sizes depending on amound of data shown with filters
-    table = plot_table(results, col_defs, "Code", figsize=(5, 10))
+    size = (5, (results["Code"].size / 3.333) + 1)
+    table = plot_table(results, col_defs, "Code", figsize=size)
 
     return table.figure, table.ax
 
