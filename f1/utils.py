@@ -113,10 +113,13 @@ def countdown(target: datetime):
     Returns a list containing the string output and tuple of (days, hrs, mins, sec).
     """
     delta = target - datetime.now()
-    d = delta.days if delta.days > 0 else 0
-    # timedelta only stores seconds so calculate mins and hours by dividing remainder
-    h, rem = divmod(delta.seconds, 3600)
-    m, s = divmod(rem, 60)
+    if delta.days < 0:
+        d, h, m, s = (0, 0, 0, 0)
+    else:
+        d = delta.days if delta.days > 0 else 0
+        # timedelta only stores seconds so calculate mins and hours by dividing remainder
+        h, rem = divmod(delta.seconds, 3600)
+        m, s = divmod(rem, 60)
     # text representation
     stringify = (
         f"{pluralize(int(d), 'day')}, "
