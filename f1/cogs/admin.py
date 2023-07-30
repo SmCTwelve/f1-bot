@@ -58,7 +58,9 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         emd.set_thumbnail(url=info.icon.url)
         emd.add_field(
             name="",
-            value="[Available commands description](https://github.com/SmCTwelve/f1-bot/blob/v2/README.md#commands)")
+            value="[Available commands description]"
+            + "(https://github.com/SmCTwelve/f1-bot/wiki/Command-Usage-and-Examples)"
+        )
         await MessageTarget(ctx).send(embed=emd)
 
     @commands.slash_command(description="Bot information and status.")
