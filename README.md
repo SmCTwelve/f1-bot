@@ -64,6 +64,8 @@ If using Docker you manage the cache separately by attatching a volume.
 
 # Commands
 
+[View command output examples](https://github.com/SmCTwelve/f1-bot/wiki/Command-Usage-and-Examples)
+
 All commands are implemented as Discord slash commands. Once the commands have synced with your Guild, they can be accessed with `/command-name`.
 
 **Parameters**:
