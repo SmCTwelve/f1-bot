@@ -8,7 +8,6 @@ import pandas as pd
 import seaborn as sns
 from discord.commands import ApplicationContext
 from discord.ext import commands
-from fastf1.core import Laps
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, Normalize
@@ -137,20 +136,13 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, session, laps=True)
 
-        drivers = s.laps["Driver"].unique()
-
         # Get the fastest lap per driver
-        fastest_laps = Laps(
-            [s.laps.pick_driver(d).pick_fastest() for d in drivers]
-        ).sort_values(by="LapTime").reset_index(drop=True)
-
-        # Calculate the deltas to the fastest overall lap in the session
-        top = fastest_laps.pick_fastest()
-        fastest_laps["Delta"] = fastest_laps["LapTime"] - top["LapTime"]
+        fastest_laps = stats.fastest_laps(s)
+        top = fastest_laps.iloc[0]
 
         # Map each driver to their team colour
-        clr = [utils.get_driver_or_team_color(t, s, team_only=True)
-               for t in fastest_laps["Team"].values]
+        clr = [utils.get_driver_or_team_color(d, s, api_only=True)
+               for d in fastest_laps["Driver"].values]
 
         # Plotting
         fig, ax = plt.subplots(figsize=(8, 6.75), dpi=DPI)
@@ -173,15 +165,15 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.grid(True, which="major", axis="x", zorder=0, alpha=0.2)
         plt.xlabel("Time Delta")
         plt.title(f"{s.name} - {ev['EventName']} ({ev['EventDate'].year})")
-        plt.suptitle(f"Fastest: {utils.format_timedelta(top['LapTime'])} ({top['Driver']})")
+        plt.suptitle(f"Fastest: {top['LapTime']} ({top['Driver']})")
         plt.tight_layout()
 
         f = utils.plot_to_file(fig, f"plt_fastlap-{s.name}-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(name="track-speed", description="View driver speed on track.")
-    async def track_speed(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                          driver: options.DriverOption):
+    async def track_speed(self, ctx: ApplicationContext, driver: options.DriverOptionRequired(),
+                          year: options.SeasonOption, round: options.RoundOption):
         """Get the `driver` fastest lap data and use the lap position and speed
         telemetry to produce a track visualisation.
         """
@@ -237,6 +229,10 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         await utils.check_season(ctx, year)
 
+        ##
+        #  Could refactor to get avg time per minisector from all laps not just fastest
+        ##
+
         ev = await stats.to_event(year, round)
         yr, rd = ev["EventDate"].year, ev["RoundNumber"]
         s = await stats.load_session(ev, session, laps=True, telemetry=True)
@@ -247,7 +243,10 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         # Get data for each driver
         data: dict[str, pd.DataFrame] = {}
         for d in drv_ids:
-            tel = s.laps.pick_driver(d).pick_fastest().get_car_data().add_distance()
+            laps = s.laps.pick_accurate()
+            if d not in laps["Driver"].values:
+                raise MissingDataError(f"No lap data for driver {d}")
+            tel = laps.pick_driver(d).pick_fastest().get_car_data().add_distance()
             data[d] = tel
 
         # Determine the x-axis position for each sector divider
@@ -323,7 +322,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax[4].set_ylabel("RPM")
 
         ax[5].set_ylabel("DRS")
-        ax[5].set_yticklabels([""])
+        ax[5].set_yticks([0, 1])
+        ax[5].set_yticklabels(["", ""])
         ax[5].set_xlabel("Distance (m)")
 
         laptimes = [
@@ -498,7 +498,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                    for d in (first, second)]
 
         # Group laps using only quicklaps to exclude pitstops and slow laps
-        laps = s.laps.pick_drivers(drivers).pick_accurate().pick_quicklaps()
+        laps = s.laps.pick_drivers(drivers).pick_accurate()
         times = laps.loc[:, ["Driver", "LapNumber", "LapTime"]].groupby("Driver")
 
         fig, ax = plt.subplots(figsize=(8, 5), dpi=DPI)
@@ -592,12 +592,13 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         plt.xlabel("Tyre Life")
         plt.ylabel("Lap Time (s)")
         plt.title(f"Tyre Performance - {ev['EventDate'].year} {ev['EventName']}")
+        plt.legend()
         plt.tight_layout()
 
         f = utils.plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
-    async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
+    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
         """Handle loading errors from unsupported API lap data."""
         if isinstance(error.__cause__, (MissingDataError, DriverNotFoundError)):
             logger.error(f"/{ctx.command} failed with\n {error}")
