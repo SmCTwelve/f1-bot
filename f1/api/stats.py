@@ -342,12 +342,12 @@ def team_pace(session: Session):
     return df
 
 
-def fastest_laps(session: Session, tyre: str):
+def fastest_laps(session: Session, tyre: str = None):
     """Get fastest laptimes for all drivers in the session, optionally filtered by `tyre`.
 
     Returns
     ------
-        `DataFrame` [Driver, LapTime, Lap, Tyre, ST]
+        `DataFrame` [Rank, Driver, LapTime, Delta, Lap, Tyre, ST]
 
     Raises
     ------
@@ -373,12 +373,12 @@ def fastest_laps(session: Session, tyre: str):
             "SpeedST": "ST"
         }
     )
-    fastest.index.name = "Rank"
-    fastest.index += 1
+    fastest["Delta"] = fastest["LapTime"] - fastest["LapTime"].min()
+    fastest["Rank"] = np.arange(1, fastest.index.size + 1)
     fastest["LapTime"] = fastest["LapTime"].apply(lambda x: utils.format_timedelta(x))
     fastest[["Lap", "ST"]] = fastest[["Lap", "ST"]].fillna(0.0).astype(int)
 
-    return fastest.loc[:, ["Driver", "LapTime", "Lap",  "Tyre", "ST"]]
+    return fastest.loc[:, ["Rank", "Driver", "LapTime", "Delta", "Lap", "Tyre", "ST"]]
 
 
 def sectors(s: Session, tyre: str = None):
@@ -424,15 +424,11 @@ def sectors(s: Session, tyre: str = None):
     sectors["ST"] = speeds["SpeedST"].astype(int)
 
     # Merge with the finish order to get the data sorted
-    df = pd.merge(finish_order, sectors, left_index=True, right_index=True).reset_index().rename(
-        columns={
-            "Sector1Time": "S1",
-            "Sector2Time": "S2",
-            "Sector3Time": "S3"
-        }
-    )
+    df = pd.merge(finish_order, sectors, left_index=True, right_index=True).reset_index()
     # Convert timestamps to seconds
-    df[["S1", "S2", "S3"]] = df[["S1", "S2", "S3"]].applymap(lambda x: f"{x.total_seconds():.3f}")
+    df[["S1", "S2", "S3"]] = df[
+        ["Sector1Time", "Sector2Time", "Sector3Time"]
+    ].applymap(lambda x: f"{x.total_seconds():.3f}")
 
     return df
 
@@ -496,7 +492,7 @@ def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
     pos_def = ColDef("Pos", width=0.5, textprops={"weight": "bold"}, border="right")
 
     if get_session_type(name) == "R":
-        size = (8, 10)
+        size = (8.5, 10)
         idx = "Pos"
         dnfs = results.loc[~results["Status"].isin(["+1 Lap", "Finished"]), "Pos"].astype(int).values
         results = results.drop("Status", axis=1)
@@ -505,7 +501,7 @@ def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
             ColDef(name="Code", width=0.4),
             ColDef("Grid", width=0.35),
             ColDef("Pts", width=0.35, border="l"),
-            ColDef("Finish", width=0.6, textprops={"ha": "right"}, border="l"),
+            ColDef("Finish", width=0.66, textprops={"ha": "right"}, border="l"),
         ]
 
     if get_session_type(name) == "Q":
@@ -557,18 +553,20 @@ def championship_table(data: list[dict], type: Literal["wcc", "wdc"]) -> tuple[F
     df = pd.DataFrame(data)
     base_defs = [
         ColDef("Pos", width=0.35, textprops={"weight": "bold"}, border="r"),
-        ColDef("Points", width=0.35, textprops={"ha": "right"}),
+        ColDef("Points", width=0.35, textprops={"ha": "right"}, border="l"),
         ColDef("Wins", width=0.35, textprops={"ha": "right"}, border="l"),
     ]
 
     # Driver
     if type == "wdc":
-        col_defs = base_defs + [ColDef("Driver", width=0.9, textprops={"ha": "left"})]
+        size = (5, 10)
+        col_defs = base_defs + [ColDef("Driver", width=0.8, textprops={"ha": "left"})]
     # Constructors
     if type == "wcc":
+        size = (6, 8)
         col_defs = base_defs + [ColDef("Team", width=0.8, textprops={"ha": "left"})]
 
-    table = plot_table(df, col_defs, "Pos", figsize=(6, 10))
+    table = plot_table(df, col_defs, "Pos", figsize=size)
 
     return table.figure, table.ax
 
@@ -592,7 +590,7 @@ def grid_table(data: list[dict]) -> tuple[Figure, Axes]:
 
 def laptime_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     """Return table with fastest lap data per driver."""
-
+    df = df.drop("Delta", axis=1)
     col_defs = [
         ColDef("Rank", width=0.25, textprops={"weight": "bold"}, border="r"),
         ColDef("Driver", width=0.25),
@@ -611,7 +609,7 @@ def laptime_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
 
 def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     """Return table with fastest sector times and speed."""
-
+    sectors = df.loc[:, ["Driver", "S1", "S2", "S3", "ST"]]
     s_defs = [ColDef(c, width=0.4, textprops={"ha": "right"}) for c in ("S1", "S2", "S3")]
     col_defs = [
         ColDef("Driver", width=0.25, textprops={"weight": "bold"}, border="r"),
@@ -621,12 +619,12 @@ def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     # Calculate table height based on rows
     size = (6, (df["Driver"].size / 3.333) + 1)
 
-    table = plot_table(df, col_defs, "Driver", size)
+    table = plot_table(sectors, col_defs, "Driver", size)
 
     # Highlight fastest values
-    table.columns["S1"].cells[df["S1"].idxmin()].text.set_color("#b138dd")
-    table.columns["S2"].cells[df["S2"].idxmin()].text.set_color("#b138dd")
-    table.columns["S3"].cells[df["S3"].idxmin()].text.set_color("#b138dd")
+    table.columns["S1"].cells[df["Sector1Time"].idxmin()].text.set_color("#b138dd")
+    table.columns["S2"].cells[df["Sector2Time"].idxmin()].text.set_color("#b138dd")
+    table.columns["S3"].cells[df["Sector3Time"].idxmin()].text.set_color("#b138dd")
     table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
 
     return table.figure, table.ax
