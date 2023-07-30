@@ -125,7 +125,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
         table, ax = stats.sectors_table(data)
         ax.set_title(
-            f"{yr} {ev['EventName']} - Sectors" + f"\nTyre: {tyre}" if tyre else ""
+            f"{yr} {ev['EventName']} - Sectors" + (f"\nTyre: {tyre}" if tyre else "")
         ).set_fontsize(12)
 
         f = utils.plot_to_file(table, f"sectors_{yr}_{rd}")
@@ -246,7 +246,7 @@ class Race(commands.Cog, guild_ids=Config().guilds):
 
         await target.send(embed=embed)
 
-    async def cog_command_error(self, ctx: ApplicationContext, error: discord.ApplicationCommandError):
+    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
         if isinstance(error.__cause__, (errors.MissingDataError, errors.DriverNotFoundError)):
             logger.error(f"/{ctx.command} failed with\n {error}")
             await MessageTarget(ctx).send(f":x: {error.__cause__.message}")
