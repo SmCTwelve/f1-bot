@@ -50,7 +50,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         # Get driver labels
         drivers = [session.get_driver(d)["Abbreviation"] for d in session.drivers]
 
-        plt.style.use("dark_background")
         fig, ax = plt.subplots(figsize=(6, 10), dpi=DPI)
 
         for driver in drivers:
@@ -322,8 +321,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax[4].set_ylabel("RPM")
 
         ax[5].set_ylabel("DRS")
-        ax[5].set_yticks([0, 1])
-        ax[5].set_yticklabels(["", ""])
+        ax[5].set_yticks([0.0, 15.0])
+        ax[5].set_yticklabels([])
         ax[5].set_xlabel("Distance (m)")
 
         laptimes = [
