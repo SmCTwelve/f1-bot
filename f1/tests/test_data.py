@@ -265,10 +265,38 @@ class MockStatsTests(BaseTest):
     async def test_to_event_throws_error(self, mock_race: MagicMock, mock_event: MagicMock):
         # assume ergast accepts invalid year for sake of test
         mock_race.return_value = {"round": "1"}
+        # Force the exception as if raised by FF1
         mock_event.side_effect = Exception
         with self.assertRaises(MissingDataError):
             await stats.to_event("-9999", "1")
             mock_event.assert_called_once()
+
+    @async_test
+    async def test_load_session_default(self):
+        event = MagicMock()
+        session = MagicMock()
+        event.get_session.return_value = session
+        res = await stats.load_session(event, "R")
+        self.assertEqual(res, session)
+        event.get_session.assert_called_once_with(identifier="R")
+        session.load.assert_called_once()
+
+    @async_test
+    async def test_format_results_with_missing_data(self):
+        session = MagicMock()
+        name = "Race"
+        session.results = pd.DataFrame({"DriverNumber": [1], "Position": [None]})
+        session.drivers = ["ALO", "VER"]
+        with self.assertRaises(MissingDataError):
+            await stats.format_results(session, name)
+
+    @async_test
+    async def test_format_results_with_nan(self):
+        session = MagicMock
+        session.results = pd.DataFrame({"DriverNumber": [1, 2], "Position": [None, None]})
+        session.drivers = ["ALO", "VER"]
+        with self.assertRaises(MissingDataError):
+            await stats.format_results(session, "Race")
 
 
 class MockAPITests(BaseTest):
