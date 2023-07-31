@@ -98,7 +98,8 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
 
     @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes (default 5).")
     @default_permissions(administrator=True)
-    async def disable_cache(self, ctx: ApplicationContext, minutes: int = 5):
+    async def disable_cache(self, ctx: ApplicationContext,
+                            minutes: discord.Option(int, default=5, max_value=15)):
         """Temporarily disable result caching. Will automatically re-enable the
         cache after `minutes`, default 5."""
         fetch.use_cache = False
@@ -109,6 +110,7 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(f":warning: Cache disabled for {minutes} minutes.")
 
     @admin.command(description="Shut down the bot application. Bot owner only.")
+    @default_permissions()
     @commands.is_owner()
     async def stop(self, ctx):
         logger.warning("Owner used stop command. Closing the bot connection...")
