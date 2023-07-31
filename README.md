@@ -60,7 +60,7 @@ The application relies on caching both to speed up command processing and to res
 
 A `/cache` directory will be created in the project root when the bot is running. This may become large over time with session telemetry (~100 MB per race weekend). You can manually delete the `/cache` folder or specific subfolders, or a script is provided in the root directory: `python -m flushcache`. Make sure the bot is not running. A new cache will be created during the next startup.
 
-If using Docker you manage the cache separately by attatching a volume.
+If using Docker you can manage the cache separately by attatching a volume.
 
 # Commands
 
@@ -68,19 +68,19 @@ If using Docker you manage the cache separately by attatching a volume.
 
 All commands are implemented as Discord slash commands. Once the commands have synced with your Guild, they can be accessed with `/command-name`.
 
-**Parameters**:
+### **Parameters**
 
 Some commands take parameters to refine the results, such as to filter to a specific driver. All `year` and `round` parameters are optional and if not specified will default to the most recent race. Commands which include lap data will not work for seasons before 2018.
 
-- `round`: This can be the location, Grand Prix name or the round number in the season. A partial name will attempt to search for a matching event. E.g. "Silverstone", "British".
+- **`round`**: This can be the location, Grand Prix name or the round number in the season. A partial name will attempt to search for a matching event. E.g. "Silverstone", "British".
 
-🔧 Try to be specific to prevent false matches; using the shorthand name "Spa" instead of "Spa-Francorchamps" will return a match for "Spain", so it's better to use the country name "Belgium" instead.
+  > 🔧 _Try to be specific to prevent false matches; using the shorthand name "Spa" instead of "Spa-Francorchamps" will return a match for "Spain", so it's better to use the country name "Belgium" instead._
 
-- `driver`: Can be the driver surname, 3-letter abbreviation or number.
+- **`driver`**: Can be the driver surname, 3-letter abbreviation or number.
 
-- `session`: Some results can be filtered to a session, e.g. FP1, Sprint, Qualifying etc. by choosing an option from the Discord menu. For Sprint Weekends before 2023, "Sprint Shootout" is the equivalent of "Sprint Qualifying".
+- **`session`**: Choose an option from the Discord menu. For Sprint Weekends before 2023, "Sprint Shootout" is the equivalent of "Sprint Qualifying".
 
-e.g.
+E.g.
 
 `/results` - defaults to latest race results
 
@@ -88,11 +88,11 @@ e.g.
 
 `/results FP1` - year and round default to latest
 
-**Results Availability**
+### **Result Availability**
 
-Data is sourced from Ergast API and official F1 timing data (through FastF1) and is typically updated within a few hours of a session.
+Data is sourced from [Ergast API](https://ergast.com/mrd/) and official F1 timing data (through [FastF1](https://github.com/theOehrly/Fast-F1)) and is typically updated within a few hours of a session.
 
-Ergast considers the "last" round to be the last _complete_ race weekend. Therefore, when using commands with the default `round` in the middle of a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
+Ergast considers the _"last"_ round to be the last **complete** race weekend. Therefore, when using commands with the default `round` in the middle of a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
 
 ## Season
 
