@@ -7,7 +7,6 @@ from typing import List
 from configparser import ConfigParser
 
 import fastf1
-import fastf1.logger
 from bs4 import XMLParsedAsHTMLWarning
 from discord import Intents
 from discord.ext import commands
@@ -86,7 +85,7 @@ class Config:
             with CONFIG_FILE.open() as f:
                 parsed = ConfigParser()
                 parsed.read_file(f)
-                logging.info('Config loaded!')
+                logger.info('Config loaded!')
 
                 # Verify directory structure
                 self._create_output_and_data_dir()
@@ -126,9 +125,9 @@ class Config:
 
                 # FastF1 logger config
                 if level == logging.DEBUG:
-                    fastf1.logger.set_log_level(logging.INFO)
+                    fastf1.set_log_level(logging.INFO)
                 else:
-                    fastf1.logger.set_log_level(logging.WARNING)
+                    fastf1.set_log_level(logging.WARNING)
 
                 # suppress BS4 warning
                 warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
