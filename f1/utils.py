@@ -4,13 +4,14 @@ from datetime import date, datetime
 from io import BytesIO
 from operator import itemgetter
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from discord import ApplicationContext, Colour, File
 from discord.ext import commands
+from fastf1 import plotting
+from fastf1.core import Session
 from matplotlib.figure import Figure
 from tabulate import tabulate
-from fastf1.core import Session
-from fastf1 import plotting
 
 from f1.api.fetch import fetch
 from f1.config import CACHE_DIR
@@ -312,6 +313,12 @@ def plot_to_file(fig: Figure, name: str):
         fig.savefig(buffer, format="png", bbox_inches="tight")
         buffer.seek(0)
         file = File(buffer, filename=f"{name}.png")
+        # Clean up memory
+        buffer.close()
+        fig.clear()
+        plt.close("all")
+        del fig
+
         return file
 
 
