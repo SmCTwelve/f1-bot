@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import logging
 from typing import Literal
 
@@ -8,7 +9,6 @@ import pandas as pd
 from fastf1.core import Lap, Laps, Session, SessionResults
 from fastf1.ergast import Ergast
 from fastf1.events import Event
-from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from plottable import ColDef, Table
@@ -37,7 +37,9 @@ def get_session_type(name: str):
 
 def plot_table(df: pd.DataFrame, col_defs: list[ColDef], idx: str, figsize: tuple[float]):
     """Returns plottable table from data."""
-    fig, ax = plt.subplots(figsize=figsize, dpi=200, layout="constrained")
+
+    fig = Figure(figsize=figsize, dpi=200, layout="constrained")
+    ax = fig.add_subplot()
 
     table = Table(
         df=df,
@@ -51,6 +53,7 @@ def plot_table(df: pd.DataFrame, col_defs: list[ColDef], idx: str, figsize: tupl
         column_definitions=col_defs,
     )
     table.col_label_row.set_fontsize(11)
+    del df
 
     return table
 
@@ -95,6 +98,7 @@ async def load_session(event: Event, name: str, **kwargs) -> Session:
     except Exception:
         raise MissingDataError("Unable to get session data, check the round and year is correct.")
 
+    gc.collect()
     return session
 
 
@@ -136,6 +140,7 @@ async def format_results(session: Session, name: str):
         "GridPosition": "Grid",
         "TeamName": "Team"
     })
+    del _sr
 
     # FP1, FP2, FP3
     ###############
@@ -153,6 +158,7 @@ async def format_results(session: Session, name: str):
             res_df[["Code", "Driver", "Team"]],
             fastest_laps["LapTime"],
             left_index=True, right_index=True)
+        del fastest_laps, res_df
 
         # Get a count of lap entries for each driver
         lap_totals = session.laps.groupby("DriverNumber").count()
@@ -169,6 +175,7 @@ async def format_results(session: Session, name: str):
     if _session_type == "Q":
         res_df["Pos"] = res_df["Pos"].astype(int)
         qs_res = res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Q1", "Q2", "Q3"]]
+        del res_df
 
         # Format the timedeltas to readable strings, replacing NaT with blank
         qs_res.loc[:, ["Q1", "Q2", "Q3"]] = res_df.loc[:, [
@@ -233,6 +240,7 @@ async def filter_pitstops(year, round, filter: str = None, driver: str = None) -
         row_mask = data.groupby("driverId")["duration"].idxmin()
 
     df = data.loc[row_mask].sort_values(by="duration").reset_index(drop=True)
+    del data
 
     # Convert timedelta into seconds for stop duration
     df["duration"] = df["duration"].transform(lambda x: f"{x.total_seconds():.3f}")
@@ -304,6 +312,7 @@ def minisectors(laps: list[Lap]) -> pd.DataFrame:
 
     # Create single df with all telemetry
     telemetry = pd.concat(tel_list).reset_index(drop=True)
+    del tel_list
 
     # Assign minisectors to each row based on distance
     max_dis = telemetry["Distance"].values.max()
@@ -336,6 +345,7 @@ def team_pace(session: Session):
     laps = session.laps.pick_quicklaps()
     times = laps.groupby(["Team"])[["Sector1Time", "Sector2Time", "Sector3Time"]].mean()
     speeds = laps.groupby(["Team"])[["SpeedI1", "SpeedI2", "SpeedFL", "SpeedST"]].max()
+    del laps
 
     df = pd.merge(times, speeds, how="left", left_index=True, right_index=True)
 
@@ -373,6 +383,7 @@ def fastest_laps(session: Session, tyre: str = None):
             "SpeedST": "ST"
         }
     )
+    del laps
     fastest["Delta"] = fastest["LapTime"] - fastest["LapTime"].min()
     fastest["Rank"] = np.arange(1, fastest.index.size + 1)
     fastest["LapTime"] = fastest["LapTime"].apply(lambda x: utils.format_timedelta(x))

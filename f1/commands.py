@@ -1,3 +1,4 @@
+import gc
 import logging
 import asyncio
 import re
@@ -39,7 +40,7 @@ async def on_message(message: Message):
 
 
 def handle_command(ctx: commands.Context | ApplicationContext):
-    logger.info(f"Command: /{ctx.command} in {ctx.channel} by {ctx.user}")
+    logger.info(f"Command: /{ctx.command} in {ctx.guild.name} {ctx.channel} by {ctx.user}")
 
 
 async def handle_errors(ctx: commands.Context | ApplicationContext, err):
@@ -47,7 +48,9 @@ async def handle_errors(ctx: commands.Context | ApplicationContext, err):
     if ctx.response.is_done():
         return
 
-    logger.error(f"Command failed: /{ctx.command}\n {err}")
+    logger.error(f"Command failed: /{ctx.command} in {ctx.guild.name} {ctx.channel} by {ctx.user}")
+    logger.error(f"Selected Options: {ctx.selected_options}")
+    logger.error(f"Reason: {err}")
     target = MessageTarget(ctx)
 
     # Catch TimeoutError
@@ -89,6 +92,11 @@ async def on_application_command(ctx: ApplicationContext):
 @bot.event
 async def on_command_completion(ctx: commands.Context):
     await ctx.message.add_reaction(u'🏁')
+
+
+@bot.event
+async def on_application_command_completion(ctx: ApplicationContext):
+    gc.collect()
 
 
 @bot.event
