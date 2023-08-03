@@ -22,6 +22,8 @@ Developed with [Pycord](https://pycord.dev/), the bot harnesses the excellent da
 
 Plus generate charts 📈 to compare car performance, laptime distribution, tyre compounds, position gains, race stints and more!
 
+[View command examples](https://github.com/SmCTwelve/f1-bot/wiki/Command-Usage-and-Examples)
+
 ## Installation
 
 The application requires **Python 3.11+**. It is recommended to use the Poetry package manager.
