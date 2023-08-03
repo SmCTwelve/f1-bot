@@ -613,7 +613,7 @@ def laptime_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     size = (6, (df["Driver"].size / 3.333) + 1)
     table = plot_table(df, col_defs, "Rank", figsize=size)
     table.rows[0].set_hatch("//").set_facecolor("#b138dd").set_alpha(0.35)
-    table.columns["ST"].cells[df["ST"].idxmax() - 1].text.set_color("#b138dd")
+    table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
 
     return table.figure, table.ax
 
