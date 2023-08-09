@@ -7,6 +7,7 @@ from discord import ApplicationContext, Message
 from discord.errors import ApplicationCommandInvokeError
 from discord.activity import Activity, ActivityType
 from discord.ext import commands
+from matplotlib import pyplot as plt
 
 from f1.target import MessageTarget
 from f1.config import Config
@@ -44,6 +45,10 @@ def handle_command(ctx: commands.Context | ApplicationContext):
 
 
 async def handle_errors(ctx: commands.Context | ApplicationContext, err):
+    # Force cleanup
+    plt.close("all")
+    gc.collect()
+
     # Command or Cog handler already responded
     if ctx.response.is_done():
         return
