@@ -98,7 +98,9 @@ async def load_session(event: Event, name: str, **kwargs) -> Session:
     except Exception:
         raise MissingDataError("Unable to get session data, check the round and year is correct.")
 
-    gc.collect()
+    finally:
+        gc.collect()
+
     return session
 
 
@@ -532,6 +534,7 @@ def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
         ]
 
     table = plot_table(df=results, col_defs=col_defs, idx=idx, figsize=size)
+    del results
 
     # Highlight DNFs in race
     if get_session_type(name) == "R":
@@ -553,6 +556,7 @@ def pitstops_table(results: pd.DataFrame) -> tuple[Figure, Axes]:
     # Different sizes depending on amound of data shown with filters
     size = (5, (results["Code"].size / 3.333) + 1)
     table = plot_table(results, col_defs, "Code", figsize=size)
+    del results
 
     return table.figure, table.ax
 
@@ -614,6 +618,7 @@ def laptime_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     table = plot_table(df, col_defs, "Rank", figsize=size)
     table.rows[0].set_hatch("//").set_facecolor("#b138dd").set_alpha(0.35)
     table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
+    del df
 
     return table.figure, table.ax
 
@@ -637,5 +642,6 @@ def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     table.columns["S2"].cells[df["Sector2Time"].idxmin()].text.set_color("#b138dd")
     table.columns["S3"].cells[df["Sector3Time"].idxmin()].text.set_color("#b138dd")
     table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
+    del df
 
     return table.figure, table.ax
