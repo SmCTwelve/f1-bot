@@ -612,6 +612,48 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = utils.plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
+    @plot.command(name="avg-lap-delta",
+                  description="Bar chart comparing average time per driver with overall race average as a delta.")
+    async def avg_delta(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+        """Get the overall average lap time of the session and plot the delta for each driver."""
+        await utils.check_season(ctx, year)
+
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, "R", laps=True)
+        yr, rd = ev["EventDate"].year, ev["EventName"]
+
+        # Get the overall session average
+        session_avg: pd.Timedelta = s.laps.pick_accurate()["LapTime"].mean()
+
+        fig = Figure(figsize=(10, 6), dpi=DPI, layout="constrained")
+        ax = fig.add_subplot()
+
+        # Plot the average lap delta to session average for each driver
+        for d in s.drivers:
+            laps = s.laps.pick_accurate().pick_driver(d).loc[:, ["Driver", "LapTime"]]
+            driver_avg: pd.Timedelta = laps["LapTime"].mean()
+
+            # Filter out non-runners
+            if pd.isna(driver_avg):
+                continue
+
+            delta = session_avg.total_seconds() - driver_avg.total_seconds()
+            driver_id = laps["Driver"].unique()[0]
+            ax.bar(x=driver_id, height=delta, width=0.75,
+                   color=utils.get_driver_or_team_color(driver_id, s))
+            del laps
+
+        ax.minorticks_on()
+        ax.tick_params(axis="x", which="minor", bottom=False)
+        ax.tick_params(axis="y", which="minor", grid_alpha=0.1)
+        ax.tick_params(axis="y", which="major", grid_alpha=0.3)
+        ax.grid(True, which="both", axis="y")
+        ax.set_xlabel("Delta (s)")
+        ax.set_title(f"{yr} {rd}\nDelta to Avgerage Lap").set_fontsize(16)
+
+        f = utils.plot_to_file(fig, f"plt_avgdelta-{yr}-{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
+
     async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
         """Handle loading errors from unsupported API lap data."""
         if isinstance(error.__cause__, (MissingDataError, DriverNotFoundError)):
