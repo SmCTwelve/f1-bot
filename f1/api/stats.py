@@ -371,7 +371,7 @@ def fastest_laps(session: Session, tyre: str = None):
     laps = session.laps.pick_accurate()
 
     if tyre:
-        laps = laps.pick_tyre(tyre)
+        laps = laps.pick_compounds(tyre)
 
     if laps["Driver"].size == 0:
         raise MissingDataError("Not enough laps on this tyre.")
@@ -418,7 +418,7 @@ def sectors(s: Session, tyre: str = None):
 
     # Filter by tyre if chosen
     if tyre:
-        laps = laps.pick_tyre(tyre)
+        laps = laps.pick_compounds(tyre)
 
     if laps["Driver"].size == 0:
         raise MissingDataError("No quick laps available for this tyre.")
