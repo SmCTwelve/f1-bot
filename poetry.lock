@@ -641,20 +641,20 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
 name = "fastf1"
-version = "3.0.7"
+version = "3.1.2"
 description = "Wrapper library for F1 data and telemetry API with additional data processing capabilities."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastf1-3.0.7-py3-none-any.whl", hash = "sha256:42cf87d7d53be754115411b1a9db9e826be5a371f1b3c3bda3c8287cfb2e674f"},
-    {file = "fastf1-3.0.7.tar.gz", hash = "sha256:0f520d832e5aa97d6fa81c45730c96e640f5e073d0bdf9aafe618b888f3daf9b"},
+    {file = "fastf1-3.1.2-py3-none-any.whl", hash = "sha256:f1299c501111d95792ae836c2c740189a6574ad23bd66d4ef22b8216665b3743"},
+    {file = "fastf1-3.1.2.tar.gz", hash = "sha256:9c1152b994497f9610b981540fc7c828c2bf0364d8d9a987098bae705dd8be40"},
 ]
 
 [package.dependencies]
 matplotlib = ">=3.4.2,<4.0.0"
 numpy = ">=1.20.3,<2.0.0"
-pandas = ">=1.2.4,<3.0.0"
+pandas = ">=1.2.4,<2.1.0"
 python-dateutil = "*"
 requests = ">=2.28.0"
 requests-cache = ">=0.8.0"
