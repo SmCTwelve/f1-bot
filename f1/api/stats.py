@@ -377,7 +377,7 @@ def fastest_laps(session: Session, tyre: str = None):
         raise MissingDataError("Not enough laps on this tyre.")
 
     fastest = Laps(
-        [laps.pick_driver(d).pick_fastest() for d in laps["Driver"].unique()]
+        [laps.pick_drivers(d).pick_fastest() for d in laps["Driver"].unique()]
     ).sort_values(by="LapTime").reset_index(drop=True).rename(
         columns={
             "LapNumber": "Lap",

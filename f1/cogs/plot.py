@@ -110,7 +110,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Plot the drivers position per lap
         for d in session.drivers:
-            laps = session.laps.pick_driver(d)
+            laps = session.laps.pick_drivers(d)
             id = laps["Driver"].iloc[0]
             ax.plot(laps["LapNumber"], laps["Position"], label=id,
                     color=utils.get_driver_or_team_color(id, session, api_only=True))
@@ -189,7 +189,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Filter laps to the driver's fastest and get telemetry for the lap
         drv_id = utils.find_driver(driver, await ergast.get_all_drivers(year, ev["RoundNumber"]))["code"]
-        lap = session.laps.pick_driver(drv_id).pick_fastest()
+        lap = session.laps.pick_drivers(drv_id).pick_fastest()
         pos = lap.get_pos_data()
         car = lap.get_car_data()
 
@@ -251,7 +251,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         for d in drv_ids:
             if d not in laps["Driver"].values:
                 raise MissingDataError(f"No lap data for driver {d}")
-            lap = laps.pick_driver(d).pick_fastest()
+            lap = laps.pick_drivers(d).pick_fastest()
             laptimes.append(lap["LapTime"])
             data[d] = lap.get_car_data().add_distance()
             del lap
@@ -371,7 +371,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Get telemetry and minisectors for each driver
         telemetry = stats.minisectors([
-            s.laps.pick_driver(d).pick_fastest()
+            s.laps.pick_drivers(d).pick_fastest()
             for d in drivers
         ])
 
@@ -630,7 +630,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Plot the average lap delta to session average for each driver
         for d in s.drivers:
-            laps = s.laps.pick_accurate().pick_driver(d).loc[:, ["Driver", "LapTime"]]
+            laps = s.laps.pick_accurate().pick_drivers(d).loc[:, ["Driver", "LapTime"]]
             driver_avg: pd.Timedelta = laps["LapTime"].mean()
 
             # Filter out non-runners
@@ -638,7 +638,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 continue
 
             delta = session_avg.total_seconds() - driver_avg.total_seconds()
-            driver_id = laps["Driver"].unique()[0]
+            driver_id = laps["Driver"].iloc[0]
             ax.bar(x=driver_id, height=delta, width=0.75,
                    color=utils.get_driver_or_team_color(driver_id, s))
             del laps
