@@ -232,10 +232,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         await utils.check_season(ctx, year)
 
-        ##
-        #  Could refactor to get avg time per minisector from all laps not just fastest
-        ##
-
         ev = await stats.to_event(year, round)
         yr, rd, nm = ev["EventDate"].year, ev["RoundNumber"], ev["EventName"]
         s = await stats.load_session(ev, session, laps=True, telemetry=True)
@@ -266,7 +262,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Plot 6 subplots for each telemetry graph
         fig = Figure(figsize=(18, 14), dpi=DPI, layout="constrained")
-        ax = fig.subplots(6, gridspec_kw={"height_ratios": [3, 2, 1, 1, 2, 1]},
+        ax = fig.subplots(7, gridspec_kw={"height_ratios": [3, 2, 1, 1.25, 2, 1, 1.35]},
                           sharex=True)
 
         for d, t in data.items():
@@ -313,6 +309,19 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 color=c,
                 label=d
             )
+
+        # Plot delta when comparing two drivers
+        if driver2:
+            delta = stats.compare_lap_telemetry_delta(data[drv_ids[0]], data[drv_ids[1]])
+            ax[6].plot(
+                data[drv_ids[0]]["Distance"].values,
+                delta,
+                linestyle="--",
+                color="w"
+            )
+            ax[6].set_ylabel(f"{drv_ids[1]} | {drv_ids[0]}")
+
+        del data
 
         # Presentation
         ax[0].set_ylabel("Speed (kph)")
@@ -491,11 +500,11 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = utils.plot_to_file(fig, f"plt_tyrechoice-{ev['RoundNumber']}-{ev['EventDate'].year}")
         await MessageTarget(ctx).send(file=f)
 
-    @plot.command(name="gap", description="Compare laptime difference between two drivers.")
-    async def driver_gap(self, ctx: ApplicationContext,
-                         first: options.DriverOptionRequired(),
-                         second: options.DriverOptionRequired(),
-                         year: options.SeasonOption, round: options.RoundOption):
+    @plot.command(name="lap-compare", description="Compare laptime difference between two drivers.")
+    async def compare_laps(self, ctx: ApplicationContext,
+                           first: options.DriverOptionRequired(),
+                           second: options.DriverOptionRequired(),
+                           year: options.SeasonOption, round: options.RoundOption):
         """Plot the lap times between two drivers for all laps, excluding pitstops and slow laps."""
         await utils.check_season(ctx, year)
 
@@ -612,9 +621,52 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         f = utils.plot_to_file(fig, f"plt_tyreperf-{ev['EventDate'].year}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
 
+    @plot.command(description="Plots the delta in seconds between two drivers over a lap.")
+    async def gap(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
+                  session: options.SessionOption, driver1: options.DriverOptionRequired(),
+                  driver2: options.DriverOptionRequired()):
+        """Get the delta over lap distance between two drivers and return a line plot."""
+        await utils.check_season(ctx, year)
+
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, session, laps=True, telemetry=True)
+        yr, rd = ev["EventDate"].year, ev["EventName"]
+
+        # Check lap data support
+        if not s.f1_api_support:
+            raise MissingDataError("Lap data not available for the session.")
+
+        # Get drivers
+        drivers = [utils.find_driver(d, await ergast.get_all_drivers(year, ev["RoundNumber"]))["code"]
+                   for d in (driver1, driver2)]
+
+        # Load each driver fastest lap telemetry
+        telemetry = {d: s.laps.pick_drivers(d).pick_fastest().get_car_data(interpolate_edges=True) for d in drivers}
+
+        # Get interpolated delta between drivers
+        # where driver1 is ref lap and driver2 is compared
+        delta = stats.compare_lap_telemetry_delta(telemetry.values[0], telemetry.values[1])
+
+        # Mask the delta values to plot + green and - red
+        ahead = np.ma.masked_where(delta >= 0., delta)
+        behind = np.ma.masked_where(delta < 0., delta)
+
+        fig = Figure(figsize=(10, 3), dpi=DPI, layout="constrained")
+        ax = fig.add_subplot()
+
+        x = telemetry[drivers[0]]["Distance"].values
+        ax.plot(x, ahead, color="green")
+        ax.plot(x, behind, color="red")
+        ax.axhline(0.0, linestyle="--", linewidth=0.5, color="w", zorder=0, alpha=0.5)
+        ax.set_title(f"{drivers[1]} Delta to {drivers[0]} (Fastest Lap)\n{yr} {rd} | {session}").set_fontsize(16)
+        ax.set_ylabel(f"<-  {drivers[1]}  |  {drivers[0]}  ->")
+
+        f = utils.plot_to_file(fig, f"plt_gap-{yr}-{ev['RoundNumber']}-{session[0]}")
+        await MessageTarget(ctx).send(content="**Driver Gap**", file=f)
+
     @plot.command(name="avg-lap-delta",
                   description="Bar chart comparing average time per driver with overall race average as a delta.")
-    async def avg_delta(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
+    async def avg_lap_delta(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption):
         """Get the overall average lap time of the session and plot the delta for each driver."""
         await utils.check_season(ctx, year)
 

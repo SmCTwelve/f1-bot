@@ -6,7 +6,7 @@ from typing import Literal
 import fastf1 as ff1
 import numpy as np
 import pandas as pd
-from fastf1.core import Lap, Laps, Session, SessionResults
+from fastf1.core import Lap, Laps, Session, SessionResults, Telemetry
 from fastf1.ergast import Ergast
 from fastf1.events import Event
 from matplotlib.axes import Axes
@@ -491,6 +491,31 @@ def pos_change(session: Session):
     diff[["Start", "Finish", "Diff"]] = diff[["Start", "Finish", "Diff"]].astype(int)
 
     return diff
+
+
+def compare_lap_telemetry_delta(ref_lap: Telemetry, comp_lap: Telemetry) -> np.ndarray:
+    """Takes two lap `Telemetry` and returns an array with the time delta
+    in seconds between `comp_lap` and `ref_lap` for each data sample.
+
+    E.g. negative values = ref ahead
+
+    Values are interpolated based on "Distance" samples.
+    """
+
+    if not any("Distance" in df.columns for df in (ref_lap, comp_lap)):
+        ref_lap = ref_lap.add_distance()
+        comp_lap = comp_lap.add_distance()
+
+    # Convert Time to seconds for interpolation
+    ref_times = ref_lap["Time"].dt.total_seconds().to_numpy()
+    comp_times = comp_lap["Time"].dt.total_seconds().to_numpy()
+
+    # Interpolates the comp_lap times to fill missing samples from ref_lap
+    # so they can be compared without NaT if the shapes are not equal
+    comp_interp = np.interp(ref_lap["Distance"].values, comp_lap["Distance"].values, comp_times)
+
+    del ref_lap, comp_lap
+    return comp_interp - ref_times
 
 
 def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
