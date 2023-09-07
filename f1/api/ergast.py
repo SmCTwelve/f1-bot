@@ -130,7 +130,7 @@ async def get_driver_info(driver_id):
     return res
 
 
-async def get_driver_standings(season):
+async def get_driver_standings(season, rnd=None):
     """Get the driver championship standings.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
@@ -149,6 +149,7 @@ async def get_driver_standings(season):
             'data': list[dict] [{
                 'Pos': int,
                 'Driver': str,
+                'Code': str,
                 'Points': int,
                 'Wins': int,
             }]
@@ -159,7 +160,10 @@ async def get_driver_standings(season):
     `MissingDataError`
         if API response unavailable.
     """
-    url = f'{BASE_URL}/{season}/driverStandings'
+    if rnd:
+        url = f'{BASE_URL}/{season}/{rnd}/driverStandings'
+    else:
+        url = f'{BASE_URL}/{season}/driverStandings'
     soup = await get_soup(url)
     if soup:
         # tags are lowercase
@@ -174,6 +178,7 @@ async def get_driver_standings(season):
                 {
                     'Pos': int(standing['position']),
                     'Driver': f"{standing.driver.givenname.string[0]} {standing.driver.familyname.string}",
+                    'Code': f"{standing.driver['code']}",
                     'Points': int(standing['points']),
                     'Wins': int(standing['wins']),
                 }
@@ -182,7 +187,7 @@ async def get_driver_standings(season):
     raise MissingDataError()
 
 
-async def get_team_standings(season):
+async def get_team_standings(season, rnd=None):
     """Get the constructor championship standings.
 
     Fetches results from API. Response XML is parsed into a list of dicts to be tabulated.
@@ -211,7 +216,10 @@ async def get_team_standings(season):
     `MissingDataError`
         if API response unavailable.
     """
-    url = f'{BASE_URL}/{season}/constructorStandings'
+    if rnd:
+        url = f'{BASE_URL}/{season}/{rnd}/constructorStandings'
+    else:
+        url = f'{BASE_URL}/{season}/constructorStandings'
     soup = await get_soup(url)
     if soup:
         standings = soup.standingslist
