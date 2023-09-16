@@ -319,7 +319,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 linestyle="--",
                 color="w"
             )
-            ax[6].set_ylabel(f"{drv_ids[1]} | {drv_ids[0]}")
+            ax[6].set_ylabel(f"<- {drv_ids[1]} | {drv_ids[0]} ->")
+            ax[6].axhline(0, linestyle="--", linewidth=0.5, color="w", zorder=0, alpha=0.5)
 
         del data
 
@@ -622,10 +623,13 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         await MessageTarget(ctx).send(file=f)
 
     @plot.command(description="Plots the delta in seconds between two drivers over a lap.")
-    async def gap(self, ctx: ApplicationContext, year: options.SeasonOption, round: options.RoundOption,
-                  session: options.SessionOption, driver1: options.DriverOptionRequired(),
-                  driver2: options.DriverOptionRequired()):
-        """Get the delta over lap distance between two drivers and return a line plot."""
+    async def gap(self, ctx: ApplicationContext, driver1: options.DriverOptionRequired(),
+                  driver2: options.DriverOptionRequired(), year: options.SeasonOption,
+                  round: options.RoundOption, session: options.SessionOption):
+        """Get the delta over lap distance between two drivers and return a line plot.
+
+        `driver1` is comparison, `driver2` is reference lap.
+        """
         await utils.check_season(ctx, year)
 
         ev = await stats.to_event(year, round)
@@ -641,11 +645,14 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                    for d in (driver1, driver2)]
 
         # Load each driver fastest lap telemetry
-        telemetry = {d: s.laps.pick_drivers(d).pick_fastest().get_car_data(interpolate_edges=True) for d in drivers}
+        telemetry = {
+            d: s.laps.pick_drivers(d).pick_fastest().get_car_data(interpolate_edges=True).add_distance()
+            for d in drivers
+        }
 
         # Get interpolated delta between drivers
         # where driver1 is ref lap and driver2 is compared
-        delta = stats.compare_lap_telemetry_delta(telemetry.values[0], telemetry.values[1])
+        delta = stats.compare_lap_telemetry_delta(telemetry[drivers[1]], telemetry[drivers[0]])
 
         # Mask the delta values to plot + green and - red
         ahead = np.ma.masked_where(delta >= 0., delta)
@@ -654,12 +661,13 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         fig = Figure(figsize=(10, 3), dpi=DPI, layout="constrained")
         ax = fig.add_subplot()
 
-        x = telemetry[drivers[0]]["Distance"].values
+        # Use ref driver distance for X
+        x = telemetry[drivers[1]]["Distance"].values
         ax.plot(x, ahead, color="green")
         ax.plot(x, behind, color="red")
         ax.axhline(0.0, linestyle="--", linewidth=0.5, color="w", zorder=0, alpha=0.5)
-        ax.set_title(f"{drivers[1]} Delta to {drivers[0]} (Fastest Lap)\n{yr} {rd} | {session}").set_fontsize(16)
-        ax.set_ylabel(f"<-  {drivers[1]}  |  {drivers[0]}  ->")
+        ax.set_title(f"{drivers[0]} Delta to {drivers[1]} (Fastest Lap)\n{yr} {rd} | {session}").set_fontsize(16)
+        ax.set_ylabel(f"<-  {drivers[0]}  |  {drivers[1]}  ->")
 
         f = utils.plot_to_file(fig, f"plt_gap-{yr}-{ev['RoundNumber']}-{session[0]}")
         await MessageTarget(ctx).send(content="**Driver Gap**", file=f)
@@ -673,6 +681,10 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, "R", laps=True)
         yr, rd = ev["EventDate"].year, ev["EventName"]
+
+        # Check lap data support
+        if not s.f1_api_support:
+            raise MissingDataError("Lap data not available for the session.")
 
         # Get the overall session average
         session_avg: pd.Timedelta = s.laps.pick_accurate()["LapTime"].mean()
@@ -692,7 +704,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             delta = session_avg.total_seconds() - driver_avg.total_seconds()
             driver_id = laps["Driver"].iloc[0]
             ax.bar(x=driver_id, height=delta, width=0.75,
-                   color=utils.get_driver_or_team_color(driver_id, s))
+                   color=utils.get_driver_or_team_color(driver_id, s, api_only=True))
             del laps
 
         ax.minorticks_on()
@@ -701,7 +713,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.tick_params(axis="y", which="major", grid_alpha=0.3)
         ax.grid(True, which="both", axis="y")
         ax.set_xlabel("Delta (s)")
-        ax.set_title(f"{yr} {rd}\nDelta to Avgerage Lap").set_fontsize(16)
+        ax.set_title(f"{yr} {rd}\nDelta to Avgerage ({session_avg})").set_fontsize(16)
 
         f = utils.plot_to_file(fig, f"plt_avgdelta-{yr}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
