@@ -713,7 +713,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.tick_params(axis="y", which="major", grid_alpha=0.3)
         ax.grid(True, which="both", axis="y")
         ax.set_xlabel("Delta (s)")
-        ax.set_title(f"{yr} {rd}\nDelta to Avgerage ({session_avg})").set_fontsize(16)
+        ax.set_title(f"{yr} {rd}\nDelta to Avgerage ({utils.format_timedelta(session_avg)})").set_fontsize(16)
 
         f = utils.plot_to_file(fig, f"plt_avgdelta-{yr}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
