@@ -72,16 +72,26 @@ async def get_all_drivers(season=None, round=None) -> list[dict]:
 
     Raises `MissingDataError`.
     """
-    if season and round:
-        url = f'{BASE_URL}/{season}/{round}/drivers.json?limit=1000'
-    elif season:
-        url = f'{BASE_URL}/{season}/drivers.json?limit=1000'
-    else:
-        url = f'{BASE_URL}/drivers.json?limit=1000'
+    round_url = f'{BASE_URL}/{season}/{round}/drivers.json?limit=1000'
+    season_url = f'{BASE_URL}/{season}/drivers.json?limit=1000'
+    all_time_url = f'{BASE_URL}/drivers.json?limit=1000'
+
     # Get JSON data as dict
-    res = await fetch(url)
+    if season and round:
+        res = await fetch(round_url)
+    elif season:
+        res = await fetch(season_url)
+    else:
+        res = await fetch(all_time_url)
+
     if res is None:
         raise MissingDataError()
+
+    # Fallback to season only if data for the round is unavailable
+    if round and not res['MRData']['DriverTable']['Drivers']:
+        logger.warning("Driver data for specified round is missing, falling back to season list.")
+        res = await fetch(season_url)
+
     return res['MRData']['DriverTable']['Drivers']
 
 

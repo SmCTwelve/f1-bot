@@ -444,6 +444,23 @@ class MockAPITests(BaseTest):
         self.check_total_and_num_results(data['Seasons']['total'], data['Seasons']['years'])
         self.check_total_and_num_results(data['Teams']['total'], data['Teams']['names'])
 
+    @patch(fetch_path)
+    @async_test
+    async def test_get_all_drivers(self, mock_fetch):
+        mock_fetch.return_value = models.all_drivers
+        res = await ergast.get_all_drivers()
+        self.assertEqual(res[0]["code"], "ALO")
+        self.assertEqual(res[1]["code"], "VER")
+
+    @patch(fetch_path)
+    @async_test
+    async def test_get_all_drivers_missing_round(self, mock_fetch):
+        empty_data = {"MRData": {"DriverTable": {"Drivers": []}}}
+        mock_fetch.side_effect = [empty_data, models.all_drivers]
+        res = await ergast.get_all_drivers(round=100)
+        self.assertEqual(mock_fetch.call_count, 2)
+        self.assertEqual(len(res), 2)
+
     # boundary tests
 
 
