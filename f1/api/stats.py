@@ -160,6 +160,7 @@ async def format_results(session: Session, name: str):
             res_df[["Code", "Driver", "Team"]],
             fastest_laps["LapTime"],
             left_index=True, right_index=True)
+
         del fastest_laps, res_df
 
         # Get a count of lap entries for each driver
@@ -177,12 +178,12 @@ async def format_results(session: Session, name: str):
     if _session_type == "Q":
         res_df["Pos"] = res_df["Pos"].astype(int)
         qs_res = res_df.loc[:, ["Pos", "Code", "Driver", "Team", "Q1", "Q2", "Q3"]]
-        del res_df
 
         # Format the timedeltas to readable strings, replacing NaT with blank
         qs_res.loc[:, ["Q1", "Q2", "Q3"]] = res_df.loc[:, [
             "Q1", "Q2", "Q3"]].applymap(lambda x: utils.format_timedelta(x))
 
+        del res_df
         return qs_res
 
     # RACE / SPRINT
