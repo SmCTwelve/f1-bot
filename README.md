@@ -75,5 +75,3 @@ The bot uses Discord slash commands. Once the commands have synced with your Gui
 Data is sourced from [Ergast API](https://ergast.com/mrd/) and official F1 timing data (through [FastF1](https://github.com/theOehrly/Fast-F1)) and is typically updated within a few hours of a session.
 
 Ergast considers the _"last"_ round to be the last **complete** race weekend. Therefore, when using commands with the default `round` in the middle of a race weekend - e.g. to view qualifying results on a Saturday - the results will refer to the previous round. However, you can still specify the name or number of the `round` in question to get results for the current race weekend if they are available.
-
-Data is based on quick laps with a threshold of 105%. This means that some compounds may not appear on the graph even if they were used in the race because the times were too slow. Additionally, track conditions, incidents and weather will influence the accuracy of the tyre life metrics.
