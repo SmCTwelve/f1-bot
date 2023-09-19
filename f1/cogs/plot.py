@@ -239,22 +239,20 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         drv_ids = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
                    for d in drivers if d is not None]
 
-        laps = s.laps.pick_accurate()
-
         # Get data for each driver
         data: dict[str, pd.DataFrame] = {}
         laptimes = []
         for d in drv_ids:
-            if d not in laps["Driver"].values:
+            if d not in s.laps["Driver"].unique():
                 raise MissingDataError(f"No lap data for driver {d}")
-            lap = laps.pick_drivers(d).pick_fastest()
+            lap = s.laps.pick_drivers(d).pick_fastest()
             laptimes.append(lap["LapTime"])
             data[d] = lap.get_car_data().add_distance()
             del lap
 
         # Determine the x-axis position for each sector divider
         # based on the percentage of each sector time from the total lap time
-        fl = laps.pick_fastest()
+        fl = s.laps.pick_fastest()
         max_dis = data[drv_ids[0]]["Distance"].max()
         s1_dis = max_dis * (fl["Sector1Time"] / fl["LapTime"])
         s2_dis = s1_dis + max_dis * (fl["Sector2Time"] / fl["LapTime"])
@@ -516,7 +514,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                    for d in (first, second)]
 
         # Group laps using only quicklaps to exclude pitstops and slow laps
-        laps = s.laps.pick_drivers(drivers).pick_accurate()
+        laps = s.laps.pick_drivers(drivers).pick_quicklaps()
         times = laps.loc[:, ["Driver", "LapNumber", "LapTime"]].groupby("Driver")
         del laps
 
@@ -687,14 +685,14 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Lap data not available for the session.")
 
         # Get the overall session average
-        session_avg: pd.Timedelta = s.laps.pick_accurate()["LapTime"].mean()
+        session_avg: pd.Timedelta = s.laps.pick_wo_box()["LapTime"].mean()
 
         fig = Figure(figsize=(10, 6), dpi=DPI, layout="constrained")
         ax = fig.add_subplot()
 
         # Plot the average lap delta to session average for each driver
         for d in s.drivers:
-            laps = s.laps.pick_accurate().pick_drivers(d).loc[:, ["Driver", "LapTime"]]
+            laps = s.laps.pick_drivers(d).pick_wo_box().loc[:, ["Driver", "LapTime"]]
             driver_avg: pd.Timedelta = laps["LapTime"].mean()
 
             # Filter out non-runners
@@ -712,7 +710,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax.tick_params(axis="y", which="minor", grid_alpha=0.1)
         ax.tick_params(axis="y", which="major", grid_alpha=0.3)
         ax.grid(True, which="both", axis="y")
-        ax.set_xlabel("Delta (s)")
+        ax.set_xlabel("Finishing Order")
+        ax.set_ylabel("Delta (s)")
         ax.set_title(f"{yr} {rd}\nDelta to Avgerage ({utils.format_timedelta(session_avg)})").set_fontsize(16)
 
         f = utils.plot_to_file(fig, f"plt_avgdelta-{yr}-{ev['RoundNumber']}")

@@ -369,7 +369,7 @@ def fastest_laps(session: Session, tyre: str = None):
     if not session.f1_api_support:
         raise MissingDataError("Lap data not supported for the session.")
 
-    laps = session.laps.pick_accurate()
+    laps = session.laps.pick_wo_box()
 
     if tyre:
         laps = laps.pick_compounds(tyre)
@@ -378,7 +378,7 @@ def fastest_laps(session: Session, tyre: str = None):
         raise MissingDataError("Not enough laps on this tyre.")
 
     fastest = Laps(
-        [laps.pick_drivers(d).pick_fastest() for d in laps["Driver"].unique()]
+        [laps.pick_drivers(d).pick_fastest() for d in laps["Driver"].dropna().unique()]
     ).sort_values(by="LapTime").reset_index(drop=True).rename(
         columns={
             "LapNumber": "Lap",
