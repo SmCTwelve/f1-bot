@@ -227,7 +227,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
     @plot.command(description="Compare fastest lap telemetry between two drivers.")
     async def telemetry(self, ctx: ApplicationContext,
                         driver1: discord.Option(str, required=True), driver2: discord.Option(str, default=None),
-                        year: options.SeasonOption, round: options.RoundOption, session: options.SessionOption):
+                        year: options.SeasonOption, round: options.RoundOption, session: options.SessionOption,
+                        lap: options.LapOption):
         """Plot lap telemetry (speed, distance, rpm, gears, brake) between two driver's fastest lap."""
 
         await utils.check_season(ctx, year)
@@ -239,16 +240,27 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         drv_ids = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
                    for d in drivers if d is not None]
 
+        # Check API support
+        if not s.f1_api_support:
+            raise MissingDataError("Session does not support lap data.")
+
+        # Check lap number is valid and within range
+        if lap and int(lap) > s.total_laps:
+            raise ValueError("Lap number out of range.")
+
         # Get data for each driver
         data: dict[str, pd.DataFrame] = {}
         laptimes = []
         for d in drv_ids:
             if d not in s.laps["Driver"].unique():
                 raise MissingDataError(f"No lap data for driver {d}")
-            lap = s.laps.pick_drivers(d).pick_fastest()
-            laptimes.append(lap["LapTime"])
-            data[d] = lap.get_car_data().add_distance()
-            del lap
+            if lap:
+                drv_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
+            else:
+                drv_lap = s.laps.pick_drivers(d).pick_fastest()
+            laptimes.append(drv_lap["LapTime"])
+            data[d] = drv_lap.get_car_data().add_distance()
+            del drv_lap
 
         # Determine the x-axis position for each sector divider
         # based on the percentage of each sector time from the total lap time
@@ -349,11 +361,13 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             a.vlines([s1_dis, s2_dis], ylim[0], ylim[1], colors="w",
                      linestyles="dotted", linewidth=1, zorder=0, alpha=0.5)
 
+        lap_label = f"{lap}" if lap else "Fastest"
         ax[0].set_title("".join([
-            f"Lap Comparison - {session} - {yr} {nm}",
+            f"Telemetry - {session} - {yr} {nm}",
             f"\n{drv_ids[0]}: {utils.format_timedelta(laptimes[0])}",
             (f" | {drv_ids[1]}: {utils.format_timedelta(laptimes[1])}"
-             if len(laptimes) > 1 else "")
+             if len(laptimes) > 1 else ""),
+            f"\nLap: {lap_label}"
         ])).set_fontsize(18)
 
         # File
@@ -375,7 +389,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Session does not support lap data.")
 
         # Check lap number is valid and within range
-        if lap and (not str(lap).isdigit() or int(lap) > s.total_laps):
+        if lap and int(lap) > s.total_laps:
             raise ValueError("Lap number out of range.")
 
         yr, rd = ev["EventDate"].year, ev["RoundNumber"]
@@ -646,7 +660,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Lap data not available for the session.")
 
         # Check lap number is valid and within range
-        if lap and (not str(lap).isdigit() or int(lap) > s.total_laps):
+        if lap and int(lap) > s.total_laps:
             raise ValueError("Lap number out of range.")
 
         # Get drivers
@@ -660,10 +674,14 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                 driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
             else:
                 driver_lap = s.laps.pick_drivers(d).pick_fastest()
-            telemetry[d] = driver_lap.get_car_data(interpolate_edges=True).add_distance()
+
+            try:
+                telemetry[d] = driver_lap.get_car_data(interpolate_edges=True).add_distance()
+            except Exception:
+                raise MissingDataError(f"Cannot get telemetry for {d}.")
 
         # Get interpolated delta between drivers
-        # where driver1 is ref lap and driver2 is compared
+        # where driver2 is ref lap and driver1 is compared
         delta = stats.compare_lap_telemetry_delta(telemetry[drivers[1]], telemetry[drivers[0]])
 
         # Mask the delta values to plot + green and - red
@@ -673,9 +691,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         fig = Figure(figsize=(10, 3), dpi=DPI, layout="constrained")
         ax = fig.add_subplot()
 
-        # Use ref driver distance for X
         lap_label = f"Lap {lap}" if lap else "Fastest Lap"
-        x = telemetry[drivers[1]]["Distance"].values
+        x = telemetry[drivers[1]]["Distance"].values  # Use ref lap distance for X
         ax.plot(x, ahead, color="green")
         ax.plot(x, behind, color="red")
         ax.axhline(0.0, linestyle="--", linewidth=0.5, color="w", zorder=0, alpha=0.5)
