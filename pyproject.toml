@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "f1-bot"
-version = "2.0.0"
+version = "2.0.3"
 description = "A Discord bot to view F1 stats."
 authors = ["SmCTwelve <smctwelve@gmail.com>"]
 license = "MIT"
