@@ -1,7 +1,9 @@
 
 class BotError(Exception):
     """Base error class for the bot."""
-    pass
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
 
 class MissingDataError(BotError):
