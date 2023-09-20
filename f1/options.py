@@ -66,5 +66,5 @@ SessionOption = Option(
 LapOption = Option(
     str,
     default=None,
-    description="Filter by lap number (default fastest)"
+    description="Filter by lap number (optional, default fastest)"
 )

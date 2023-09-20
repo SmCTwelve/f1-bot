@@ -363,7 +363,8 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
     @plot.command(name="track-sectors", description="Compare fastest driver sectors on track map.")
     async def track_sectors(self, ctx: ApplicationContext, first: options.DriverOptionRequired(),
                             second: options.DriverOptionRequired(), year: options.SeasonOption,
-                            round: options.RoundOption, session: options.SessionOption):
+                            round: options.RoundOption, session: options.SessionOption,
+                            lap: options.LapOption):
         """Plot a track map showing where a driver was faster based on minisectors."""
         await utils.check_season(ctx, year)
         ev = await stats.to_event(year, round)
@@ -373,12 +374,17 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         if not s.f1_api_support:
             raise MissingDataError("Session does not support lap data.")
 
+        # Check lap number is valid and within range
+        if lap and (not str(lap).isdigit() or int(lap) > s.total_laps):
+            raise ValueError("Lap number out of range.")
+
         yr, rd = ev["EventDate"].year, ev["RoundNumber"]
         drivers = [utils.find_driver(d, await ergast.get_all_drivers(yr, rd))["code"]
                    for d in (first, second)]
 
         # Get telemetry and minisectors for each driver
         telemetry = stats.minisectors([
+            s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0] if lap else
             s.laps.pick_drivers(d).pick_fastest()
             for d in drivers
         ])
@@ -429,8 +435,9 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         # Add colorbar legend
         cax = fig.add_axes([0.05, 0.05, 0.1, 0.02])
         fig.colorbar(sectors, cax=cax, location="bottom", ticks=[1.5, 2.5]).set_ticklabels([d for d in drivers])
+        lap_label = f"{lap}" if lap else "Fastest"
         ax.set_title(
-            f"Fastest Sectors | {drivers[0]} v {drivers[1]}\n{yr} {ev['EventName']} - {session}"
+            f"Fastest Sectors | {drivers[0]} v {drivers[1]} | (L: {lap_label}))\n{yr} {ev['EventName']} - {session}"
         ).set_fontsize(14)
 
         f = utils.plot_to_file(fig, f"plt_trksectors_{yr}_{rd}")
@@ -639,7 +646,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Lap data not available for the session.")
 
         # Check lap number is valid and within range
-        if lap and (not str(lap).isdigit() or int(lap) > s.laps["LapNumber"].unique().max()):
+        if lap and (not str(lap).isdigit() or int(lap) > s.total_laps):
             raise ValueError("Lap number out of range.")
 
         # Get drivers
@@ -650,7 +657,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         telemetry = {}
         for d in drivers:
             if lap:
-                driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap))
+                driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
             else:
                 driver_lap = s.laps.pick_drivers(d).pick_fastest()
             telemetry[d] = driver_lap.get_car_data(interpolate_edges=True).add_distance()
