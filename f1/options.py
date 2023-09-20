@@ -4,7 +4,7 @@ from discord import Option
 
 RankedPitstopFilter = Option(
     str, choices=["Best", "Worst", "Ranked"],
-    default="Ranked", description="Which stops to view")
+    default="Ranked", description="Which stops to view (default ranked)")
 
 DriverOption = Option(str, default=None, description="Driver number, 3-letter code or surname")
 
@@ -38,7 +38,7 @@ RoundOption = Option(
 
 TyreOption = Option(
     str,
-    description="Choice of tyre compound",
+    description="Choice of tyre compound (default none)",
     choices=[
         "SOFT",
         "MEDIUM",
@@ -61,4 +61,10 @@ SessionOption = Option(
         "Race"
     ],
     default="Race",
-    description="The session to view")
+    description="The session to view (default race)")
+
+LapOption = Option(
+    str,
+    default=None,
+    description="Filter by lap number (default fastest)"
+)

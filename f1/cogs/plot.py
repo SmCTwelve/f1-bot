@@ -623,7 +623,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
     @plot.command(description="Plots the delta in seconds between two drivers over a lap.")
     async def gap(self, ctx: ApplicationContext, driver1: options.DriverOptionRequired(),
                   driver2: options.DriverOptionRequired(), year: options.SeasonOption,
-                  round: options.RoundOption, session: options.SessionOption):
+                  round: options.RoundOption, session: options.SessionOption, lap: options.LapOption):
         """Get the delta over lap distance between two drivers and return a line plot.
 
         `driver1` is comparison, `driver2` is reference lap.
@@ -638,15 +638,22 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         if not s.f1_api_support:
             raise MissingDataError("Lap data not available for the session.")
 
+        # Check lap number is valid and within range
+        if lap and (not str(lap).isdigit() or int(lap) > s.laps["LapNumber"].unique().max()):
+            raise ValueError("Lap number out of range.")
+
         # Get drivers
         drivers = [utils.find_driver(d, await ergast.get_all_drivers(year, ev["RoundNumber"]))["code"]
                    for d in (driver1, driver2)]
 
-        # Load each driver fastest lap telemetry
-        telemetry = {
-            d: s.laps.pick_drivers(d).pick_fastest().get_car_data(interpolate_edges=True).add_distance()
-            for d in drivers
-        }
+        # Load each driver lap telemetry
+        telemetry = {}
+        for d in drivers:
+            if lap:
+                driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap))
+            else:
+                driver_lap = s.laps.pick_drivers(d).pick_fastest()
+            telemetry[d] = driver_lap.get_car_data(interpolate_edges=True).add_distance()
 
         # Get interpolated delta between drivers
         # where driver1 is ref lap and driver2 is compared
@@ -660,11 +667,12 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ax = fig.add_subplot()
 
         # Use ref driver distance for X
+        lap_label = f"Lap {lap}" if lap else "Fastest Lap"
         x = telemetry[drivers[1]]["Distance"].values
         ax.plot(x, ahead, color="green")
         ax.plot(x, behind, color="red")
         ax.axhline(0.0, linestyle="--", linewidth=0.5, color="w", zorder=0, alpha=0.5)
-        ax.set_title(f"{drivers[0]} Delta to {drivers[1]} (Fastest Lap)\n{yr} {rd} | {session}").set_fontsize(16)
+        ax.set_title(f"{drivers[0]} Delta to {drivers[1]} ({lap_label})\n{yr} {rd} | {session}").set_fontsize(16)
         ax.set_ylabel(f"<-  {drivers[0]}  |  {drivers[1]}  ->")
 
         f = utils.plot_to_file(fig, f"plt_gap-{yr}-{ev['RoundNumber']}-{session[0]}")
