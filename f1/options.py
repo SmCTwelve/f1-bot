@@ -64,7 +64,8 @@ SessionOption = Option(
     description="The session to view (default race)")
 
 LapOption = Option(
-    str,
+    int,
+    min_value=1,
     default=None,
     description="Filter by lap number (optional, default fastest)"
 )
