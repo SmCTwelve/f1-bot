@@ -1,13 +1,7 @@
 
 class BotError(Exception):
     """Base error class for the bot."""
-
-    def __init__(self, message=""):
-        self.message = message
-        super().__init__(self.message)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}: {self.message}"
+    pass
 
 
 class MissingDataError(BotError):
@@ -21,7 +15,8 @@ class MissingDataError(BotError):
         self,
         message="Returned data missing or invalid, results could not be processed."
     ):
-        super().__init__(message)
+        self.message = message
+        super().__init__(self.message)
 
 
 class MessageTooLongError(BotError):
@@ -38,3 +33,4 @@ class DriverNotFoundError(BotError):
 
     def __init__(self):
         self.message = "The provided driver could not be found."
+        super().__init__(self.message)

@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 from f1 import options, utils
 from f1.api import ergast, stats
 from f1.config import Config
-from f1.errors import DriverNotFoundError, MissingDataError
+from f1.errors import MissingDataError
 from f1.target import MessageTarget
 
 logger = logging.getLogger("f1-bot")
@@ -724,14 +724,6 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         f = utils.plot_to_file(fig, f"plt_avgdelta-{yr}-{ev['RoundNumber']}")
         await MessageTarget(ctx).send(file=f)
-
-    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
-        """Handle loading errors from unsupported API lap data."""
-        if isinstance(error.__cause__, (MissingDataError, DriverNotFoundError)):
-            logger.error(f"/{ctx.command} failed with\n {error}")
-            await MessageTarget(ctx).send(f":x: {error.__cause__.message}")
-        else:
-            raise error
 
 
 def setup(bot: discord.Bot):

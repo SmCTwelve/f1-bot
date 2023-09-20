@@ -11,7 +11,6 @@ from matplotlib import pyplot as plt
 
 from f1.target import MessageTarget
 from f1.config import Config
-from f1.errors import DriverNotFoundError
 
 
 logger = logging.getLogger("f1-bot")
@@ -49,10 +48,6 @@ async def handle_errors(ctx: commands.Context | ApplicationContext, err):
     plt.close("all")
     gc.collect()
 
-    # Command or Cog handler already responded
-    if ctx.response.is_done():
-        return
-
     logger.error(f"Command failed: /{ctx.command} in {ctx.guild.name} {ctx.channel} by {ctx.user}")
     logger.error(f"Selected Options: {ctx.selected_options}")
     logger.error(f"Reason: {err}")
@@ -61,10 +56,6 @@ async def handle_errors(ctx: commands.Context | ApplicationContext, err):
     # Catch TimeoutError
     if isinstance(err, asyncio.TimeoutError) or 'TimeoutError' in str(err):
         await target.send("Response timed out. Check connection status.")
-
-    # Catch DriverNotFoundError
-    elif isinstance(err, DriverNotFoundError):
-        await target.send("Could not find a matching driver. Check ID.")
 
     # Invocation errors
     elif isinstance(err, ApplicationCommandInvokeError):

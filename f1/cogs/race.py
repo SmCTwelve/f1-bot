@@ -7,7 +7,7 @@ import pandas as pd
 from discord import ApplicationContext, Embed
 from discord.ext import commands
 
-from f1 import errors, options, utils
+from f1 import options, utils
 from f1.api import ergast, stats
 from f1.config import Config
 from f1.target import MessageTarget
@@ -245,13 +245,6 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         )
 
         await target.send(embed=embed)
-
-    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
-        if isinstance(error.__cause__, (errors.MissingDataError, errors.DriverNotFoundError)):
-            logger.error(f"/{ctx.command} failed with\n {error}")
-            await MessageTarget(ctx).send(f":x: {error.__cause__.message}")
-        else:
-            raise error
 
 
 def setup(bot: discord.Bot):
