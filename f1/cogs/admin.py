@@ -94,6 +94,8 @@ class Admin(commands.Cog, guild_ids=Config().guilds):
         emd.add_field(name="Connection", value=ws, inline=True)
         emd.add_field(name="API", value=api_txt, inline=True)
 
+        emd.set_footer(text=f"v{Config().version}")
+
         await MessageTarget(ctx).send(embed=emd)
 
     @admin.command(name="disable-cache", description="Temporarily disable caching for X minutes (default 5).")

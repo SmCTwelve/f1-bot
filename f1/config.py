@@ -32,6 +32,9 @@ CACHE_DIR = BASE_DIR.joinpath('cache')
 LOG_DIR = BASE_DIR.joinpath('logs')
 LOG_FILE = LOG_DIR.joinpath('f1-bot.log')
 
+# Version
+VERSION = BASE_DIR.joinpath('version.txt')
+
 
 class Config:
     """Creates a singleton for the parsed config settings and bot client instance."""
@@ -45,6 +48,8 @@ class Config:
             cls._instance.settings = cls._instance._load_config()
             cls._instance.guilds = cls._instance._get_guilds()
             cls._instance.bot = cls._instance._setup_bot()
+            with open(VERSION) as f:
+                cls._instance.version = f.readline()
         return cls._instance
 
     # Initialise instance with accessible API
@@ -52,6 +57,7 @@ class Config:
         self.settings: ConfigParser
         self.guilds: List[int] | None
         self.bot: commands.Bot
+        self.version: str
 
     def _create_output_and_data_dir(self):
         # Check directories, will skip if they exist
