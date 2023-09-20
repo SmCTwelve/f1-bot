@@ -6,3 +6,4 @@ assets
 cache
 logs
 notebook
+config.local.ini

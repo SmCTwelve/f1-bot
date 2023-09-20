@@ -13,6 +13,7 @@ db.sqlite3
 notebook
 *.ipynb
 config.ini
+config.local.ini
 fly.toml
 
 # Distribution / packaging

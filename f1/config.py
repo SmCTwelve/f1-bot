@@ -17,7 +17,10 @@ logger = logging.getLogger('f1-bot')
 BASE_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
 
 # Path to config file
-CONFIG_FILE = BASE_DIR.joinpath('config.ini')
+if Path.exists(BASE_DIR.joinpath('config.local.ini')):
+    CONFIG_FILE = BASE_DIR.joinpath('config.local.ini')
+else:
+    CONFIG_FILE = BASE_DIR.joinpath('config.ini')
 
 # Image and text assets
 ASSET_DIR = BASE_DIR.joinpath('assets')
@@ -135,5 +138,6 @@ class Config:
                 return parsed
 
         except OSError:
-            logging.critical(f'Could not load config.ini file at {CONFIG_FILE}, check it exists.')
+            logging.critical(
+                f'Could not load config.ini file at {CONFIG_FILE}, check it exists (rename example.config.ini).')
             sys.exit(0)
