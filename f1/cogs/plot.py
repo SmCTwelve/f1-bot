@@ -245,7 +245,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Session does not support lap data.")
 
         # Check lap number is valid and within range
-        if lap and int(lap) > s.total_laps:
+        if lap and int(lap) > s.laps["LapNumber"].unique().max():
             raise ValueError("Lap number out of range.")
 
         # Get data for each driver
@@ -254,10 +254,15 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         for d in drv_ids:
             if d not in s.laps["Driver"].unique():
                 raise MissingDataError(f"No lap data for driver {d}")
-            if lap:
-                drv_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
-            else:
-                drv_lap = s.laps.pick_drivers(d).pick_fastest()
+
+            try:
+                if lap:
+                    drv_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
+                else:
+                    drv_lap = s.laps.pick_drivers(d).pick_fastest()
+            except Exception:
+                raise MissingDataError(f"Cannot get data for driver {d}")
+
             laptimes.append(drv_lap["LapTime"])
             data[d] = drv_lap.get_car_data().add_distance()
             del drv_lap
@@ -389,7 +394,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Session does not support lap data.")
 
         # Check lap number is valid and within range
-        if lap and int(lap) > s.total_laps:
+        if lap and int(lap) > s.laps["LapNumber"].unique().max():
             raise ValueError("Lap number out of range.")
 
         yr, rd = ev["EventDate"].year, ev["RoundNumber"]
@@ -397,11 +402,14 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
                    for d in (first, second)]
 
         # Get telemetry and minisectors for each driver
-        telemetry = stats.minisectors([
-            s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0] if lap else
-            s.laps.pick_drivers(d).pick_fastest()
-            for d in drivers
-        ])
+        try:
+            telemetry = stats.minisectors([
+                s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0] if lap else
+                s.laps.pick_drivers(d).pick_fastest()
+                for d in drivers
+            ])
+        except Exception:
+            raise MissingDataError("Missing telemetry for driver or lap.")
 
         # Get the mean time for each minisector per driver
         mTimes = telemetry.groupby(["mSector", "Driver"])["Time"].mean().reset_index()
@@ -660,7 +668,7 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
             raise MissingDataError("Lap data not available for the session.")
 
         # Check lap number is valid and within range
-        if lap and int(lap) > s.total_laps:
+        if lap and int(lap) > s.laps["LapNumber"].unique().max():
             raise ValueError("Lap number out of range.")
 
         # Get drivers
@@ -670,12 +678,11 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         # Load each driver lap telemetry
         telemetry = {}
         for d in drivers:
-            if lap:
-                driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
-            else:
-                driver_lap = s.laps.pick_drivers(d).pick_fastest()
-
             try:
+                if lap:
+                    driver_lap = s.laps.pick_drivers(d).pick_laps(int(lap)).iloc[0]
+                else:
+                    driver_lap = s.laps.pick_drivers(d).pick_fastest()
                 telemetry[d] = driver_lap.get_car_data(interpolate_edges=True).add_distance()
             except Exception:
                 raise MissingDataError(f"Cannot get telemetry for {d}.")
