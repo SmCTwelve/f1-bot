@@ -641,14 +641,14 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
 name = "fastf1"
-version = "3.1.2"
+version = "3.1.5"
 description = "Wrapper library for F1 data and telemetry API with additional data processing capabilities."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastf1-3.1.2-py3-none-any.whl", hash = "sha256:f1299c501111d95792ae836c2c740189a6574ad23bd66d4ef22b8216665b3743"},
-    {file = "fastf1-3.1.2.tar.gz", hash = "sha256:9c1152b994497f9610b981540fc7c828c2bf0364d8d9a987098bae705dd8be40"},
+    {file = "fastf1-3.1.5-py3-none-any.whl", hash = "sha256:80b4f0672427dda221aed0edd435f27e1980615764c9a21140084ff9fc20d700"},
+    {file = "fastf1-3.1.5.tar.gz", hash = "sha256:35f421512d81a50d3dbee065fa4d73ab7e27899fef08a582d342135f680cb319"},
 ]
 
 [package.dependencies]
