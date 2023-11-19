@@ -105,6 +105,10 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         session = await stats.load_session(ev, "R", laps=True)
 
+        # Check API support
+        if not session.f1_api_support:
+            raise MissingDataError("Lap data not available before 2018.")
+
         fig = Figure(figsize=(8.5, 5.46), dpi=DPI, layout="constrained")
         ax = fig.add_subplot()
 
@@ -139,6 +143,9 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Get the fastest lap per driver
         fastest_laps = stats.fastest_laps(s)
+        # Filter out race start incidents
+        if stats.get_session_type(session) == "R":
+            fastest_laps = fastest_laps.loc[fastest_laps["Lap"] > 5]
         top = fastest_laps.iloc[0]
 
         # Map each driver to their team colour
@@ -579,6 +586,10 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
         ev = await stats.to_event(year, round)
         s = await stats.load_session(ev, "R", laps=True)
 
+        # Check API support
+        if not s.f1_api_support:
+            raise MissingDataError("Session does not support lap data before 2018.")
+
         # Get the point finishers
         point_finishers = s.drivers[:10]
 
@@ -731,7 +742,11 @@ class Plot(commands.Cog, guild_ids=Config().guilds):
 
         # Plot the average lap delta to session average for each driver
         for d in s.drivers:
-            laps = s.laps.pick_drivers(d).pick_wo_box().loc[:, ["Driver", "LapTime"]]
+            laps = (s.laps
+                    .pick_drivers(d)
+                    .pick_wo_box()
+                    .pick_laps(range(5, s.total_laps + 1))
+                    .loc[:, ["Driver", "LapTime"]])
             driver_avg: pd.Timedelta = laps["LapTime"].mean()
 
             # Filter out non-runners
