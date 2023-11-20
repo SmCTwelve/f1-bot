@@ -342,3 +342,12 @@ def get_driver_or_team_color(id: str, session: Session, team_only=False, api_onl
             pass
 
     return f"#{session.get_driver(id)['TeamColor']}"
+
+
+def map_track_status(status: str):
+    """Return the description of a track status code."""
+    names = {"4": "Safety Car", "5": "Red Flag", "6": "Virtual Safety Car", "1": "Green Flag"}
+    for code in status:
+        if code in names:
+            return names[code]
+    return None

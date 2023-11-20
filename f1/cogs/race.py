@@ -10,6 +10,7 @@ from discord.ext import commands
 from f1 import options, utils
 from f1.api import ergast, stats
 from f1.config import Config
+from f1.errors import MissingDataError
 from f1.target import MessageTarget
 
 logger = logging.getLogger('f1-bot')
@@ -245,6 +246,46 @@ class Race(commands.Cog, guild_ids=Config().guilds):
         )
 
         await target.send(embed=embed)
+
+    @commands.slash_command(
+        name="track-incidents",
+        description="Summary of race events including Safety Cars and retirements.")
+    async def track_incidents(self, ctx: ApplicationContext,
+                              year: options.SeasonOption, round: options.RoundOption):
+        """Outputs a table showing the lap number and event, such as Safety Car or Red Flag."""
+        await utils.check_season(ctx, year)
+        ev = await stats.to_event(year, round)
+        s = await stats.load_session(ev, 'R', laps=True)
+
+        if not s.f1_api_support:
+            raise MissingDataError("Track status data unavailable.")
+
+        # Get the driver DNFs
+        dnfs = stats.get_dnf_results(s)
+        # Combine driver code and dnf reason into single column for merging
+        dnfs["Event"] = dnfs.apply(lambda row: f"Retired: {row['Abbreviation']} ({row['Status']})", axis=1)
+        dnfs = dnfs.loc[:, ["LapNumber", "Event"]]
+
+        # Get track status events grouped by lap number
+        track_events = stats.get_track_events(s)
+
+        if dnfs["Event"].size == 0 and track_events["Event"].size == 0:
+            raise MissingDataError("No track events in this race.")
+
+        # Combine the driver retirements and track status events
+        incidents = pd.concat([
+            dnfs.loc[:, ["LapNumber", "Event"]],
+            track_events.loc[:, ["LapNumber", "Event"]]
+        ], ignore_index=True).sort_values(by="LapNumber").reset_index(drop=True)
+        incidents["LapNumber"] = incidents["LapNumber"].astype(int)
+
+        table, ax = stats.incidents_table(incidents)
+        ax.set_title(
+            f"{ev['EventDate'].year} {ev['EventName']}\nTrack Incidents"
+        ).set_fontsize(12)
+
+        f = utils.plot_to_file(table, f"incidents_{ev['EventDate'].year}_{ev['RoundNumber']}")
+        await MessageTarget(ctx).send(file=f)
 
 
 def setup(bot: discord.Bot):

@@ -519,6 +519,36 @@ def compare_lap_telemetry_delta(ref_lap: Telemetry, comp_lap: Telemetry) -> np.n
     return comp_interp - ref_times
 
 
+def get_dnf_results(session: Session):
+    """Filter the results to only drivers who retired and include their final lap."""
+
+    driver_nums = [d for d in session.drivers if session.get_driver(d).dnf]
+    dnfs = session.results.loc[session.results["DriverNumber"].isin(driver_nums)].reset_index(drop=True)
+    # Get the retirement lap number
+    dnfs["LapNumber"] = [session.laps.pick_drivers(d)["LapNumber"].astype(int).max() for d in driver_nums]
+
+    return dnfs
+
+
+def get_track_events(session: Session):
+    """Return a DataFrame with lap number and event description, e.g. safety cars."""
+
+    incidents = (
+        Laps(session.laps.loc[:, ["LapNumber", "TrackStatus"]].dropna())
+        .pick_track_status("1456", how="any")
+        .groupby("LapNumber").min()
+        .reset_index()
+    )
+    # Map the status codes to names
+    incidents["Event"] = incidents["TrackStatus"].apply(utils.map_track_status)
+
+    # Mark the first occurance of consecutive status events by comparing against neighbouring row
+    # Allows filtering to keep only the first lap where the status occured until the next change
+    incidents["Change"] = (incidents["Event"] != incidents["Event"].shift(1)).astype(int)
+
+    return incidents[incidents["Change"] == 1]
+
+
 def results_table(results: pd.DataFrame, name: str) -> tuple[Figure, Axes]:
     """Return a formatted matplotlib table from a session results dataframe.
 
@@ -670,4 +700,33 @@ def sectors_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
     table.columns["ST"].cells[df["ST"].idxmax()].text.set_color("#b138dd")
     del df
 
+    return table.figure, table.ax
+
+
+def incidents_table(df: pd.DataFrame) -> tuple[Figure, Axes]:
+    """Return table listing track retirements and status events."""
+    df = df.rename(columns={"LapNumber": "Lap"})
+    col_defs = [
+        ColDef("Lap", width=0.15, textprops={"weight": "bold"}, border="r"),
+        ColDef("Event", width=0.5, textprops={"ha": "right"})
+    ]
+    # Dynamic size
+    size = (4, (df["Lap"].size / 3.333) + 1)
+    table = plot_table(df, col_defs, "Lap", size)
+
+    # Styling
+    for cell in table.columns["Event"].cells:
+        if cell.content in ("Safety Car", "Virtual Safety Car"):
+            cell.text.set_color("#ffb300")
+            cell.text.set_alpha(0.84)
+        elif cell.content == "Red Flag":
+            cell.text.set_color("#e53935")
+            cell.text.set_alpha(0.84)
+        elif cell.content == "Green Flag":
+            cell.text.set_color("#43a047")
+            cell.text.set_alpha(0.84)
+        else:
+            cell.text.set_color((1, 1, 1, 0.5))
+
+    del df
     return table.figure, table.ax
